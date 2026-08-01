@@ -120,12 +120,9 @@ except ImportError as e:
     DeepAnalyzer = GoogleMapsController = MapsVerificationResult = None
     park_finder_search = BrowserAutomation = None
 
-try:
-    from geolocation_db import GeolocationDatabase, GeolocationDB
-    GEODB_AVAILABLE = True
-except ImportError:
-    GEODB_AVAILABLE = False
-    GeolocationDatabase = GeolocationDB = None
+# Geolocation DB completely removed in favor of real APIs
+GEODB_AVAILABLE = False
+GeolocationDatabase = GeolocationDB = None
 
 try:
     from core.vision_engine import VisionEngine, VisionFeatures
@@ -847,22 +844,7 @@ def phase6_park_proximity(visual_features: Dict[str, Any],
     try:
         all_parks = []
         for lat, lon in candidate_coords:
-            if GEODB_AVAILABLE and GeolocationDatabase is not None:
-                try:
-                    db_parks = GeolocationDatabase.find_nearby_parks(lat, lon, radius_km=2.0)
-                    for p in db_parks:
-                        wt = (p["distance_km"] / 5.0) * 60.0
-                        all_parks.append({
-                            "name": p["name"], "city": p.get("city", "unknown"),
-                            "latitude": p.get("lat", p.get("latitude", lat)),
-                            "longitude": p.get("lng", p.get("longitude", lon)),
-                            "distance_km": p["distance_km"],
-                            "walk_minutes": round(wt, 1),
-                            "within_8_10_min": 8 <= wt <= 10,
-                            "source": "GeolocationDatabase",
-                        })
-                except Exception as e:
-                    logger.warning(f"  DB park error: {e}")
+
 
             if MODULES_AVAILABLE and park_finder_search is not None:
                 try:
@@ -1305,26 +1287,6 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                     "phase": "PropertyRecords",
                 })
 
-        if db.get("matches") and GEODB_AVAILABLE and GeolocationDatabase is not None:
-            for m in db["matches"][:5]:
-                city_name = m["city"]
-                try:
-                    nearby = GeolocationDatabase.find_cities_nearby(0, 0, 20000)
-                    for c in nearby:
-                        if c["name"] == city_name:
-                            lat = c.get("lat", c.get("latitude", 0))
-                            lng = c.get("lng", c.get("longitude", 0))
-                            all_estimates.append({
-                                "latitude": lat,
-                                "longitude": lng,
-                                "confidence": m["score"] * 0.7,
-                                "sources": [f"db:{city_name}"],
-                                "evidence": {"city": city_name, "score": m["score"]},
-                                "phase": "DB",
-                            })
-                            break
-                except Exception:
-                    pass
 
         # From park proximity
         park = phases.get("park_proximity", {})
@@ -2047,20 +2009,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
                 "latitude": m["latitude"], "longitude": m["longitude"],
                 "confidence": m["confidence"],
             })
-    if not prelim_estimates and pipeline_result.db_matches.get("matches") and GEODB_AVAILABLE:
-        try:
-            for m in pipeline_result.db_matches["matches"][:3]:
-                nearby = GeolocationDatabase.find_cities_nearby(0, 0, 20000)
-                for c in nearby:
-                    if c["name"] == m["city"]:
-                        prelim_estimates.append({
-                            "latitude": c.get("lat", 0),
-                            "longitude": c.get("lng", 0),
-                            "confidence": m["score"],
-                        })
-                        break
-        except Exception:
-            pass
+
     if not prelim_estimates:
         prelim_estimates = []
 
