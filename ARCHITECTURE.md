@@ -8,6 +8,16 @@ GeoVision is a state-of-the-art, purely programmatic OSINT geolocation pipeline.
 2. **Probabilistic Evidence Fusion:** Instead of returning a single, opaque guess, GeoVision aggregates clues from various extractors into a probabilistic model. Each piece of evidence is weighted by its source reliability and detection confidence to compute an expected latitude/longitude center and a variance-based uncertainty radius.
 3. **Modular Pipeline:** The system is heavily modularized, featuring numerous specialized modules for detecting specific types of features (e.g., vegetation, scenes, shadows) and interacting with OSINT APIs (e.g., OpenStreetMap, Wikimedia, property records).
 
+## System Boundaries & Limitations
+As per the GeoVision Ultra manifesto, **GeoVision contains ZERO fake modules, simulated results, or mock APIs.** Consequently, if a feature cannot be implemented natively without fabricating results, it is explicitly excluded.
+
+**Currently Unsupported Capabilities (Future Work):**
+1. **Video Geolocation (Object Tracking & Scene Changes):** Currently, GeoVision only processes static image frames. True multi-frame perspective reconstruction requires specialized spatio-temporal models and large memory buffers not currently integrated.
+2. **3D Depth & Horizon Matching:** True 3D skyline matching against massive digital elevation models (DEMs) requires a distributed vector database indexing terabytes of 3D data, which cannot be practically shipped in a local library. We rely on 2D terrain heuristics and API elevation lookups instead.
+3. **Historical Location Search:** We do not maintain historical GIS layers. GeoVision evaluates imagery as if it reflects the current state of OpenStreetMap and public APIs.
+4. **Massive Vector Search:** True image-to-image similarity searching (retrieving the top 5 similar places from a billion-image geotagged index) is unsupported. GeoVision focuses on explicit CV/OSINT clues rather than purely latent embeddings.
+
+
 ## Pipeline Architecture
 The GeoVision pipeline, executed primarily via `geovision_deep_scan.py`, runs through multiple phases:
 

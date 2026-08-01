@@ -34,7 +34,6 @@ import base64
 import json
 import logging
 import os
-import random
 import sys
 import time
 import traceback
