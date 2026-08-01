@@ -1324,7 +1324,24 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
         try:
             from modules.weather_corroborator import WeatherCorroborator
             weather_checker = WeatherCorroborator()
-            all_estimates = weather_checker.verify_candidates(all_estimates, exif, "")
+            
+            # Extract weather heuristics from scene classification if available
+            extracted_weather = ""
+            scene = phases.get("scene_classification", {})
+            if scene.get("status") == "success":
+                top_classes = [c.get("class", "").lower() for c in scene.get("top_5", [])]
+                for tc in top_classes:
+                    if any(w in tc for w in ["snow", "ski", "alp", "ice", "glacier"]):
+                        extracted_weather = "snow"
+                        break
+                    elif any(w in tc for w in ["umbrella", "rain", "storm"]):
+                        extracted_weather = "rain"
+                        break
+                    elif any(w in tc for w in ["sunglass", "sunscreen", "beach", "desert", "sand"]):
+                        extracted_weather = "sunny"
+                        break
+                        
+            all_estimates = weather_checker.verify_candidates(all_estimates, exif, extracted_weather)
         except Exception as e:
             logger.error(f"  [-] Weather corroboration skipped/failed: {e}", exc_info=True)
 
