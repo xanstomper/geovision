@@ -12,15 +12,14 @@ Flagship entry point that runs the complete multi-phase geolocation pipeline:
   Phase 5 — Satellite Imagery Matching   (SatelliteMatcher)
   Phase 6 — Park Proximity Analysis      (ParkFinder + GeolocationDB)
   Phase 7 — Cross-View Verification      (BrowserAutomation / fallback)
-  Phase 8 — OpenCode VLM Integration     (Vision-Language Model)
-  Phase 9 — Synthesis Report Generation  (HTML + JSON + interactive map)
+  Phase 8 — Synthesis Report Generation  (HTML + JSON + interactive map)
 
 Usage
 -----
   # CLI
   python geovision_deep_scan.py /path/to/image.jpg
   python geovision_deep_scan.py /path/to/image.jpg --output-dir ./reports --near-park
-  python geovision_deep_scan.py /path/to/image.jpg --region Toronto --no-vlm
+  python geovision_deep_scan.py /path/to/image.jpg --region Toronto
   python geovision_deep_scan.py /path/to/image.jpg --interactive --verbose
 
   # Programmatic
@@ -171,7 +170,6 @@ class PipelineResult:
     satellite_matches: List[Dict[str, Any]] = field(default_factory=list)
     park_proximity: Dict[str, Any] = field(default_factory=dict)
     cross_verification: Dict[str, Any] = field(default_factory=dict)
-    vlm_analysis: Dict[str, Any] = field(default_factory=dict)
     synthesis_report: Dict[str, Any] = field(default_factory=dict)
 
     # Consolidated estimates
@@ -731,7 +729,7 @@ def phase4b_property_records(db_matches: List[Dict[str, Any]]) -> Dict[str, Any]
         return {"phase": phase_name, "status": "failed", "error": str(e), "records": []}
 
 def phase5_satellite_matching(visual_features: Dict[str, Any],
-                               db_matches: Dict[str, Any]) -> Dict[str, Any]:
+                               candidate_coords: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Phase 5 — Satellite imagery matching using SatelliteMatcher.
     Matches architectural style, materials, and vegetation patterns to regions.
@@ -762,11 +760,11 @@ def phase5_satellite_matching(visual_features: Dict[str, Any],
                 self.tree_types = data.get("tree_types", [])
                 self.vegetation_density = data.get("vegetation_density", 0.0)
 
-        # Get center coordinates from best DB match
+        # Get center coordinates from candidate_coords
         center_lat, center_lon = None, None
-        if db_matches.get("matches"):
-            center_lat = db_matches["matches"][0]["latitude"]
-            center_lon = db_matches["matches"][0]["longitude"]
+        if candidate_coords:
+            center_lat = candidate_coords[0]["latitude"]
+            center_lon = candidate_coords[0]["longitude"]
             
         if center_lat is None or center_lon is None:
             logger.warning("  ⚠ No center coordinates provided by Phase 4. Skipping Satellite Matcher.")
@@ -808,7 +806,8 @@ def phase5_satellite_matching(visual_features: Dict[str, Any],
     return result
 def phase6_park_proximity(visual_features: Dict[str, Any],
                            satellite_matches: Dict[str, Any],
-                           near_park: bool = False) -> Dict[str, Any]:
+                           near_park: bool = False,
+                           candidate_coords: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Phase 6 — Park proximity analysis using park_finder + GeolocationDatabase.
     """
@@ -822,16 +821,17 @@ def phase6_park_proximity(visual_features: Dict[str, Any],
         "parks": [], "nearest_park": None, "walk_analysis": {},
     }
 
-    candidate_coords: List[Tuple[float, float]] = []
+    local_coords: List[Tuple[float, float]] = []
     if satellite_matches.get("matches"):
         for m in satellite_matches["matches"][:3]:
-            candidate_coords.append((m["latitude"], m["longitude"]))
-    else:
-        candidate_coords = []
+            local_coords.append((m["latitude"], m["longitude"]))
+    elif candidate_coords:
+        for c in candidate_coords[:3]:
+            local_coords.append((c["latitude"], c["longitude"]))
 
     try:
         all_parks = []
-        for lat, lon in candidate_coords:
+        for lat, lon in local_coords:
 
 
             if MODULES_AVAILABLE and park_finder_search is not None:
@@ -992,243 +992,15 @@ def phase7_cross_verification(location_estimates: List[Dict[str, Any]],
     return result
 
 
-def phase8_vlm_analysis(image_paths: List[str], context: Dict[str, Any] = None, user_context: str = "", no_vlm: bool = False) -> Dict[str, Any]:
-    """
-    Phase 8 — OpenCode VLM integration.
-    Sends one or multiple images to a vision-language model for geolocation reasoning.
-    """
-    phase_name = "phase8_vlm_analysis"
-    logger.info("━" * 48)
-    logger.info("  Phase 8: OpenCode VLM Integration")
-    logger.info("━" * 48)
-
-    result: Dict[str, Any] = {
-        "phase": phase_name, "status": "skipped" if no_vlm else "failed",
-        "model_used": None, "raw_response": None,
-        "best_estimate": {}, "vision_features": {},
-        "deep_features_norm": None, "nearby_parks": [],
-        "location_estimates": [],
-    }
-
-    if no_vlm:
-        logger.info("  Skipped (--no-vlm flag)")
-        result["note"] = "VLM analysis skipped by user request"
-        return result
-
-    try:
-        base64_images = []
-        for img_path in image_paths:
-            with open(img_path, "rb") as f:
-                base64_images.append(base64.b64encode(f.read()).decode("utf-8"))
-
-        vlm_provider = os.environ.get("VLM_PROVIDER", "opencode-zen")
-        model_vlm = os.environ.get("VLM_MODEL", "deepseek-v4-flash-free")
-
-        if vlm_provider == "cline":
-            api_key = os.environ.get("CLINE_API_KEY")
-            url = "https://api.cline.bot/v1/chat/completions"
-        elif vlm_provider in ("opencode-zen", "zen"):
-            api_key = os.environ.get("OPENCODE_ZEN_API_KEY")
-            url = os.environ.get("OPENCODE_ZEN_BASE_URL", "https://opencode.ai/zen/v1") + "/chat/completions"
-        elif vlm_provider in ("opencode-go", "go"):
-            api_key = os.environ.get("OPENCODE_GO_API_KEY")
-            url = os.environ.get("OPENCODE_GO_BASE_URL", "https://opencode.ai/go/v1") + "/chat/completions"
-        else:
-            # Fallback for standard OpenAI-compatible
-            api_key = os.environ.get("OPENAI_API_KEY")
-            url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1/chat/completions")
-
-        if not api_key:
-            logger.warning(f"  ⚠ No API key found for provider {vlm_provider}")
-            result["status"] = "skipped"
-            return result
-
-        logger.info(f"  Using VLM provider: [cyan]{vlm_provider}[/cyan], model: [cyan]{model_vlm}[/cyan] at {url}")
-
-        # Provide the VLM with context from earlier phases
-        context_str = json.dumps(context, indent=2, default=str) if context else "None"
-        
-        prompt = f"""You are GeoSpy AI, an advanced OSINT tool for geolocation.
-Analyze the image to determine EXACTLY where it was taken. Look for landmarks, text,
-architectural styles, foliage, infrastructure (power lines, road signs), and shadows.
-Consider which side of the road cars are driving on and license plate shapes/colors.
-
-CRITICAL WARNING ON RETAIL SIGNS:
-Do NOT confidently hallucinate store names from blurry signs (e.g., mistaking a generic red sign for 'GameStop', or a blue sign for 'Hibbett Sports'). If a sign is blurry, describe its color and general shape rather than guessing a specific national brand, or provide a list of possible alternatives with low confidence.
-
-We have already run several algorithms (EXIF, OCR, Database Matching, Property Records).
-Here is the context data we found so far. Use this to guide your reasoning:
-{context_str}
-
-User-provided context / hints:
-{user_context if user_context else "None provided."}
-
-Return ONLY valid JSON (no markdown blocks, no text before or after, just the raw JSON string)
-with the following structure:
-{{
-  "best_estimate": {{
-    "latitude": float,
-    "longitude": float,
-    "confidence": float
-  }},
-  "vision_features": {{
-    "architectural_style": "string",
-    "facade_material": "string",
-    "floors_estimate": "string",
-    "building_type": "string",
-    "infrastructure_indicators": ["string"],
-    "license_plate_indicators": "string",
-    "region_indicators": ["string"],
-    "tree_types": ["string"],
-    "weather_condition": "string",
-    "estimated_time_of_day": "string",
-    "shadow_direction": "string",
-    "era_estimate": "string",
-    "store_signs_detected": ["string"]
-  }},
-  "deep_features_norm": float,
-  "nearby_parks": [
-    {{
-      "name": "string",
-      "distance_km": float,
-      "walk_minutes": int,
-      "within_8_10_min": boolean
-    }}
-  ],
-  "reasoning": "string explaining the geolocation logic"
-}}
-
-Ensure confidence is between 0.0 and 1.0. Find real parks near your estimated coordinates."""
-
-        messages = [
-            {"role": "user", "content": [{"type": "text", "text": prompt}]}
-        ]
-        for b64 in base64_images:
-            messages[0]["content"].append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}})
-        
-        payload = {
-            "model": model_vlm,
-            "messages": messages,
-            "temperature": 0.2,
-            "max_tokens": 2048
-        }
-
-        logger.info("  Sending request to VLM API via curl...")
-        import tempfile
-        import subprocess
-
-        max_retries = 2
-        last_error = None
-        for attempt in range(max_retries):
-            with tempfile.NamedTemporaryFile('w', delete=False) as f:
-                json.dump(payload, f)
-                tmp_path = f.name
-                
-            curl_cmd = [
-                'curl', '-s', '-X', 'POST', url,
-                '-H', 'Content-Type: application/json',
-                '-H', f'Authorization: Bearer {api_key}',
-                '-d', f'@{tmp_path}'
-            ]
-            
-            try:
-                result_json = subprocess.check_output(curl_cmd).decode('utf-8')
-                os.remove(tmp_path)
-                
-                response_data = json.loads(result_json)
-                choices = response_data.get("choices")
-                if not choices:
-                    err_msg = response_data.get("error") or response_data
-                    raise ValueError(f"VLM provider returned no choices. Response: {err_msg}")
-                raw_content = choices[0]["message"]["content"]
-                break
-            except Exception as e:
-                last_error = e
-                err_str = str(e)
-                if "image_url" in err_str and attempt == 0:
-                    logger.warning("  ⚠ VLM provider does not support images. Retrying without images...")
-                    messages = [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
-                    payload = {
-                        "model": model_vlm,
-                        "messages": messages,
-                        "temperature": 0.2,
-                        "max_tokens": 2048
-                    }
-                    continue
-                else:
-                    raise
-        else:
-            raise last_error
-
-        # Robust JSON extraction
-        start_idx = raw_content.find('{')
-        end_idx = raw_content.rfind('}')
-        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-            cleaned = raw_content[start_idx:end_idx+1]
-        else:
-            cleaned = raw_content.replace("```json", "").replace("```", "").strip()
-            
-        parsed = json.loads(cleaned)
-        result["raw_response"] = raw_content
-        result["model_used"] = model_vlm
-
-        if "best_estimate" in parsed and isinstance(parsed["best_estimate"], dict):
-            be = parsed["best_estimate"]
-            result["best_estimate"] = {"latitude": be.get("latitude", 0),
-                                       "longitude": be.get("longitude", 0),
-                                       "confidence": be.get("confidence", 0)}
-            result["location_estimates"].append({
-                "latitude": be.get("latitude", 0),
-                "longitude": be.get("longitude", 0),
-                "confidence": be.get("confidence", 0),
-                "sources": ["OpenCode VLM"],
-                "evidence": {"ai_reasoning": parsed.get("reasoning", "VLM extraction")},
-            })
-        if "vision_features" in parsed:
-            result["vision_features"] = parsed["vision_features"]
-        if "deep_features_norm" in parsed:
-            result["deep_features_norm"] = parsed["deep_features_norm"]
-        if "nearby_parks" in parsed:
-            result["nearby_parks"] = parsed["nearby_parks"]
-        if "reasoning" in parsed:
-            result["reasoning"] = parsed["reasoning"]
-
-        result["status"] = "success"
-        be = result["best_estimate"]
-        logger.info(f"  ✓ VLM complete: ({be.get('latitude', '?'):.4f}, "
-                     f"{be.get('longitude', '?'):.4f}) "
-                     f"conf={be.get('confidence', 0):.3f}")
-
-    except json.JSONDecodeError as e:
-        result["error"] = f"VLM parse error: {e}"
-        result["raw_response"] = locals().get("raw_content", "")
-        logger.error(f"  ✗ VLM parse error: {e}")
-    except urllib.error.HTTPError as e:
-        result["error"] = f"VLM HTTP {e.code}: {e.reason}"
-        try:
-            result["response_body"] = e.read().decode("utf-8")[:500]
-        except Exception:
-            pass
-        logger.error(f"  ✗ VLM HTTP error: {e.code}")
-    except urllib.error.URLError as e:
-        result["error"] = f"VLM connection error: {e.reason}"
-        logger.error(f"  ✗ VLM connection error: {e.reason}")
-    except Exception as e:
-        result["error"] = str(e)
-        result["traceback"] = traceback.format_exc()
-        logger.error(f"  ✗ Phase 8 error: {e}")
-
-    return result
-
-def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
+def phase8_synthesis(phases: Dict[str, Dict[str, Any]],
                       options: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Phase 9 — Synthesis and report generation.
+    Phase 8 — Synthesis and report generation.
     Combines all phases into a unified report with ranked location estimates.
     """
-    phase_name = "phase9_synthesis"
+    phase_name = "phase8_synthesis"
     logger.info("━" * 48)
-    logger.info("  Phase 9: Synthesis & Report Generation")
+    logger.info("  Phase 8: Synthesis & Report Generation")
     logger.info("━" * 48)
 
     result: Dict[str, Any] = {
@@ -1403,15 +1175,10 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
 
         # ── Advanced OSINT: Weather Corroboration ──
         # Cross-reference the final estimates with historical weather if EXIF date is available
-        vlm_weather = ""
-        vlm = phases.get("vlm_analysis", {})
-        if vlm.get("vision_features"):
-            vlm_weather = vlm["vision_features"].get("weather_condition", "")
-            
         try:
             from modules.weather_corroborator import WeatherCorroborator
             weather_checker = WeatherCorroborator()
-            all_estimates = weather_checker.verify_candidates(all_estimates, exif, vlm_weather)
+            all_estimates = weather_checker.verify_candidates(all_estimates, exif, "")
         except Exception as e:
             logger.warning(f"  [-] Weather corroboration skipped/failed: {e}")
 
@@ -1510,7 +1277,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
     except Exception as e:
         result["error"] = str(e)
         result["traceback"] = traceback.format_exc()
-        logger.error(f"  ✗ Phase 9 error: {e}")
+        logger.error(f"  ✗ Phase 8 error: {e}")
 
     return result
 # ---------------------------------------------------------------------------
@@ -1536,7 +1303,7 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
     if FOLIUM_AVAILABLE and folium:
         try:
             m = folium.Map(location=[map_center_lat, map_center_lon],
-                           zoom_start=12, control_scale=True)
+                           zoom_start=11, control_scale=True)
             if best:
                 folium.Marker(
                     location=[best.get("latitude", 0), best.get("longitude", 0)],
@@ -1584,13 +1351,13 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
         "phase1b_shadow_analysis", "phase1_visual_features", "phase2_ocr", "phase3_deep_features",
         "phase3b_reverse_image_search", "phase4_db_matching", "phase4b_property_records",
         "phase5_satellite_matching", "phase6_park_proximity",
-        "phase7_cross_verification", "phase8_vlm_analysis", "phase9_synthesis",
+        "phase7_cross_verification", "phase8_synthesis",
     ]
     phase_labels = [
         "Shadow Analysis", "Visual Features", "OCR Extraction", "Deep Features",
         "Reverse Image Search", "DB Matching", "Property Records",
         "Satellite Matching", "Park Proximity",
-        "Cross-Verification", "VLM Analysis", "Synthesis",
+        "Cross-Verification", "Synthesis",
     ]
     phase_badges = ""
     for pn, pl in zip(phase_names, phase_labels):
@@ -1611,11 +1378,9 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
         link = f"https://www.google.com/maps/@{lat},{lon},17z"
         est_rows += f"""<tr><td>#{i+1}</td><td>{lat:.4f}</td><td>{lon:.4f}</td>
         <td>{conf:.3f}</td><td>{ph}</td><td><small>{src}</small></td>
-        <td><a href="{link}" target="_blank">&#128279;</a></td></tr>"""
+        <td><a href="{link}" target="_blank">&#118279;</a></td></tr>"""
 
-    # VLM reasoning
-    vlm_data = result.get("vlm_analysis") or {}
-    vlm_reasoning = vlm_data.get("reasoning", "N/A")
+
 
     # Parks table
     pk_rows = ""
@@ -1644,38 +1409,38 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
   * {{ margin:0; padding:0; box-sizing:border-box; }}
   body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
          background:#0d1117; color:#c9d1d9; line-height:1.6; }}
-  .container {{ max-width:1200px; margin:0 auto; padding:20px; }}
+  .container {{ max-width:1100px; margin:0 auto; padding:20px; }}
   h1 {{ color:#58a6ff; font-size:28px; margin-bottom:5px; }}
   h2 {{ color:#58a6ff; font-size:20px; margin:25px 0 15px;
         border-bottom:1px solid #30363d; padding-bottom:8px; }}
   .header {{ text-align:center; padding:30px 0; }}
   .header .subtitle {{ color:#8b949e; font-size:14px; }}
-  .header .timestamp {{ color:#484f58; font-size:12px; }}
+  .header .timestamp {{ color:#484f58; font-size:11px; }}
   .stats-grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
                 gap:15px; margin:20px 0; }}
   .stat-card {{ background:#161b22; border:1px solid #30363d; border-radius:8px;
                padding:20px; text-align:center; }}
   .stat-card .value {{ font-size:32px; font-weight:bold; color:#58a6ff; }}
-  .stat-card .label {{ font-size:12px; color:#8b949e; text-transform:uppercase; }}
+  .stat-card .label {{ font-size:11px; color:#8b949e; text-transform:uppercase; }}
   .best-estimate {{ background:linear-gradient(135deg,#1a2332,#161b22);
-                    border:1px solid #58a6ff; border-radius:12px; padding:25px; text-align:center; }}
+                    border:1px solid #58a6ff; border-radius:11px; padding:25px; text-align:center; }}
   .best-estimate .coords {{ font-size:24px; color:#f0f6fc; }}
   .best-estimate .conf {{ font-size:18px; color:#58a6ff; }}
   .map-container {{ background:#161b22; border:1px solid #30363d; border-radius:8px; overflow:hidden; }}
   table {{ width:100%; border-collapse:collapse; margin:15px 0; }}
-  th,td {{ border:1px solid #30363d; padding:10px 12px; text-align:left; font-size:14px; }}
+  th,td {{ border:1px solid #30363d; padding:10px 11px; text-align:left; font-size:14px; }}
   th {{ background:#1a2332; color:#58a6ff; font-weight:600; }}
   tr:nth-child(even) {{ background:#161b22; }}
   tr:hover {{ background:#1c2333; }}
-  .badge {{ display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; }}
+  .badge {{ display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }}
   .badge-success {{ background:#1a3a2a; color:#3fb950; }}
   .badge-failed {{ background:#3a1a1a; color:#f85149; }}
   .badge-limited {{ background:#3a2a1a; color:#d29922; }}
   .code-block {{ background:#0d1117; border:1px solid #30363d; border-radius:6px;
                 padding:16px; font-family:'SF Mono',monospace; font-size:13px; overflow-x:auto; }}
   .section {{ background:#161b22; border:1px solid #30363d; border-radius:8px; padding:20px; margin:20px 0; }}
-  .error-box {{ background:#3a1a1a; border:1px solid #f85149; border-radius:6px; padding:12px; }}
-  .footer {{ text-align:center; padding:30px 0; color:#484f58; font-size:12px; }}
+  .error-box {{ background:#3a1a1a; border:1px solid #f85149; border-radius:6px; padding:11px; }}
+  .footer {{ text-align:center; padding:30px 0; color:#484f58; font-size:11px; }}
   a {{ color:#58a6ff; text-decoration:none; }}
   a:hover {{ text-decoration:underline; }}
   ul {{ list-style:none; }}
@@ -1685,18 +1450,18 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
 <body>
 <div class="container">
   <div class="header">
-    <h1>&#128752; GeoVision Deep Scan</h1>
+    <h1>&#118752; GeoVision Deep Scan</h1>
     <div class="subtitle">GeoSpy-Class Geolocation Pipeline Report</div>
     <div class="timestamp">Generated: {result.get('timestamp', 'unknown')}</div>
   </div>
   <div class="stats-grid">
     <div class="stat-card"><div class="value">{len(estimates)}</div><div class="label">Location Estimates</div></div>
-    <div class="stat-card"><div class="value">{len(phases_completed)}/12</div><div class="label">Phases Completed</div></div>
+    <div class="stat-card"><div class="value">{len(phases_completed)}/11</div><div class="label">Phases Completed</div></div>
     <div class="stat-card"><div class="value">{best.get('confidence', 0.0):.3f}</div><div class="label">Best Confidence</div></div>
     <div class="stat-card"><div class="value">{len(park_data.get('parks', []))}</div><div class="label">Parks Found</div></div>
   </div>
   <div class="best-estimate">
-    <h2>&#128205; Best Estimate</h2>
+    <h2>&#118205; Best Estimate</h2>
     <div class="coords">{best.get('latitude', 0.0):.6f}, {best.get('longitude', 0.0):.6f}</div>
     <div class="conf">Confidence: {best.get('confidence', 0.0):.3f}</div>
     <div style="margin-top:10px;font-size:13px;color:#8b949e">
@@ -1705,48 +1470,45 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
     <div style="margin-top:15px">
       <a href="https://www.google.com/maps/@{best.get('latitude', 0)},{best.get('longitude', 0)},18z"
          target="_blank" style="background:#58a6ff;color:#0d1117;padding:8px 20px;
-         border-radius:6px;text-decoration:none;font-weight:600">&#127758; Google Maps</a>
+         border-radius:6px;text-decoration:none;font-weight:600">&#117758; Google Maps</a>
       <a href="https://www.google.com/maps/@{best.get('latitude', 0)},{best.get('longitude', 0)},3a,75y,90h,90t"
          target="_blank" style="background:#30363d;color:#c9d1d9;padding:8px 20px;
-         border-radius:6px;text-decoration:none;font-weight:600;margin-left:10px">&#128247; Street View</a>
+         border-radius:6px;text-decoration:none;font-weight:600;margin-left:10px">&#118247; Street View</a>
     </div>
   </div>
   <div class="map-container">{map_html}</div>
   <div class="section">
-    <h2>&#128205; Ranked Location Estimates</h2>
+    <h2>&#118205; Ranked Location Estimates</h2>
     <table><thead><tr><th>Rank</th><th>Latitude</th><th>Longitude</th><th>Confidence</th><th>Phase</th><th>Sources</th><th>Maps</th></tr></thead>
     <tbody>{est_rows if est_rows else '<tr><td colspan="7">No estimates generated</td></tr>'}</tbody></table>
   </div>
   <div class="section">
-    <h2>&#128304; Pipeline Phase Status</h2>
+    <h2>&#118304; Pipeline Phase Status</h2>
     <ul>{phase_badges}</ul>
   </div>
-  <div class="section">
-    <h2>&#129302; VLM AI Reasoning</h2>
-    <div class="code-block">{vlm_reasoning}</div>
   </div>
   <div class="section">
-    <h2>&#128202; Visual Features</h2>
+    <h2>&#118202; Visual Features</h2>
     <div class="code-block">{visual_json}</div>
   </div>
   <div class="section">
-    <h2>&#128260; OCR Text</h2>
+    <h2>&#118260; OCR Text</h2>
     <p><strong>Text:</strong> {ocr_text[:500]}</p>
     {f'<p><strong>Significant:</strong> {ocr_sig[:300]}</p>' if ocr_sig else ''}
   </div>
   <div class="section">
-    <h2>&#127796; Nearby Parks</h2>
+    <h2>&#117796; Nearby Parks</h2>
     {f'<table><thead><tr><th>Park</th><th>Distance</th><th>Walk</th><th>8-10 min</th></tr></thead><tbody>{pk_rows}</tbody></table>' if pk_rows else '<p>No parks found in proximity analysis</p>'}
   </div>
   <div class="section">
-    <h2>&#129504; Deep Features</h2>
+    <h2>&#119504; Deep Features</h2>
     <p><strong>Method:</strong> {(result.get('deep_features') or {}).get('method', 'N/A')}</p>
     <p><strong>Norm:</strong> {(result.get('deep_features') or {}).get('feature_norm', 'N/A')}</p>
     <p><strong>Dim:</strong> {(result.get('deep_features') or {}).get('feature_dim', 'N/A')}</p>
   </div>
   {errors_html}
   <div class="section">
-    <h2>&#128193; Image</h2>
+    <h2>&#118193; Image</h2>
     <p><strong>Path:</strong> {result.get('image_path', 'N/A')}</p>
     <p><strong>Success:</strong> {'&#9989; Yes' if result.get('success') else '&#10060; No'}</p>
   </div>
@@ -1925,9 +1687,47 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.errors.append(f"Phase 4 error: {e}")
         phases["db_matches"] = {"status": "failed", "error": str(e)}
 
+
+    # Gather candidate coordinates from all prior sources and region flag
+    candidate_coords = []
+    
+    # 1. EXIF GPS
+    if pipeline_result.exif_data.get("gps"):
+        gps = pipeline_result.exif_data["gps"]
+        if "latitude" in gps and "longitude" in gps:
+            candidate_coords.append({"latitude": gps["latitude"], "longitude": gps["longitude"]})
+            
+    # 2. Region flag
+    if region:
+        try:
+            from modules.nominatim_geocoder import NominatimGeocoder
+            geocoder = NominatimGeocoder()
+            val = geocoder.geocode(region)
+            if val and val.get("latitude") and val.get("longitude"):
+                candidate_coords.append({"latitude": val["latitude"], "longitude": val["longitude"]})
+                logger.info(f"  ✓ Region '{region}' geocoded to {val['latitude']}, {val['longitude']}")
+        except Exception as e:
+            logger.warning(f"  [-] Failed to geocode region '{region}': {e}")
+            
+    # 3. Phase 4 DB Matches
+    if pipeline_result.db_matches.get("matches"):
+        for m in pipeline_result.db_matches["matches"]:
+            if "latitude" in m and "longitude" in m:
+                candidate_coords.append({"latitude": m["latitude"], "longitude": m["longitude"]})
+                
+    # Remove duplicates
+    seen_coords = set()
+    unique_candidates = []
+    for c in candidate_coords:
+        key = (round(c["latitude"], 4), round(c["longitude"], 4))
+        if key not in seen_coords:
+            seen_coords.add(key)
+            unique_candidates.append(c)
+    candidate_coords = unique_candidates
+
     # Phase 4b: Property Records
     try:
-        pipeline_result.property_records = phase4b_property_records(pipeline_result.db_matches.get("matches", []))
+        pipeline_result.property_records = phase4b_property_records(candidate_coords)
         phases["property_records"] = pipeline_result.property_records
         if pipeline_result.property_records.get("status") == "success":
             pipeline_result.phases_completed.append("phase4b_property_records")
@@ -1943,7 +1743,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         vis_for_sat = pipeline_result.visual_features.get("features", {})
         if not vis_for_sat:
             vis_for_sat = pipeline_result.visual_features
-        pipeline_result.satellite_matches = phase5_satellite_matching(vis_for_sat, pipeline_result.db_matches)
+        pipeline_result.satellite_matches = phase5_satellite_matching(vis_for_sat, candidate_coords)
         phases["satellite_matches"] = pipeline_result.satellite_matches
         if pipeline_result.satellite_matches.get("status") in ("success", "limited"):
             pipeline_result.phases_completed.append("phase5_satellite_matching")
@@ -1959,7 +1759,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         vis_for_pk = pipeline_result.visual_features.get("features", {})
         if not vis_for_pk:
             vis_for_pk = pipeline_result.visual_features
-        pipeline_result.park_proximity = phase6_park_proximity(vis_for_pk, pipeline_result.satellite_matches, near_park)
+        pipeline_result.park_proximity = phase6_park_proximity(vis_for_pk, pipeline_result.satellite_matches, near_park, candidate_coords)
         phases["park_proximity"] = pipeline_result.park_proximity
         if pipeline_result.park_proximity.get("status") in ("success", "limited"):
             pipeline_result.phases_completed.append("phase6_park_proximity")
@@ -1976,11 +1776,16 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         for m in pipeline_result.satellite_matches["matches"][:3]:
             prelim_estimates.append({
                 "latitude": m["latitude"], "longitude": m["longitude"],
-                "confidence": m["confidence"],
+                "confidence": m.get("confidence", 0.5),
+            })
+    
+    if not prelim_estimates and candidate_coords:
+        for c in candidate_coords[:3]:
+            prelim_estimates.append({
+                "latitude": c["latitude"], "longitude": c["longitude"],
+                "confidence": 0.5,
             })
 
-    if not prelim_estimates:
-        prelim_estimates = []
 
     try:
         pipeline_result.cross_verification = phase7_cross_verification(prelim_estimates, interactive)
@@ -1994,19 +1799,19 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.errors.append(f"Phase 7 error: {e}")
         phases["cross_verification"] = {"status": "failed", "error": str(e)}
 
-    # Phase 9: Synthesis
+    # Phase 8: Synthesis
     try:
-        pipeline_result.synthesis_report = phase9_synthesis(phases, options)
+        pipeline_result.synthesis_report = phase8_synthesis(phases, options)
         phases["synthesis_report"] = pipeline_result.synthesis_report
         if pipeline_result.synthesis_report.get("status") == "success":
-            pipeline_result.phases_completed.append("phase9_synthesis")
+            pipeline_result.phases_completed.append("phase8_synthesis")
             pipeline_result.location_estimates = pipeline_result.synthesis_report.get("location_estimates", [])
             pipeline_result.best_estimate = pipeline_result.synthesis_report.get("best_estimate", {})
         else:
-            pipeline_result.phases_failed.append("phase9_synthesis")
+            pipeline_result.phases_failed.append("phase8_synthesis")
     except Exception as e:
-        pipeline_result.phases_failed.append("phase9_synthesis")
-        pipeline_result.errors.append(f"Phase 9 error: {e}")
+        pipeline_result.phases_failed.append("phase8_synthesis")
+        pipeline_result.errors.append(f"Phase 8 error: {e}")
         phases["synthesis_report"] = {"status": "failed", "error": str(e)}
 
     # Overall success
@@ -2034,7 +1839,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     logger.info("╔" + "═" * 60 + "╗")
     logger.info("║                Pipeline Complete                        ║")
     logger.info("╚" + "═" * 60 + "╝")
-    logger.info(f"  Phases completed: {len(pipeline_result.phases_completed)}/9")
+    logger.info(f"  Phases completed: {len(pipeline_result.phases_completed)}/8")
     logger.info(f"  Phases failed:    {len(pipeline_result.phases_failed)}")
     logger.info(f"  Location estimates: {len(pipeline_result.location_estimates)}")
     if pipeline_result.best_estimate:
@@ -2113,7 +1918,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"Best estimate: ({be.get('latitude', '?'):.4f}, "
                   f"{be.get('longitude', '?'):.4f}) "
                   f"confidence={be.get('confidence', 0):.3f}", file=sys.stderr)
-        print(f"Phases: {len(result.phases_completed)}/9 completed, "
+        print(f"Phases: {len(result.phases_completed)}/8 completed, "
               f"{len(result.phases_failed)} failed", file=sys.stderr)
         print(f"Output: {args.output_dir}", file=sys.stderr)
 

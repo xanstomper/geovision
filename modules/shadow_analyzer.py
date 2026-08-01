@@ -40,11 +40,14 @@ class ShadowAnalyzer:
             # We just return the declination for the VLM to use as a strong prior.
             
             logger.info(f"  Sun declination calculated as {declination:.2f} degrees for {dt.date()}")
-            return {
+            result = {
                 "solar_declination": declination,
                 "day_of_year": day_of_year,
                 "estimated_time": f"{dt.hour}:{dt.minute}"
             }
+            if shadow_angle_deg is not None:
+                result["estimated_latitude"] = shadow_angle_deg + declination
+            return result
         except Exception as e:
             logger.warning(f"Shadow Analyzer failed to parse EXIF date: {e}")
             return None

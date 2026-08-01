@@ -9,7 +9,7 @@ class NominatimGeocoder:
     """Free reverse/forward geocoding using OpenStreetMap Nominatim API."""
     
     BASE_URL = "https://nominatim.openstreetmap.org"
-    USER_AGENT = "GeoVision OSINT Tool/2.0 (contact: admin@geovision.local)"
+    USER_AGENT = "GeoVision-OSINT/1.0 (https://github.com/xanstomper/geovision)"
     
     def __init__(self):
         self.session = requests.Session()

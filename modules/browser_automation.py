@@ -21,10 +21,11 @@ class BrowserAutomation:
         "selenium": "Selenium WebDriver",
         "playwright": "Playwright",
         "mcp": "MCP Browser Control",
-        "pyautogui": "System-level automation"
+        "pyautogui": "System-level automation",
+        "requests": "Simple Requests Backend"
     }
     
-    def __init__(self, backend: str = "mcp"):
+    def __init__(self, backend: str = "requests"):
         self.backend = backend
         self.driver = None
         self.active = False
@@ -39,9 +40,15 @@ class BrowserAutomation:
                 return self._connect_playwright()
             elif self.backend == "pyautogui":
                 return self._connect_pyautogui()
+            elif self.backend == "requests":
+                return self._connect_requests()
         except Exception as e:
             logger.error(f"Browser connection error: {e}")
         return False
+    
+    def _connect_requests(self) -> bool:
+        self.active = True
+        return True
     
     def _connect_mcp(self) -> bool:
         try:
@@ -100,6 +107,9 @@ class BrowserAutomation:
             import webbrowser
             webbrowser.open(url)
             time.sleep(wait)
+        elif self.backend == "requests":
+            logger.info(f"Verification URL generated: {url}")
+            return url
     
     def screenshot(self, output_path: Optional[str] = None) -> Optional[bytes]:
         try:
@@ -122,6 +132,9 @@ class BrowserAutomation:
                 if output_path:
                     screenshot.save(output_path)
                 return screenshot.tobytes()
+            elif self.backend == "requests":
+                logger.info("Requests backend cannot take screenshots.")
+                return None
         except Exception as e:
             logger.error(f"Screenshot error: {e}")
         return None

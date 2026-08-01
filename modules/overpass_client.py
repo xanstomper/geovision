@@ -18,6 +18,7 @@ class OverpassClient:
         query = f"""
         [out:json][timeout:25];
         (
+          node["leisure"="park"](around:{radius_meters},{lat},{lon});
           way["leisure"="park"](around:{radius_meters},{lat},{lon});
           relation["leisure"="park"](around:{radius_meters},{lat},{lon});
           way["boundary"="national_park"](around:{radius_meters},{lat},{lon});

@@ -115,9 +115,9 @@ class SatelliteMatcher:
             except Exception as e:
                 logger.warning(f"Google Maps API fetch error: {e}. Falling back to OpenStreetMap.")
 
-        # Fallback to OpenStreetMap tile if Google API key is missing or failed
+        # Fallback to ESRI World Imagery if Google API key is missing or failed
         try:
-            url = f"https://tile.openstreetmap.org/{zoom}/{self._lon2tile(lon, zoom)}/{self._lat2tile(lat, zoom)}.png"
+            url = f"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{zoom}/{self._lat2tile(lat, zoom)}/{self._lon2tile(lon, zoom)}"
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 img_array = np.frombuffer(response.content, np.uint8)
@@ -126,7 +126,7 @@ class SatelliteMatcher:
                     cv2.imwrite(str(cache_file), img)
                     return img
             else:
-                logger.error(f"OSM tile fetch returned status code {response.status_code}")
+                logger.error(f"ESRI tile fetch returned status code {response.status_code}")
         except Exception as e:
             logger.error(f"OSM tile fetch error: {e}")
 

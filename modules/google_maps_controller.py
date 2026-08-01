@@ -50,35 +50,16 @@ class GoogleMapsController:
     
     def navigate_to_location(self, lat: float, lon: float, zoom: int = 19):
         # We can use the official Static Maps / Street View API if a key is provided
-        api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "AIzaSyD7AuD-KuRPukRoUH8laqbOg3iRMAkLYNw")
-        if api_key:
-            logger.info("  Using Google Maps API for Cross-Verification")
-            self.current_lat = lat
-            self.current_lon = lon
-            self.api_key = api_key
-            return self._capture_current_view()
-            
-        if not self.driver:
-            if not self.initialize_browser():
-                return None
-        
-        try:
-            url = f"https://www.google.com/maps/@{lat},{lon},{zoom}z/data=!3m1!1e3"
-            self.driver.get(url)
-            time.sleep(2)
-            
-            # Try to trigger Street View
-            try:
-                pegman = self.driver.find_element("css selector", "[aria-label=Pegman]")
-                pegman.click()
-                time.sleep(1)
-            except:
-                pass
-            
-            return self._capture_current_view()
-        except Exception as e:
-            logger.error(f"Navigation error: {e}")
+        api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
+        if not api_key:
+            logger.warning("No GOOGLE_MAPS_API_KEY available. Skipping Google Maps fetch.")
             return None
+            
+        logger.info("  Using Google Maps API for Cross-Verification")
+        self.current_lat = lat
+        self.current_lon = lon
+        self.api_key = api_key
+        return self._capture_current_view()
     
     def _capture_current_view(self) -> Optional[bytes]:
         import requests
@@ -101,6 +82,15 @@ class GoogleMapsController:
             return None
     
     def verify_location(self, lat: float, lon: float) -> MapsVerificationResult:
+        if not os.environ.get("GOOGLE_MAPS_API_KEY"):
+            return MapsVerificationResult(
+                verified=False,
+                street_view_available=False,
+                satellite_match_confidence=0.0,
+                nearby_amenities=[],
+                address="No API key"
+            )
+            
         self.navigate_to_location(lat, lon)
         
         screenshot = self._capture_current_view()

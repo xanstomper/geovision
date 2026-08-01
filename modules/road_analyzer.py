@@ -23,7 +23,9 @@ class RoadAnalyzer:
                 "confidence": 0.0
             }
             
-        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        height, width = image.shape[:2]
+        bottom_third = image[height - height//3:, :]
+        hsv_image = cv2.cvtColor(bottom_third, cv2.COLOR_BGR2HSV)
         
         # Define color ranges
         # Yellow lines (North America, etc)
@@ -38,7 +40,7 @@ class RoadAnalyzer:
         white_mask = cv2.inRange(hsv_image, lower_white, upper_white)
         white_pixels = cv2.countNonZero(white_mask)
         
-        total_pixels = image.shape[0] * image.shape[1]
+        total_pixels = bottom_third.shape[0] * bottom_third.shape[1]
         yellow_ratio = yellow_pixels / total_pixels
         white_ratio = white_pixels / total_pixels
         
@@ -82,7 +84,8 @@ class RoadAnalyzer:
             region_indicators.append("UK / Japan / Australia / India / South Africa")
             
         # Road surface
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        bottom_quarter = image[height - height//4:, :]
+        gray_image = cv2.cvtColor(bottom_quarter, cv2.COLOR_BGR2GRAY)
         mean_intensity = np.mean(gray_image)
         road_surface = "dark asphalt" if mean_intensity < 100 else "light concrete"
             

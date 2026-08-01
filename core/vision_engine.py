@@ -108,16 +108,12 @@ class VisionEngine:
     
     ARCHITECTURAL_REGIONS = {
         "red_brick_apartments": {
-            "style": "Toronto brick apartment",
-            "regions": ["Toronto, Canada", "Chicago, USA", "Detroit, USA", "Montreal, Canada"],
-            "era": "1950s-1970s",
-            "confidence_weight": 0.9
+            "style": "brick residential",
+            "era": "1950s-1970s"
         },
         "tan_stucco": {
-            "style": "California/Southwest stucco",
-            "regions": ["Los Angeles, USA", "Phoenix, USA", "San Diego, USA", "Las Vegas, USA"],
-            "era": "1960s-1990s",
-            "confidence_weight": 0.85
+            "style": "stucco residential",
+            "era": "1960s-1990s"
         },
     }
     
@@ -128,12 +124,7 @@ class VisionEngine:
         self._init_models()
     
     def _init_models(self):
-        try:
-            from ultralytics import YOLO
-            self.yolo = YOLO("yolov8n-seg.pt")
-        except Exception as e:
-            logger.warning(f"YOLO unavailable: {e}")
-            self.yolo = None
+        self.yolo = None
     
     def analyze_image(self, image_path: str) -> VisionFeatures:
         self.features = VisionFeatures()
@@ -160,6 +151,7 @@ class VisionEngine:
             img_np = np.array(img)
             self.height, self.width = img_np.shape[:2]
             img_np = cv2.resize(img_np, (1024, 768), interpolation=cv2.INTER_AREA)
+            img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
             return img_np
         except Exception as e:
             logger.error(f"Image loading error: {e}")
@@ -257,7 +249,6 @@ class VisionEngine:
             style_info = self.ARCHITECTURAL_REGIONS[best_style]
             self.features.architectural_style = style_info["style"]
             self.features.era_estimate = style_info["era"]
-            self.features.region_indicators = style_info["regions"]
     
     def _analyze_infrastructure(self, image: np.ndarray):
         bottom_half = image[self.height//2:, :]
@@ -378,8 +369,7 @@ class VisionEngine:
     
     def _cross_correlate_features(self):
         if self.features.facade_material == "red_brick" and self.features.floors_estimate and self.features.floors_estimate >= 2:
-            if "Toronto, Canada" in self.features.region_indicators:
-                self.features.building_type = "Toronto-style multi-unit residential"
+            self.features.building_type = "multi-unit residential"
         
         if self.features.vegetation_density > 0.3 and self.features.leaf_color_variance > 100:
             self.features.tree_types.append("temperate_deciduous_forest")

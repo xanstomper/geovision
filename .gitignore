@@ -9,3 +9,4 @@ geovision_screenshot_native*
 .DS_Store
 *.pyc
 __pycache__/
+reports/

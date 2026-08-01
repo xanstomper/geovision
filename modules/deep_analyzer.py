@@ -29,7 +29,7 @@ class DeepAnalyzer:
     def __init__(self):
         self.device = "cpu"
         self.model = None
-        self.feature_dim = 512
+        self.feature_dim = 2048
         
         if TORCH_AVAILABLE:
             try:
@@ -59,8 +59,11 @@ class DeepAnalyzer:
         
         try:
             from PIL import Image
+            import cv2
             if isinstance(image, str):
                 image = Image.open(image).convert('RGB')
+            elif isinstance(image, np.ndarray):
+                image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
             
             tensor = self.preprocess(image).unsqueeze(0).to(self.device)
             
