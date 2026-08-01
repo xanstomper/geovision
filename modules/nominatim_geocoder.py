@@ -9,7 +9,7 @@ class NominatimGeocoder:
     """Free reverse/forward geocoding using OpenStreetMap Nominatim API."""
     
     BASE_URL = "https://nominatim.openstreetmap.org"
-    USER_AGENT = "GeoVision/1.0 (contact@example.com)"
+    USER_AGENT = "GeoVision OSINT Tool/2.0 (contact: admin@geovision.local)"
     
     def __init__(self):
         self.session = requests.Session()
@@ -59,6 +59,7 @@ class NominatimGeocoder:
         if result and "error" not in result:
             address = result.get("address", {})
             return {
+                "is_land": True,
                 "is_on_land": True,
                 "country": address.get("country"),
                 "state": address.get("state"),
@@ -67,6 +68,7 @@ class NominatimGeocoder:
         
         # If error or no result, it might be in the ocean
         return {
+            "is_land": False,
             "is_on_land": False,
             "country": None,
             "state": None,

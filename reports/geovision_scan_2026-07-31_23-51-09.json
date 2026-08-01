@@ -1,0 +1,555 @@
+{
+  "image_path": "/home/jewboy420/.gemini/antigravity-cli/brain/b92b2618-d035-4296-89dc-f6ab2ee16b08/.user_uploaded/uploaded_media_1785534764588.png",
+  "timestamp": "2026-07-31_23-51-09",
+  "success": true,
+  "phases_completed": [
+    "phase2_ocr",
+    "phase3_deep_features",
+    "phase4_db_matching",
+    "phase4b_property_records",
+    "phase5_satellite_matching",
+    "phase6_park_proximity",
+    "phase7_cross_verification",
+    "phase9_synthesis"
+  ],
+  "phases_failed": [
+    "phase0_exif_extraction",
+    "phase1b_shadow_analysis",
+    "phase1_visual_features",
+    "phase3b_reverse_image_search",
+    "phase8_vlm_analysis"
+  ],
+  "exif_data": {
+    "phase": "phase0_exif_extraction",
+    "status": "limited",
+    "data": {},
+    "gps": null
+  },
+  "visual_features": {
+    "phase": "phase1_visual_features",
+    "status": "failed",
+    "features": {},
+    "raw_analysis": {},
+    "error": "'VisionEngine' object has no attribute 'analyze'",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/jewboy420/geovision/geovision_deep_scan.py\", line 287, in phase1_visual_features\n    engine.analyze(image_path)\n    ^^^^^^^^^^^^^^\nAttributeError: 'VisionEngine' object has no attribute 'analyze'\n"
+  },
+  "shadow_analysis": {
+    "phase": "phase1b_shadow_analysis",
+    "status": "skipped",
+    "reason": "No EXIF DateTime"
+  },
+  "ocr_text": {
+    "phase": "phase2_ocr",
+    "status": "success",
+    "text": "Walmart ",
+    "significant_text": "Walmart",
+    "word_count": 1,
+    "detections": [],
+    "source": "GeoVisionCore_EasyOCR"
+  },
+  "deep_features": {
+    "phase": "phase3_deep_features",
+    "status": "success",
+    "feature_vector": [
+      0.13607849180698395,
+      0.7326764464378357,
+      0.22841516137123108,
+      1.4721561670303345,
+      0.49875950813293457,
+      0.4607011079788208,
+      0.38602298498153687,
+      0.11291620880365372,
+      0.1439724713563919,
+      0.6942736506462097,
+      0.2805045545101166,
+      0.039531249552965164,
+      0.20197726786136627,
+      0.14666233956813812,
+      0.7787947654724121,
+      0.168060302734375,
+      0.8840042352676392,
+      0.14357197284698486,
+      0.20590554177761078,
+      0.08840453624725342,
+      0.30369439721107483,
+      0.525493323802948,
+      0.6661244034767151,
+      0.30352362990379333,
+      0.49945613741874695,
+      0.48879510164260864,
+      0.2877172827720642,
+      0.14498771727085114,
+      0.1268588900566101,
+      0.2532487213611603,
+      0.23723115026950836,
+      0.21438473463058472,
+      0.45534271001815796,
+      0.22591039538383484,
+      0.41526612639427185,
+      0.034655991941690445,
+      0.5507135987281799,
+      0.302312970161438,
+      0.28908491134643555,
+      0.17571114003658295,
+      0.36150044202804565,
+      0.5869298577308655,
+      0.728596568107605,
+      0.12446168065071106,
+      0.08733570575714111,
+      0.07988742738962173,
+      0.6009819507598877,
+      0.38657239079475403,
+      0.1956818848848343,
+      0.5301638841629028,
+      0.3052203059196472,
+      0.060741864144802094,
+      0.2148328572511673,
+      0.580212414264679,
+      0.052656758576631546,
+      0.4925121068954468,
+      0.29573550820350647,
+      0.028545398265123367,
+      0.741182267665863,
+      0.37348583340644836,
+      0.6729902029037476,
+      0.1120220199227333,
+      0.13930925726890564,
+      0.34521472454071045
+    ],
+    "feature_dim": 2048,
+    "method": "ResNet50",
+    "feature_norm": 22.9326
+  },
+  "reverse_image_search": {
+    "phase": "phase3b_reverse_image_search",
+    "status": "limited",
+    "matches": [],
+    "note": "No API keys configured for reverse image search."
+  },
+  "db_matches": {
+    "phase": "phase4_db_matching",
+    "status": "success",
+    "matches": [
+      {
+        "city": "Walmart",
+        "latitude": 36.36555556,
+        "longitude": -94.2175,
+        "confidence": 0.8,
+        "matched_feature": "OCR Text: Walmart"
+      }
+    ],
+    "top_cities": [
+      "Walmart"
+    ],
+    "matched_features": {}
+  },
+  "property_records": {
+    "phase": "phase4b_property_records",
+    "status": "success",
+    "records": [
+      {
+        "source_match": "OCR Text: Walmart",
+        "latitude": 36.36555556,
+        "longitude": -94.2175,
+        "records": [
+          {
+            "building": "yes",
+            "office": "company"
+          },
+          {
+            "building": "yes",
+            "office": "yes"
+          },
+          {
+            "building": "yes",
+            "office": "yes"
+          },
+          {
+            "building": "warehouse",
+            "office": "yes"
+          },
+          {
+            "landuse": "retail"
+          }
+        ]
+      }
+    ]
+  },
+  "satellite_matches": {
+    "phase": "phase5_satellite_matching",
+    "status": "success",
+    "matches": [
+      {
+        "latitude": 36.365556,
+        "longitude": -94.2175,
+        "confidence": 0.5,
+        "match_type": "satellite_validated:urban_built_up",
+        "metadata": {
+          "green_ratio": 0.0
+        }
+      },
+      {
+        "latitude": 36.370556,
+        "longitude": -94.2175,
+        "confidence": 0.5,
+        "match_type": "satellite_validated:suburban",
+        "metadata": {
+          "green_ratio": 0.356
+        }
+      },
+      {
+        "latitude": 36.360556,
+        "longitude": -94.2175,
+        "confidence": 0.5,
+        "match_type": "satellite_validated:urban_built_up",
+        "metadata": {
+          "green_ratio": 0.0
+        }
+      }
+    ],
+    "top_regions": [
+      "satellite_validated:urban_built_up",
+      "satellite_validated:suburban"
+    ]
+  },
+  "park_proximity": {
+    "phase": "phase6_park_proximity",
+    "status": "success",
+    "parks": [
+      {
+        "name": "James H Berry Park",
+        "city": "unknown",
+        "latitude": 36.366803,
+        "longitude": -94.2167632,
+        "distance_km": 0.154,
+        "walk_minutes": 2,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "Gilmore Park",
+        "city": "unknown",
+        "latitude": 36.3665447,
+        "longitude": -94.21333,
+        "distance_km": 0.389,
+        "walk_minutes": 5,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "Train Station Park",
+        "city": "unknown",
+        "latitude": 36.3674165,
+        "longitude": -94.2093181,
+        "distance_km": 0.761,
+        "walk_minutes": 10,
+        "within_8_10_min": true,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "Bogle Park",
+        "city": "unknown",
+        "latitude": 36.3749927,
+        "longitude": -94.217041,
+        "distance_km": 1.05,
+        "walk_minutes": 13,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "8th Street Gateway Park (Planned)",
+        "city": "unknown",
+        "latitude": 36.3618589,
+        "longitude": -94.2286414,
+        "distance_km": 1.079,
+        "walk_minutes": 13,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "Bentonville City Square",
+        "city": "unknown",
+        "latitude": 36.3726457,
+        "longitude": -94.2084463,
+        "distance_km": 1.131,
+        "walk_minutes": 14,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "Dave Peel Park",
+        "city": "unknown",
+        "latitude": 36.3718547,
+        "longitude": -94.2071638,
+        "distance_km": 1.161,
+        "walk_minutes": 15,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "Austin-Baggett Park",
+        "city": "unknown",
+        "latitude": 36.3658501,
+        "longitude": -94.2037997,
+        "distance_km": 1.227,
+        "walk_minutes": 15,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "Lawrence Plaza",
+        "city": "unknown",
+        "latitude": 36.3747975,
+        "longitude": -94.2076701,
+        "distance_km": 1.353,
+        "walk_minutes": 17,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      },
+      {
+        "name": "Town Branch Park",
+        "city": "unknown",
+        "latitude": 36.3713,
+        "longitude": -94.2040769,
+        "distance_km": 1.361,
+        "walk_minutes": 17,
+        "within_8_10_min": false,
+        "source": "ParkFinder"
+      }
+    ],
+    "nearest_park": {
+      "name": "James H Berry Park",
+      "city": "unknown",
+      "latitude": 36.366803,
+      "longitude": -94.2167632,
+      "distance_km": 0.154,
+      "walk_minutes": 2,
+      "within_8_10_min": false,
+      "source": "ParkFinder"
+    },
+    "walk_analysis": {
+      "nearest_park_distance_km": 0.154,
+      "nearest_park_walk_minutes": 2,
+      "walkable_parks_count": 8,
+      "parks_within_8_10_min": [
+        "Train Station Park"
+      ],
+      "near_park_flag": false
+    }
+  },
+  "cross_verification": {
+    "phase": "phase7_cross_verification",
+    "status": "success",
+    "verifications": [
+      {
+        "latitude": 36.365556,
+        "longitude": -94.2175,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      },
+      {
+        "latitude": 36.370556,
+        "longitude": -94.2175,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      },
+      {
+        "latitude": 36.360556,
+        "longitude": -94.2175,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      }
+    ],
+    "browser_used": true,
+    "interactive": false
+  },
+  "vlm_analysis": {
+    "phase": "phase8_vlm_analysis",
+    "status": "failed",
+    "model_used": null,
+    "raw_response": null,
+    "best_estimate": {},
+    "vision_features": {},
+    "deep_features_norm": null,
+    "nearby_parks": [],
+    "location_estimates": [],
+    "error": "'choices'",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/jewboy420/geovision/geovision_deep_scan.py\", line 1165, in phase8_vlm_analysis\n    raw_content = response_data[\"choices\"][0][\"message\"][\"content\"]\n                  ~~~~~~~~~~~~~^^^^^^^^^^^\nKeyError: 'choices'\n"
+  },
+  "synthesis_report": {
+    "phase": "phase9_synthesis",
+    "status": "success",
+    "location_estimates": [
+      {
+        "latitude": 36.365556,
+        "longitude": -94.2175,
+        "confidence": 0.88,
+        "sources": [
+          "satellite:satellite_validated:urban_built_up",
+          "satellite:satellite_validated:suburban",
+          "property_records:OCR Text: Walmart",
+          "park_proximity",
+          "road:Europe / Asia / Oceania"
+        ],
+        "evidence": {
+          "match_type": "satellite_validated:urban_built_up",
+          "records_count": 5,
+          "country": "United States",
+          "state": "Arkansas",
+          "park": "James H Berry Park",
+          "distance_km": 0.154,
+          "road_features": "Driving side: unknown, Line color: white, Indicator: Europe / Asia / Oceania"
+        },
+        "phase": "Satellite"
+      },
+      {
+        "latitude": 48.0,
+        "longitude": 14.0,
+        "confidence": 0.85,
+        "sources": [
+          "language:Americas/Europe"
+        ],
+        "evidence": {
+          "language_match": "Detected language/script for region Americas/Europe",
+          "country": "\u00d6sterreich",
+          "state": "Ober\u00f6sterreich"
+        },
+        "phase": "Language"
+      }
+    ],
+    "best_estimate": {
+      "latitude": 36.365556,
+      "longitude": -94.2175,
+      "confidence": 0.88,
+      "sources": [
+        "satellite:satellite_validated:urban_built_up",
+        "satellite:satellite_validated:suburban",
+        "property_records:OCR Text: Walmart",
+        "park_proximity",
+        "road:Europe / Asia / Oceania"
+      ],
+      "evidence": {
+        "match_type": "satellite_validated:urban_built_up",
+        "records_count": 5,
+        "country": "United States",
+        "state": "Arkansas",
+        "park": "James H Berry Park",
+        "distance_km": 0.154,
+        "road_features": "Driving side: unknown, Line color: white, Indicator: Europe / Asia / Oceania"
+      },
+      "phase": "Satellite"
+    },
+    "confidence_summary": {
+      "highest": 0.88,
+      "lowest": 0.85,
+      "average": 0.865,
+      "estimates_count": 2
+    },
+    "evidence_summary": {
+      "unique_sources": [
+        "language:Americas/Europe",
+        "satellite:satellite_validated:suburban",
+        "satellite:satellite_validated:urban_built_up",
+        "road:Europe / Asia / Oceania",
+        "park_proximity",
+        "property_records:OCR Text: Walmart"
+      ],
+      "source_count": 6,
+      "phases_contributing": [
+        "Satellite",
+        "Language"
+      ]
+    },
+    "execution_summary": {
+      "phases_completed": [
+        "ocr_text",
+        "deep_features",
+        "db_matches",
+        "property_records",
+        "satellite_matches",
+        "park_proximity",
+        "cross_verification"
+      ],
+      "phases_failed": [
+        "visual_features",
+        "vlm_analysis"
+      ],
+      "phases_limited": [
+        "exif_data",
+        "reverse_image_search"
+      ],
+      "phases_skipped": [
+        "shadow_analysis"
+      ],
+      "total_phases": 13,
+      "success_rate": "7/13"
+    }
+  },
+  "location_estimates": [
+    {
+      "latitude": 36.365556,
+      "longitude": -94.2175,
+      "confidence": 0.88,
+      "sources": [
+        "satellite:satellite_validated:urban_built_up",
+        "satellite:satellite_validated:suburban",
+        "property_records:OCR Text: Walmart",
+        "park_proximity",
+        "road:Europe / Asia / Oceania"
+      ],
+      "evidence": {
+        "match_type": "satellite_validated:urban_built_up",
+        "records_count": 5,
+        "country": "United States",
+        "state": "Arkansas",
+        "park": "James H Berry Park",
+        "distance_km": 0.154,
+        "road_features": "Driving side: unknown, Line color: white, Indicator: Europe / Asia / Oceania"
+      },
+      "phase": "Satellite"
+    },
+    {
+      "latitude": 48.0,
+      "longitude": 14.0,
+      "confidence": 0.85,
+      "sources": [
+        "language:Americas/Europe"
+      ],
+      "evidence": {
+        "language_match": "Detected language/script for region Americas/Europe",
+        "country": "\u00d6sterreich",
+        "state": "Ober\u00f6sterreich"
+      },
+      "phase": "Language"
+    }
+  ],
+  "best_estimate": {
+    "latitude": 36.365556,
+    "longitude": -94.2175,
+    "confidence": 0.88,
+    "sources": [
+      "satellite:satellite_validated:urban_built_up",
+      "satellite:satellite_validated:suburban",
+      "property_records:OCR Text: Walmart",
+      "park_proximity",
+      "road:Europe / Asia / Oceania"
+    ],
+    "evidence": {
+      "match_type": "satellite_validated:urban_built_up",
+      "records_count": 5,
+      "country": "United States",
+      "state": "Arkansas",
+      "park": "James H Berry Park",
+      "distance_km": 0.154,
+      "road_features": "Driving side: unknown, Line color: white, Indicator: Europe / Asia / Oceania"
+    },
+    "phase": "Satellite"
+  },
+  "errors": []
+}

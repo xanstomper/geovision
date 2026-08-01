@@ -149,6 +149,13 @@ DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "reports"
 DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # OpenCode / VLM API keys from environment
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path.home() / ".hermes" / ".env")
+    load_dotenv()
+except ImportError:
+    pass
+
 OPENCODE_ZEN_API_KEY = os.environ.get("OPENCODE_ZEN_API_KEY", "")
 OPENCODE_ZEN_BASE_URL = os.environ.get("OPENCODE_ZEN_BASE_URL", "https://opencode.ai/zen/v1")
 OPENCODE_GO_API_KEY = os.environ.get("OPENCODE_GO_API_KEY", "")
