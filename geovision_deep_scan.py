@@ -835,7 +835,7 @@ def phase6_park_proximity(visual_features: Dict[str, Any],
         for m in satellite_matches["matches"][:3]:
             candidate_coords.append((m["latitude"], m["longitude"]))
     else:
-        candidate_coords = [(43.65, -79.38)]
+        candidate_coords = []
 
     try:
         all_parks = []
@@ -944,8 +944,8 @@ def phase7_cross_verification(location_estimates: List[Dict[str, Any]],
             if connected:
                 result["browser_used"] = True
                 for est in location_estimates[:3]:
-                    lat = est.get("latitude", 43.65)
-                    lon = est.get("longitude", -79.38)
+                    lat = est.get("latitude", 0)
+                    lon = est.get("longitude", 0)
                     try:
                         browser.navigate(f"https://www.google.com/maps/@{lat},{lon},19z", wait=1.5)
                         result["verifications"].append({
@@ -964,8 +964,8 @@ def phase7_cross_verification(location_estimates: List[Dict[str, Any]],
             logger.info("  Using GoogleMapsController (Selenium)...")
             controller = GoogleMapsController()
             for est in location_estimates[:3]:
-                lat = est.get("latitude", 43.65)
-                lon = est.get("longitude", -79.38)
+                lat = est.get("latitude", 0)
+                lon = est.get("longitude", 0)
                 try:
                     ver = controller.verify_location(lat, lon)
                     result["verifications"].append({
@@ -1308,8 +1308,8 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                             lat = c.get("lat", c.get("latitude", 0))
                             lng = c.get("lng", c.get("longitude", 0))
                             all_estimates.append({
-                                "latitude": lat + random.uniform(-0.015, 0.015),
-                                "longitude": lng + random.uniform(-0.015, 0.015),
+                                "latitude": lat,
+                                "longitude": lng,
                                 "confidence": m["score"] * 0.7,
                                 "sources": [f"db:{city_name}"],
                                 "evidence": {"city": city_name, "score": m["score"]},
@@ -1333,7 +1333,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             })
 
         # ── Advanced OSINT: Telecom Area Code Extraction ──
-        ocr = phases.get("ocr_data", {})
+        ocr = phases.get("ocr_text", {})
         if ocr.get("text"):
             try:
                 from modules.telecom_osint import TelecomOSINT
@@ -1451,8 +1451,8 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
     phases_completed = result.get("phases_completed", []) or []
     phases_failed = result.get("phases_failed", []) or []
 
-    map_center_lat = best.get("latitude", 43.65) if best else 43.65
-    map_center_lon = best.get("longitude", -79.38) if best else -79.38
+    map_center_lat = best.get("latitude", 0) if best else 0
+    map_center_lon = best.get("longitude", 0) if best else 0
 
     # Build map
     map_html = ""
@@ -1945,15 +1945,15 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
                 for c in nearby:
                     if c["name"] == m["city"]:
                         prelim_estimates.append({
-                            "latitude": c.get("lat", 43.65),
-                            "longitude": c.get("lng", -79.38),
+                            "latitude": c.get("lat", 0),
+                            "longitude": c.get("lng", 0),
                             "confidence": m["score"],
                         })
                         break
         except Exception:
             pass
     if not prelim_estimates:
-        prelim_estimates = [{"latitude": 43.65, "longitude": -79.38, "confidence": 0.5}]
+        prelim_estimates = []
 
     try:
         pipeline_result.cross_verification = phase7_cross_verification(prelim_estimates, interactive)

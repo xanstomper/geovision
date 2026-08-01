@@ -99,24 +99,37 @@ class SatelliteMatcher:
         if cache_file.exists():
             return cv2.imread(str(cache_file))
 
-        try:
-            if self.api_key:
+        headers = {'User-Agent': 'GeoVision OSINT Tool/2.0 (contact: admin@geovision.local)'}
+
+        if self.api_key:
+            try:
                 url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lon}&zoom={zoom}&size=640x640&maptype=satellite&key={self.api_key}"
-            else:
-                # Fallback to OSM mapnik if no Google API key
-                url = f"https://tile.openstreetmap.org/{zoom}/{self._lon2tile(lon, zoom)}/{self._lat2tile(lat, zoom)}.png"
-                
-            headers = {'User-Agent': 'GeoVisionBot/2.0'}
+                response = requests.get(url, headers=headers, timeout=10)
+                if response.status_code == 200:
+                    img_array = np.frombuffer(response.content, np.uint8)
+                    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+                    if img is not None:
+                        cv2.imwrite(str(cache_file), img)
+                        return img
+                logger.warning(f"Google Maps API request returned status code {response.status_code}. Falling back to OpenStreetMap.")
+            except Exception as e:
+                logger.warning(f"Google Maps API fetch error: {e}. Falling back to OpenStreetMap.")
+
+        # Fallback to OpenStreetMap tile if Google API key is missing or failed
+        try:
+            url = f"https://tile.openstreetmap.org/{zoom}/{self._lon2tile(lon, zoom)}/{self._lat2tile(lat, zoom)}.png"
             response = requests.get(url, headers=headers, timeout=10)
-            
             if response.status_code == 200:
                 img_array = np.frombuffer(response.content, np.uint8)
                 img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
                 if img is not None:
                     cv2.imwrite(str(cache_file), img)
-                return img
+                    return img
+            else:
+                logger.error(f"OSM tile fetch returned status code {response.status_code}")
         except Exception as e:
-            logger.error(f"Tile fetch error: {e}")
+            logger.error(f"OSM tile fetch error: {e}")
+
         return None
 
     def _lon2tile(self, lon, zoom):

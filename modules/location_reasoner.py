@@ -1,14 +1,24 @@
 """
-Location Reasoner
-Synthesizes multiple signals to estimate precise geolocation
+Location Reasoner — Weighted Coordinate Fusion Engine
+Combines multiple geolocation signals using confidence-weighted clustering.
+No hardcoded cities. No random jitter. Pure mathematics.
 """
 
-import numpy as np
-from typing import List, Dict, Tuple, Optional
+import math
+from typing import List, Dict, Optional
 from dataclasses import dataclass, field
 import logging
 
 logger = logging.getLogger(__name__)
+
+R_EARTH_KM = 6371.0
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance in km."""
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    return R_EARTH_KM * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 @dataclass
@@ -22,106 +32,83 @@ class LocationEstimate:
 
 class LocationReasoner:
     """
-    Combines multiple geolocation signals: vision analysis, satellite matching,
-    regional indicators, and metadata to produce precise location estimates
+    Combines multiple geolocation signals using confidence-weighted coordinate
+    clustering and fusion. No hardcoded databases — pure mathematical reasoning.
     """
-    
-    def __init__(self):
-        self.location_priors = {
-            "North America": [(40.71, -74.00), (41.88, -87.63), (43.65, -79.38), (34.05, -118.24)],
-            "Europe": [(51.50, -0.12), (48.85, 2.35), (52.52, 13.40)],
-            "Asia": [(35.67, 139.65), (39.90, 116.40), (22.31, 114.16)]
-        }
-    
-    def estimate_location(self, vision_features, satellite_matches: List, additional_metadata: Dict = None) -> List[LocationEstimate]:
-        estimates = []
-        
-        if satellite_matches:
-            for match in satellite_matches[:5]:
-                supporting = {
-                    "match_type": match.match_type,
-                    "match_metadata": match.metadata
-                }
-                estimates.append(LocationEstimate(
-                    latitude=match.latitude,
-                    longitude=match.longitude,
-                    confidence=match.confidence,
-                    match_sources=[match.match_type],
-                    supporting_evidence=supporting
-                ))
-        
-        if vision_features.region_indicators:
-            region_estimates = self._infer_from_region_indicators(vision_features.region_indicators)
-            estimates.extend(region_estimates)
-        
-        if vision_features.facade_material and not estimates:
-            material_estimate = self._infer_from_material(vision_features.facade_material)
-            if material_estimate:
-                estimates.append(material_estimate)
-        
-        if vision_features.architectural_style and not estimates:
-            style_estimate = self._infer_from_architecture(vision_features.architectural_style)
-            if style_estimate:
-                estimates.append(style_estimate)
-        
+
+    def __init__(self, cluster_radius_km: float = 10.0):
+        self.cluster_radius_km = cluster_radius_km
+
+    def estimate_location(self, estimates: List[LocationEstimate]) -> List[LocationEstimate]:
+        """
+        Cluster nearby estimates and fuse them into high-confidence predictions.
+        Estimates from multiple independent sources that agree get boosted.
+        """
+        if not estimates:
+            return []
+
+        # Sort by confidence descending
         estimates = sorted(estimates, key=lambda e: e.confidence, reverse=True)
-        return estimates[:7]
-    
-    def _infer_from_region_indicators(self, indicators: List[str]) -> List[LocationEstimate]:
-        estimates = []
-        region_coords = {
-            "Toronto, Canada": (43.65, -79.38, 0.9),
-            "Chicago, USA": (41.88, -87.63, 0.85),
-            "New York, USA": (40.71, -74.00, 0.85),
-            "Los Angeles, USA": (34.05, -118.24, 0.85),
-            "Montreal, Canada": (45.50, -73.57, 0.8),
-            "developed_urban_area": None
-        }
-        
-        for indicator in indicators:
-            if indicator in region_coords and region_coords[indicator] is not None:
-                lat, lon, conf = region_coords[indicator]
-                estimates.append(LocationEstimate(
-                    latitude=lat + np.random.uniform(-0.02, 0.02),
-                    longitude=lon + np.random.uniform(-0.02, 0.02),
-                    confidence=conf,
-                    match_sources=[f"region:{indicator}"],
-                    supporting_evidence={"direct_region_match": indicator}
-                ))
-        
-        return estimates
-    
-    def _infer_from_material(self, material: str) -> Optional[LocationEstimate]:
-        material_locations = {
-            "red_brick": [(43.65, -79.38), (41.88, -87.63)],
-            "tan_brick": [(43.65, -79.38), (43.75, -79.45)],
-            "white_brick": [(40.71, -74.00), (42.36, -71.06)],
-            "grey_concrete": [(43.65, -79.38), (34.05, -118.24)],
-        }
-        if material in material_locations:
-            coords = material_locations[material]
-            lat, lon = coords[0]
-            return LocationEstimate(
-                latitude=lat + np.random.uniform(-0.02, 0.02),
-                longitude=lon + np.random.uniform(-0.02, 0.02),
-                confidence=0.5,
-                match_sources=[f"material:{material}"],
-                supporting_evidence={"material_density_match": True}
-            )
-        return None
-    
-    def _infer_from_architecture(self, style: str) -> Optional[LocationEstimate]:
-        style_locations = {
-            "Toronto brick apartment": (43.65, -79.38, 0.8),
-            "California/Southwest stucco": (34.05, -118.24, 0.75),
-        }
-        if style in style_locations:
-            lat, lon, conf = style_locations[style]
-            return LocationEstimate(
-                latitude=lat + np.random.uniform(-0.02, 0.02),
-                longitude=lon + np.random.uniform(-0.02, 0.02),
-                confidence=conf,
-                match_sources=[f"architecture:{style}"],
-                supporting_evidence={"architectural_style_match": style}
-            )
-        return None
+
+        clusters: List[List[LocationEstimate]] = []
+        assigned = [False] * len(estimates)
+
+        for i, est in enumerate(estimates):
+            if assigned[i]:
+                continue
+            cluster = [est]
+            assigned[i] = True
+            for j in range(i + 1, len(estimates)):
+                if assigned[j]:
+                    continue
+                dist = _haversine_km(est.latitude, est.longitude,
+                                     estimates[j].latitude, estimates[j].longitude)
+                if dist <= self.cluster_radius_km:
+                    cluster.append(estimates[j])
+                    assigned[j] = True
+            clusters.append(cluster)
+
+        # Fuse each cluster into a single estimate using confidence-weighted averaging
+        fused: List[LocationEstimate] = []
+        for cluster in clusters:
+            total_weight = sum(e.confidence for e in cluster)
+            if total_weight == 0:
+                continue
+
+            fused_lat = sum(e.latitude * e.confidence for e in cluster) / total_weight
+            fused_lon = sum(e.longitude * e.confidence for e in cluster) / total_weight
+
+            # Confidence boosting: multiple independent sources agreeing = higher confidence
+            all_sources = []
+            all_evidence = {}
+            for e in cluster:
+                all_sources.extend(e.match_sources)
+                all_evidence.update(e.supporting_evidence)
+
+            unique_source_types = set()
+            for s in all_sources:
+                # Extract the source type (before the colon)
+                source_type = s.split(':')[0] if ':' in s else s
+                unique_source_types.add(source_type)
+
+            # Base confidence is the max in the cluster
+            base_conf = max(e.confidence for e in cluster)
+            # Boost for corroboration: +0.05 per additional independent source type, capped at 0.99
+            corroboration_boost = min(0.2, (len(unique_source_types) - 1) * 0.05)
+            # Penalize single-source, low-confidence estimates
+            if len(cluster) == 1 and base_conf < 0.5:
+                base_conf *= 0.8
+
+            final_conf = min(0.99, base_conf + corroboration_boost)
+
+            fused.append(LocationEstimate(
+                latitude=round(fused_lat, 6),
+                longitude=round(fused_lon, 6),
+                confidence=round(final_conf, 4),
+                match_sources=list(set(all_sources)),
+                supporting_evidence=all_evidence,
+            ))
+
+        fused.sort(key=lambda e: e.confidence, reverse=True)
+        logger.info(f"  [LocationReasoner] Fused {len(estimates)} estimates into {len(fused)} clusters")
+        return fused[:10]
