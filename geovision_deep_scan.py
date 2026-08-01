@@ -985,8 +985,8 @@ def phase7_cross_verification(location_estimates: List[Dict[str, Any]],
         # Strategy 3: Generate URLs for manual verification
         logger.info("  Generating Google Maps URLs for manual verification...")
         for est in location_estimates[:5]:
-            lat = est.get("latitude", 43.65)
-            lon = est.get("longitude", -79.38)
+            lat = est.get("latitude", 0)
+            lon = est.get("longitude", 0)
             result["verifications"].append({
                 "latitude": lat, "longitude": lon,
                 "maps_url": f"https://www.google.com/maps/@{lat},{lon},19z",
@@ -1351,6 +1351,80 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             except Exception as e:
                 logger.warning(f"  [-] Telecom OSINT skipped/failed: {e}")
 
+        # ── Advanced OSINT: Language & Script Detection ──
+        ocr = phases.get("ocr_text", {})
+        if ocr.get("text"):
+            try:
+                from modules.language_detector import LanguageDetector
+                detector = LanguageDetector()
+                findings = detector.analyze_text(ocr["text"])
+                for f in findings:
+                    all_estimates.append({
+                        "latitude": f["latitude"],
+                        "longitude": f["longitude"],
+                        "confidence": f.get("confidence", 0.5),
+                        "sources": [f"language:{f.get('region', 'unknown')}"],
+                        "evidence": {"language_match": f"Detected language/script for region {f.get('region')}"},
+                        "phase": "Language"
+                    })
+            except Exception as e:
+                logger.warning(f"  [-] Language Detection skipped/failed: {e}")
+
+        # ── Advanced OSINT: Road Feature Analysis ──
+        image_path_opt = options.get("image_path", "")
+        if image_path_opt:
+            try:
+                from modules.road_analyzer import RoadAnalyzer
+                analyzer = RoadAnalyzer()
+                road_data = analyzer.analyze_road_features(image_path_opt)
+                phases["road_analysis"] = road_data
+                if road_data.get("region_indicators"):
+                    center_lat, center_lon = 0.0, 0.0
+                    if all_estimates:
+                        best_est = sorted(all_estimates, key=lambda x: x["confidence"], reverse=True)[0]
+                        center_lat = best_est["latitude"]
+                        center_lon = best_est["longitude"]
+                    
+                    for ind in road_data["region_indicators"]:
+                        all_estimates.append({
+                            "latitude": center_lat,
+                            "longitude": center_lon,
+                            "confidence": road_data.get("confidence", 0.5) * 0.8,
+                            "sources": [f"road:{ind}"],
+                            "evidence": {"road_features": f"Driving side: {road_data.get('driving_side')}, Line color: {road_data.get('line_color')}, Indicator: {ind}"},
+                            "phase": "Road"
+                        })
+            except Exception as e:
+                logger.warning(f"  [-] Road Analysis skipped/failed: {e}")
+
+        # ── Advanced OSINT: Chain Store Geolocation ──
+        sig_text = phases.get("ocr_text", {}).get("significant_text", "")
+        if sig_text:
+            try:
+                store_names = ["Walmart", "Target", "Starbucks", "McDonald's", "Tim Hortons", "Home Depot", "Lowe's", "CVS", "Walgreens", "Dollar General", "Dollar Tree", "Subway", "Burger King", "Wendy's", "Taco Bell", "KFC", "Pizza Hut", "AutoZone", "O'Reilly", "Advance Auto", "Shoe Carnival", "Shoe Show", "Cato", "Ross", "TJ Maxx", "Marshalls", "Five Below", "Bath & Body Works", "GameStop", "Hibbett", "ABC Store", "Food Lion", "Kroger", "Publix", "Winn-Dixie", "Piggly Wiggly"]
+                detected_stores = [s for s in store_names if s.lower() in sig_text.lower()]
+                if detected_stores:
+                    center_lat, center_lon = 0.0, 0.0
+                    if all_estimates:
+                        best_est = sorted(all_estimates, key=lambda x: x["confidence"], reverse=True)[0]
+                        center_lat = best_est["latitude"]
+                        center_lon = best_est["longitude"]
+                    
+                    from modules.chain_store_locator import ChainStoreLocator
+                    locator = ChainStoreLocator()
+                    store_results = locator.locate_chain_stores(detected_stores, center_lat, center_lon)
+                    for res in store_results:
+                        all_estimates.append({
+                            "latitude": res["latitude"],
+                            "longitude": res["longitude"],
+                            "confidence": 0.92,
+                            "sources": [f"chain_store:{res.get('store_name', 'unknown')}"],
+                            "evidence": {"store_name": res.get("store_name"), "store_confidence": res.get("confidence")},
+                            "phase": "ChainStore"
+                        })
+            except Exception as e:
+                logger.warning(f"  [-] Chain Store Geolocation skipped/failed: {e}")
+
         # ── Advanced OSINT: Weather Corroboration ──
         # Cross-reference the final estimates with historical weather if EXIF date is available
         vlm_weather = ""
@@ -1364,6 +1438,33 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             all_estimates = weather_checker.verify_candidates(all_estimates, exif, vlm_weather)
         except Exception as e:
             logger.warning(f"  [-] Weather corroboration skipped/failed: {e}")
+
+        # ── Advanced OSINT: Reverse Geocode Validation ──
+        try:
+            from modules.nominatim_geocoder import NominatimGeocoder
+            geocoder = NominatimGeocoder()
+            
+            sorted_ests = sorted(all_estimates, key=lambda x: x["confidence"], reverse=True)
+            top_3 = sorted_ests[:3]
+            
+            validated_estimates = []
+            for est in all_estimates:
+                if est in top_3:
+                    val = geocoder.validate_estimate(est["latitude"], est["longitude"])
+                    if val.get("is_land", True):
+                        if val.get("country") or val.get("state"):
+                            if not isinstance(est.get("evidence"), dict):
+                                est["evidence"] = {}
+                            if val.get("country"):
+                                est["evidence"]["country"] = val["country"]
+                            if val.get("state"):
+                                est["evidence"]["state"] = val["state"]
+                        validated_estimates.append(est)
+                else:
+                    validated_estimates.append(est)
+            all_estimates = validated_estimates
+        except Exception as e:
+            logger.warning(f"  [-] Reverse Geocode Validation skipped/failed: {e}")
 
         # Merge nearby estimates
         merged = []
@@ -1723,6 +1824,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     image_path_resolved = str(Path(image_path).resolve())
+    options["image_path"] = image_path_resolved
 
     pipeline_result = PipelineResult(
         image_path=image_path_resolved,

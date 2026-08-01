@@ -133,49 +133,34 @@ class GoogleMapsController:
         )
     
     def find_nearby_parks(self, lat: float, lon: float, radius_km: float = 1.0) -> List[Dict]:
-        """Search for parks within walking distance"""
-        parks = []
-        
-        # Known large park systems near residential areas
-        park_database = {
-            "Toronto": [
-                {"name": "High Park", "lat": 43.6465, "lon": -79.4637},
-                {"name": "Sunnybrook Park", "lat": 43.7280, "lon": -79.3510},
-                {"name": "Taylor Creek Park", "lat": 43.6869, "lon": -79.3050},
-                {"name": "Riverdale Park", "lat": 43.6776, "lon": -79.3482},
-                {"name": "Trinity Bellwoods", "lat": 43.6528, "lon": -79.4169}
-            ],
-            "Chicago": [
-                {"name": "Lincoln Park", "lat": 41.9214, "lon": -87.6343},
-                {"name": "Grant Park", "lat": 41.8758, "lon": -87.6186}
-            ],
-            "New York": [
-                {"name": "Central Park", "lat": 40.7829, "lon": -73.9654}
-            ]
-        }
-        
-        from math import radians, sin, cos, sqrt, atan2
-        R = 6371.0
-        
-        for city, city_parks in park_database.items():
-            for park in city_parks:
-                dlat = radians(park["lat"] - lat)
-                dlon = radians(park["lon"] - lon)
-                a = sin(dlat/2)**2 + cos(radians(lat)) * cos(radians(park["lat"])) * sin(dlon/2)**2
+        """Search for parks within walking distance using real Overpass API data."""
+        try:
+            from .overpass_client import OverpassClient
+            client = OverpassClient()
+            osm_parks = client.find_nearby_parks(lat, lon, radius_meters=int(radius_km * 1000))
+            
+            from math import radians, sin, cos, sqrt, atan2
+            R = 6371.0
+            parks = []
+            for park in osm_parks:
+                plat, plon = park["lat"], park["lon"]
+                dlat = radians(plat - lat)
+                dlon = radians(plon - lon)
+                a = sin(dlat/2)**2 + cos(radians(lat)) * cos(radians(plat)) * sin(dlon/2)**2
                 c = 2 * atan2(sqrt(a), sqrt(1-a))
                 distance = R * c
-                
-                if distance <= radius_km:
-                    parks.append({
-                        "name": park["name"],
-                        "distance_km": round(distance, 2),
-                        "walk_minutes": round(distance / 0.08),  # 80m/min walking speed
-                        "lat": park["lat"],
-                        "lon": park["lon"]
-                    })
-        
-        parks.sort(key=lambda p: p["distance_km"])
-        return parks
+                parks.append({
+                    "name": park["name"],
+                    "distance_km": round(distance, 3),
+                    "walk_minutes": round(distance / 0.08),
+                    "lat": plat,
+                    "lon": plon
+                })
+            parks.sort(key=lambda p: p["distance_km"])
+            return parks
+        except Exception as e:
+            logger.error(f"Park search failed: {e}")
+            return []
     
     def close(self):
         if self.driver:
