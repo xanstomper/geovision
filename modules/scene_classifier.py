@@ -51,6 +51,27 @@ class SceneClassifier:
             return best_match[0]
         return "Unknown"
 
+    def _extract_region_hints(self, top_classes) -> list:
+        # Map specific ImageNet classes to likely geographic regions
+        region_map = {
+            'Asia (East)': ['jinrikisha', 'shoji', 'panda', 'bamboo'],
+            'Asia (South/Southeast)': ['stupa', 'indian elephant', 'water buffalo', 'macaque'],
+            'Australia/Oceania': ['koala', 'wallaby', 'wombat', 'platypus', 'echidna'],
+            'Africa': ['african elephant', 'lion', 'zebra', 'meerkat', 'hippopotamus', 'ostrich', 'dromedary'],
+            'South America': ['llama', 'alpaca', 'macaw', 'toucan', 'sloth', 'capybara'],
+            'North America': ['bison', 'bald eagle', 'gila monster'],
+            'Europe (Italy)': ['gondola'],
+            'Polar/Arctic': ['polar bear', 'arctic fox', 'snowmobile', 'dogsled'],
+            'Middle East / North Africa': ['mosque', 'dromedary']
+        }
+        
+        hints = set()
+        for cls_name in top_classes:
+            for region, keywords in region_map.items():
+                if any(kw in cls_name.lower() for kw in keywords):
+                    hints.add(region)
+        return list(hints)
+
     def classify(self, image_path: str) -> Dict[str, Any]:
         if not TORCH_AVAILABLE or self.model is None:
             return {'status': 'unavailable', 'error': 'Torch not available'}
@@ -62,22 +83,30 @@ class SceneClassifier:
             with torch.no_grad():
                 prediction = self.model(batch).squeeze(0).softmax(0)
                 
-            top5_prob, top5_catid = torch.topk(prediction, 5)
-            top5 = []
-            for i in range(top5_prob.size(0)):
-                top5.append({
-                    'class': self.class_names[top5_catid[i]],
-                    'probability': float(top5_prob[i])
-                })
+            # Check top 10 for better regional hint extraction
+            top_k_prob, top_k_catid = torch.topk(prediction, 10)
+            top_classes_list = []
+            top_predictions = []
+            
+            for i in range(top_k_prob.size(0)):
+                cls_name = self.class_names[top_k_catid[i]]
+                prob = float(top_k_prob[i])
+                top_classes_list.append(cls_name)
+                if i < 5:  # Keep top 5 for the regular output
+                    top_predictions.append({
+                        'class': cls_name,
+                        'probability': prob
+                    })
                 
-            top_classes = [x['class'] for x in top5]
-            scene_type = self._map_to_scene(top_classes)
+            scene_type = self._map_to_scene(top_classes_list[:5])
+            region_hints = self._extract_region_hints(top_classes_list)
             
             return {
                 'status': 'success',
                 'scene_type': scene_type,
-                'confidence': top5[0]['probability'],
-                'top_5': top5
+                'confidence': top_predictions[0]['probability'],
+                'top_5': top_predictions,
+                'region_hints': region_hints
             }
         except Exception as e:
             logger.error(f"Failed to classify scene: {e}")

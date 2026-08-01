@@ -1212,6 +1212,24 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 scene = fut_sc.result()
                 if scene.get('status') == 'success':
                     phases['scene_classification'] = scene
+                    if scene.get('region_hints'):
+                        from modules.nominatim_geocoder import NominatimGeocoder
+                        geocoder = NominatimGeocoder()
+                        for rh in scene['region_hints']:
+                            try:
+                                val = geocoder.geocode(rh)
+                                if val and val.get('latitude') and val.get('longitude'):
+                                    all_estimates.append({
+                                        "latitude": val["latitude"],
+                                        "longitude": val["longitude"],
+                                        "confidence": 0.6,
+                                        "sources": [f"scene_region:{rh}"],
+                                        "evidence": {"scene_type": scene.get("scene_type"), "matched_region": rh},
+                                        "phase": "SceneClassification"
+                                    })
+                                    logger.info(f"  ✓ Added region candidate '{rh}' from scene classifier")
+                            except Exception as e:
+                                logger.error(f"  [-] Failed to geocode region hint '{rh}': {e}", exc_info=True)
             except Exception as e:
                 logger.error(f'  [-] Scene classification skipped/failed: {e}', exc_info=True)
                 
