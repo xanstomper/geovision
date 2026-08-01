@@ -62,6 +62,43 @@ class EvidenceFusion:
         pred_lat = sum_lat / total_weight
         pred_lon = sum_lon / total_weight
         
+        # --- OUTLIER REJECTION TO PREVENT HALLUCINATION ---
+        # Calculate standard deviation to detect extreme outliers
+        variance_lat = 0
+        variance_lon = 0
+        for ev in self.evidence_points:
+            effective_weight = ev["weight"] * ev["confidence"]
+            variance_lat += effective_weight * ((ev["lat"] - pred_lat)**2)
+            variance_lon += effective_weight * ((ev["lon"] - pred_lon)**2)
+            
+        std_lat = math.sqrt(variance_lat / total_weight)
+        std_lon = math.sqrt(variance_lon / total_weight)
+        
+        # Filter points that are more than 2.5 standard deviations away from the mean
+        # If we have very few points, we skip rejection
+        if len(self.evidence_points) > 3:
+            filtered_points = []
+            for ev in self.evidence_points:
+                lat_dist = abs(ev["lat"] - pred_lat)
+                lon_dist = abs(ev["lon"] - pred_lon)
+                
+                # If point is within 2.5 std devs (or std dev is 0), keep it
+                if (std_lat == 0 or lat_dist <= 2.5 * std_lat) and (std_lon == 0 or lon_dist <= 2.5 * std_lon):
+                    filtered_points.append(ev)
+                else:
+                    logger.warning(f"Rejected outlier evidence from {ev['source']}: {ev['lat']},{ev['lon']} (deviates too far from consensus)")
+            
+            # Recompute mean if outliers were removed
+            if len(filtered_points) < len(self.evidence_points) and len(filtered_points) > 0:
+                total_weight = sum(ev["weight"] * ev["confidence"] for ev in filtered_points)
+                sum_lat = sum(ev["lat"] * (ev["weight"] * ev["confidence"]) for ev in filtered_points)
+                sum_lon = sum(ev["lon"] * (ev["weight"] * ev["confidence"]) for ev in filtered_points)
+                
+                pred_lat = sum_lat / total_weight
+                pred_lon = sum_lon / total_weight
+                self.evidence_points = filtered_points  # Use filtered points for final variance
+        # -------------------------------------------------
+        
         variance_lat = 0
         variance_lon = 0
         for ev in self.evidence_points:
