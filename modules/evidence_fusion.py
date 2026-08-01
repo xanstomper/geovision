@@ -133,3 +133,48 @@ class EvidenceFusion:
             
         candidates.sort(key=lambda x: x["score"], reverse=True)
         return candidates[:top_k]
+
+    def fuse(self, estimates: List[dict]) -> List[dict]:
+        """
+        Ingests a list of estimates, processes them through the outlier-rejection
+        weighted average, and returns a unified estimate list.
+        """
+        for est in estimates:
+            self.add_evidence(
+                source=est.get("phase", "unknown"),
+                lat=est.get("latitude", 0.0),
+                lon=est.get("longitude", 0.0),
+                confidence=est.get("confidence", 0.5)
+            )
+            
+        prediction = self.get_prediction()
+        if prediction and "error" not in prediction and prediction.get("lat") != 0.0:
+            # We return a list to match the expected format of `merged`
+            # which is a list of top candidate dictionaries.
+            # We will return the primary predicted center as the #1 estimate,
+            # and follow it with the highest confidence candidates that survived filtering.
+            
+            fused_estimate = {
+                "latitude": prediction["lat"],
+                "longitude": prediction["lon"],
+                "confidence": prediction["confidence"],
+                "sources": ["evidence_fusion_consensus"],
+                "evidence": {"radius_km": prediction["radius_km"]},
+                "phase": "EvidenceFusion"
+            }
+            
+            results = [fused_estimate]
+            
+            # Add surviving original estimates that are within the confidence radius
+            for ev in self.evidence_points:
+                results.append({
+                    "latitude": ev["lat"],
+                    "longitude": ev["lon"],
+                    "confidence": ev["confidence"],
+                    "sources": [ev["source"]],
+                    "evidence": {},
+                    "phase": ev["source"]
+                })
+                
+            return results
+        return []
