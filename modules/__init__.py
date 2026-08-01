@@ -4,3 +4,58 @@ from .deep_analyzer import DeepAnalyzer
 from .google_maps_controller import GoogleMapsController, MapsVerificationResult
 from .park_finder import find_nearby_parks
 from .browser_automation import BrowserAutomation
+
+try:
+    from .scene_classifier import SceneClassifier
+except ImportError:
+    SceneClassifier = None
+
+try:
+    from .sign_detector import SignDetector
+except ImportError:
+    SignDetector = None
+
+try:
+    from .vehicle_detector import VehicleDetector
+except ImportError:
+    VehicleDetector = None
+
+try:
+    from .vegetation_classifier import VegetationClassifier
+except ImportError:
+    VegetationClassifier = None
+
+try:
+    from .terrain_analyzer import TerrainAnalyzer
+except ImportError:
+    TerrainAnalyzer = None
+
+try:
+    from .geonames_client import GeoNamesClient
+except ImportError:
+    GeoNamesClient = None
+
+try:
+    from .elevation_client import ElevationClient
+except ImportError:
+    ElevationClient = None
+
+try:
+    from .climate_analyzer import ClimateAnalyzer
+except ImportError:
+    ClimateAnalyzer = None
+
+try:
+    from .osm_feature_matcher import OSMFeatureMatcher
+except ImportError:
+    OSMFeatureMatcher = None
+
+try:
+    from .image_embeddings import ImageEmbedder
+except ImportError:
+    ImageEmbedder = None
+
+try:
+    from .evidence_fusion import EvidenceFusion
+except ImportError:
+    EvidenceFusion = None

@@ -992,13 +992,13 @@ def phase7_cross_verification(location_estimates: List[Dict[str, Any]],
     return result
 
 
-def phase8_synthesis(phases: Dict[str, Dict[str, Any]],
+def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                       options: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Phase 8 — Synthesis and report generation.
+    Phase 9 — Synthesis and report generation.
     Combines all phases into a unified report with ranked location estimates.
     """
-    phase_name = "phase8_synthesis"
+    phase_name = "phase9_synthesis"
     logger.info("━" * 48)
     logger.info("  Phase 8: Synthesis & Report Generation")
     logger.info("━" * 48)
@@ -1173,6 +1173,94 @@ def phase8_synthesis(phases: Dict[str, Dict[str, Any]],
             except Exception as e:
                 logger.warning(f"  [-] Chain Store Geolocation skipped/failed: {e}")
 
+        # ── a) Scene Classification ──
+        try:
+            from modules.scene_classifier import SceneClassifier
+            sc = SceneClassifier()
+            scene = sc.classify(options.get('image_path', ''))
+            if scene.get('status') == 'success':
+                phases['scene_classification'] = scene
+        except Exception as e:
+            logger.warning(f'  [-] Scene classification skipped/failed: {e}')
+
+        # ── b) Sign Detection ──
+        try:
+            from modules.sign_detector import SignDetector
+            sd = SignDetector()
+            sign_data = sd.detect(options.get('image_path', ''))
+            if sign_data.get('status') == 'success' and sign_data.get('text'):
+                from modules.wikimedia_client import WikimediaClient
+                wiki = WikimediaClient()
+                wiki_results = wiki.search_public_records_by_text(sign_data['text'], limit=3)
+                for wr in wiki_results:
+                    if wr.get("lat") and wr.get("lon"):
+                        all_estimates.append({
+                            "latitude": wr.get("lat"),
+                            "longitude": wr.get("lon"),
+                            "confidence": 0.8,
+                            "sources": [f"sign_detection:{wr.get('title')}"],
+                            "evidence": {"sign_text": sign_data['text'], "matched_title": wr.get('title')},
+                            "phase": "SignDetection"
+                        })
+        except Exception as e:
+            logger.warning(f'  [-] Sign detection skipped/failed: {e}')
+
+        # ── c) Vehicle Detection ──
+        try:
+            from modules.vehicle_detector import VehicleDetector
+            vd = VehicleDetector()
+            vehicle_data = vd.detect(options.get('image_path', ''))
+            if vehicle_data.get('status') == 'success' and vehicle_data.get('driving_side'):
+                phases['vehicle_detection'] = vehicle_data
+        except Exception as e:
+            logger.warning(f'  [-] Vehicle detection skipped/failed: {e}')
+
+        # ── d) Vegetation Classification ──
+        try:
+            from modules.vegetation_classifier import VegetationClassifier
+            vc = VegetationClassifier()
+            veg_data = vc.classify(options.get('image_path', ''))
+            if veg_data.get('status') == 'success':
+                phases['vegetation_classification'] = veg_data
+        except Exception as e:
+            logger.warning(f'  [-] Vegetation classification skipped/failed: {e}')
+
+        # ── e) Terrain Analysis ──
+        try:
+            from modules.terrain_analyzer import TerrainAnalyzer
+            ta = TerrainAnalyzer()
+            terrain_data = ta.analyze(options.get('image_path', ''))
+            if terrain_data.get('status') == 'success':
+                phases['terrain_analysis'] = terrain_data
+        except Exception as e:
+            logger.warning(f'  [-] Terrain analysis skipped/failed: {e}')
+
+        # ── f) Candidate Coordinates Validation ──
+        if all_estimates:
+            try:
+                from modules.elevation_client import ElevationClient
+                from modules.climate_analyzer import ClimateAnalyzer
+                from modules.osm_feature_matcher import OSMFeatureMatcher
+                
+                ec = ElevationClient()
+                ca = ClimateAnalyzer()
+                osm = OSMFeatureMatcher()
+                
+                for est in all_estimates[:3]:
+                    lat, lon = est['latitude'], est['longitude']
+                    elev = ec.get_elevation(lat, lon)
+                    clim = ca.verify_climate(lat, lon, phases.get('vegetation_classification', {}).get('climate_estimate'))
+                    poi = osm.get_poi_density(lat, lon)
+                    
+                    if not isinstance(est.get('evidence'), dict):
+                        est['evidence'] = {}
+                    est['evidence']['elevation'] = elev
+                    est['evidence']['climate_consistency'] = clim
+                    est['evidence']['poi_density'] = poi
+            except Exception as e:
+                logger.warning(f'  [-] Candidate validation skipped/failed: {e}')
+
+
         # ── Advanced OSINT: Weather Corroboration ──
         # Cross-reference the final estimates with historical weather if EXIF date is available
         try:
@@ -1211,27 +1299,39 @@ def phase8_synthesis(phases: Dict[str, Dict[str, Any]],
 
         # Merge nearby estimates
         merged = []
-        for est in all_estimates:
-            lat, lon = est["latitude"], est["longitude"]
-            found = False
-            for existing in merged:
-                if abs(existing["latitude"] - lat) < 0.05 and abs(existing["longitude"] - lon) < 0.05:
-                    existing["confidence"] = max(existing["confidence"], est["confidence"])
-                    for s in est.get("sources", []):
-                        if s not in existing["sources"]:
-                            existing["sources"].append(s)
-                    if isinstance(est.get("evidence"), dict):
-                        existing["evidence"].update(est["evidence"])
-                    found = True
-                    break
-            if not found:
-                merged.append({
-                    "latitude": lat, "longitude": lon,
-                    "confidence": est["confidence"],
-                    "sources": est.get("sources", []),
-                    "evidence": est.get("evidence", {}),
-                    "phase": est.get("phase", "unknown"),
-                })
+        fusion_success = False
+        try:
+            from modules.evidence_fusion import EvidenceFusion
+            fusion = EvidenceFusion()
+            fused = fusion.fuse(all_estimates)
+            if fused:
+                merged = fused
+                fusion_success = True
+        except Exception as e:
+            logger.warning(f'  [-] EvidenceFusion skipped/failed: {e}')
+
+        if not fusion_success:
+            for est in all_estimates:
+                lat, lon = est["latitude"], est["longitude"]
+                found = False
+                for existing in merged:
+                    if abs(existing["latitude"] - lat) < 0.05 and abs(existing["longitude"] - lon) < 0.05:
+                        existing["confidence"] = max(existing["confidence"], est["confidence"])
+                        for s in est.get("sources", []):
+                            if s not in existing["sources"]:
+                                existing["sources"].append(s)
+                        if isinstance(est.get("evidence"), dict):
+                            existing["evidence"].update(est["evidence"])
+                        found = True
+                        break
+                if not found:
+                    merged.append({
+                        "latitude": lat, "longitude": lon,
+                        "confidence": est["confidence"],
+                        "sources": est.get("sources", []),
+                        "evidence": est.get("evidence", {}),
+                        "phase": est.get("phase", "unknown"),
+                    })
 
         merged.sort(key=lambda x: x["confidence"], reverse=True)
         result["location_estimates"] = merged[:7]
@@ -1351,7 +1451,7 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
         "phase1b_shadow_analysis", "phase1_visual_features", "phase2_ocr", "phase3_deep_features",
         "phase3b_reverse_image_search", "phase4_db_matching", "phase4b_property_records",
         "phase5_satellite_matching", "phase6_park_proximity",
-        "phase7_cross_verification", "phase8_synthesis",
+        "phase7_cross_verification", "phase9_synthesis",
     ]
     phase_labels = [
         "Shadow Analysis", "Visual Features", "OCR Extraction", "Deep Features",
@@ -1799,19 +1899,19 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.errors.append(f"Phase 7 error: {e}")
         phases["cross_verification"] = {"status": "failed", "error": str(e)}
 
-    # Phase 8: Synthesis
+    # Phase 9: Synthesis
     try:
-        pipeline_result.synthesis_report = phase8_synthesis(phases, options)
+        pipeline_result.synthesis_report = phase9_synthesis(phases, options)
         phases["synthesis_report"] = pipeline_result.synthesis_report
         if pipeline_result.synthesis_report.get("status") == "success":
-            pipeline_result.phases_completed.append("phase8_synthesis")
-            pipeline_result.location_estimates = pipeline_result.synthesis_report.get("location_estimates", [])
             pipeline_result.best_estimate = pipeline_result.synthesis_report.get("best_estimate", {})
+            pipeline_result.location_estimates = pipeline_result.synthesis_report.get("location_estimates", [])
+            pipeline_result.phases_completed.append("phase9_synthesis")
         else:
-            pipeline_result.phases_failed.append("phase8_synthesis")
+            pipeline_result.phases_failed.append("phase9_synthesis")
     except Exception as e:
-        pipeline_result.phases_failed.append("phase8_synthesis")
-        pipeline_result.errors.append(f"Phase 8 error: {e}")
+        pipeline_result.phases_failed.append("phase9_synthesis")
+        pipeline_result.errors.append(f"Phase 9 error: {e}")
         phases["synthesis_report"] = {"status": "failed", "error": str(e)}
 
     # Overall success
