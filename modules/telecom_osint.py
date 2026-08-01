@@ -425,8 +425,8 @@ class TelecomOSINT:
         # Look for international codes (+XX)
         for code, data in self.intl_codes.items():
             # Fix regex to use word boundaries so +33 doesn't match inside +330
-            # Note: since code starts with '+', we need to escape it and use  at the end
-            pattern = re.escape(code) + r""
+            # Note: since code starts with '+', we need to escape it and use \b at the end
+            pattern = re.escape(code) + r"\b"
             if re.search(pattern, ocr_text):
                 logger.info(f"  [+] Found International Code {code} in OCR text -> {data['country']}")
                 findings.append({
