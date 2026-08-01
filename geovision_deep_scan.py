@@ -1097,7 +1097,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                         "phase": "Telecom"
                     })
             except Exception as e:
-                logger.warning(f"  [-] Telecom OSINT skipped/failed: {e}")
+                logger.error(f"  [-] Telecom OSINT skipped/failed: {e}", exc_info=True)
 
         # ── Advanced OSINT: Language & Script Detection ──
         ocr = phases.get("ocr_text", {})
@@ -1116,7 +1116,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                         "phase": "Language"
                     })
             except Exception as e:
-                logger.warning(f"  [-] Language Detection skipped/failed: {e}")
+                logger.error(f"  [-] Language Detection skipped/failed: {e}", exc_info=True)
 
         # ── Advanced OSINT: Road Feature Analysis ──
         image_path_opt = options.get("image_path", "")
@@ -1143,13 +1143,19 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                             "phase": "Road"
                         })
             except Exception as e:
-                logger.warning(f"  [-] Road Analysis skipped/failed: {e}")
+                logger.error(f"  [-] Road Analysis skipped/failed: {e}", exc_info=True)
 
         # ── Advanced OSINT: Chain Store Geolocation ──
         sig_text = phases.get("ocr_text", {}).get("significant_text", "")
         if sig_text:
             try:
-                store_names = ["Walmart", "Target", "Starbucks", "McDonald's", "Tim Hortons", "Home Depot", "Lowe's", "CVS", "Walgreens", "Dollar General", "Dollar Tree", "Subway", "Burger King", "Wendy's", "Taco Bell", "KFC", "Pizza Hut", "AutoZone", "O'Reilly", "Advance Auto", "Shoe Carnival", "Shoe Show", "Cato", "Ross", "TJ Maxx", "Marshalls", "Five Below", "Bath & Body Works", "GameStop", "Hibbett", "ABC Store", "Food Lion", "Kroger", "Publix", "Winn-Dixie", "Piggly Wiggly"]
+                config_path = os.path.join(os.path.dirname(__file__), "config", "chain_stores.json")
+                try:
+                    with open(config_path, "r") as f:
+                        store_names = json.load(f)
+                except Exception as e:
+                    logger.error(f"Failed to load chain stores config: {e}")
+                    store_names = []
                 detected_stores = [s for s in store_names if s.lower() in sig_text.lower()]
                 if detected_stores:
                     center_lat, center_lon = 0.0, 0.0
@@ -1171,69 +1177,84 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                             "phase": "ChainStore"
                         })
             except Exception as e:
-                logger.warning(f"  [-] Chain Store Geolocation skipped/failed: {e}")
+                logger.error(f"  [-] Chain Store Geolocation skipped/failed: {e}", exc_info=True)
 
-        # ── a) Scene Classification ──
-        try:
+        # ── a-e) CV Modules (Concurrent) ──
+        import concurrent.futures
+
+        def _run_sc():
             from modules.scene_classifier import SceneClassifier
-            sc = SceneClassifier()
-            scene = sc.classify(options.get('image_path', ''))
-            if scene.get('status') == 'success':
-                phases['scene_classification'] = scene
-        except Exception as e:
-            logger.warning(f'  [-] Scene classification skipped/failed: {e}')
-
-        # ── b) Sign Detection ──
-        try:
+            return SceneClassifier().classify(options.get('image_path', ''))
+            
+        def _run_sd():
             from modules.sign_detector import SignDetector
-            sd = SignDetector()
-            sign_data = sd.detect(options.get('image_path', ''))
-            if sign_data.get('status') == 'success' and sign_data.get('text'):
-                from modules.wikimedia_client import WikimediaClient
-                wiki = WikimediaClient()
-                wiki_results = wiki.search_public_records_by_text(sign_data['text'], limit=3)
-                for wr in wiki_results:
-                    if wr.get("lat") and wr.get("lon"):
-                        all_estimates.append({
-                            "latitude": wr.get("lat"),
-                            "longitude": wr.get("lon"),
-                            "confidence": 0.8,
-                            "sources": [f"sign_detection:{wr.get('title')}"],
-                            "evidence": {"sign_text": sign_data['text'], "matched_title": wr.get('title')},
-                            "phase": "SignDetection"
-                        })
-        except Exception as e:
-            logger.warning(f'  [-] Sign detection skipped/failed: {e}')
-
-        # ── c) Vehicle Detection ──
-        try:
+            return SignDetector().detect(options.get('image_path', ''))
+            
+        def _run_vd():
             from modules.vehicle_detector import VehicleDetector
-            vd = VehicleDetector()
-            vehicle_data = vd.detect(options.get('image_path', ''))
-            if vehicle_data.get('status') == 'success' and vehicle_data.get('driving_side'):
-                phases['vehicle_detection'] = vehicle_data
-        except Exception as e:
-            logger.warning(f'  [-] Vehicle detection skipped/failed: {e}')
-
-        # ── d) Vegetation Classification ──
-        try:
+            return VehicleDetector().detect(options.get('image_path', ''))
+            
+        def _run_vc():
             from modules.vegetation_classifier import VegetationClassifier
-            vc = VegetationClassifier()
-            veg_data = vc.classify(options.get('image_path', ''))
-            if veg_data.get('status') == 'success':
-                phases['vegetation_classification'] = veg_data
-        except Exception as e:
-            logger.warning(f'  [-] Vegetation classification skipped/failed: {e}')
-
-        # ── e) Terrain Analysis ──
-        try:
+            return VegetationClassifier().classify(options.get('image_path', ''))
+            
+        def _run_ta():
             from modules.terrain_analyzer import TerrainAnalyzer
-            ta = TerrainAnalyzer()
-            terrain_data = ta.analyze(options.get('image_path', ''))
-            if terrain_data.get('status') == 'success':
-                phases['terrain_analysis'] = terrain_data
-        except Exception as e:
-            logger.warning(f'  [-] Terrain analysis skipped/failed: {e}')
+            return TerrainAnalyzer().analyze(options.get('image_path', ''))
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            fut_sc = executor.submit(_run_sc)
+            fut_sd = executor.submit(_run_sd)
+            fut_vd = executor.submit(_run_vd)
+            fut_vc = executor.submit(_run_vc)
+            fut_ta = executor.submit(_run_ta)
+            
+            try:
+                scene = fut_sc.result()
+                if scene.get('status') == 'success':
+                    phases['scene_classification'] = scene
+            except Exception as e:
+                logger.error(f'  [-] Scene classification skipped/failed: {e}', exc_info=True)
+                
+            try:
+                sign_data = fut_sd.result()
+                if sign_data.get('status') == 'success' and sign_data.get('text'):
+                    from modules.wikimedia_client import WikimediaClient
+                    wiki = WikimediaClient()
+                    wiki_results = wiki.search_public_records_by_text(sign_data['text'], limit=3)
+                    for wr in wiki_results:
+                        if wr.get("lat") and wr.get("lon"):
+                            all_estimates.append({
+                                "latitude": wr.get("lat"),
+                                "longitude": wr.get("lon"),
+                                "confidence": 0.8,
+                                "sources": [f"sign_detection:{wr.get('title')}"],
+                                "evidence": {"sign_text": sign_data['text'], "matched_title": wr.get('title')},
+                                "phase": "SignDetection"
+                            })
+            except Exception as e:
+                logger.error(f'  [-] Sign detection skipped/failed: {e}', exc_info=True)
+                
+            try:
+                vehicle_data = fut_vd.result()
+                if vehicle_data.get('status') == 'success' and vehicle_data.get('driving_side'):
+                    phases['vehicle_detection'] = vehicle_data
+            except Exception as e:
+                logger.error(f'  [-] Vehicle detection skipped/failed: {e}', exc_info=True)
+                
+            try:
+                veg_data = fut_vc.result()
+                if veg_data.get('status') == 'success':
+                    phases['vegetation_classification'] = veg_data
+            except Exception as e:
+                logger.error(f'  [-] Vegetation classification skipped/failed: {e}', exc_info=True)
+                
+            try:
+                terrain_data = fut_ta.result()
+                if terrain_data.get('status') == 'success':
+                    phases['terrain_analysis'] = terrain_data
+            except Exception as e:
+                logger.error(f'  [-] Terrain analysis skipped/failed: {e}', exc_info=True)
 
         # ── f) Candidate Coordinates Validation ──
         if all_estimates:
@@ -1246,20 +1267,40 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 ca = ClimateAnalyzer()
                 osm = OSMFeatureMatcher()
                 
-                for est in all_estimates[:3]:
+                clim_est = phases.get('vegetation_classification', {}).get('climate_estimate')
+                
+                def _val_candidate(est):
                     lat, lon = est['latitude'], est['longitude']
-                    elev = ec.get_elevation(lat, lon)
-                    clim = ca.verify_climate(lat, lon, phases.get('vegetation_classification', {}).get('climate_estimate'))
-                    poi = osm.get_poi_density(lat, lon)
-                    
+                    elev, clim, poi = None, None, None
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as inner_exec:
+                        f_elev = inner_exec.submit(ec.get_elevation, lat, lon)
+                        f_clim = inner_exec.submit(ca.verify_climate, lat, lon, clim_est)
+                        f_poi = inner_exec.submit(osm.get_poi_density, lat, lon)
+                        
+                        try: elev = f_elev.result()
+                        except Exception as e: logger.error(f'Elevation validation failed: {e}', exc_info=True)
+                        
+                        try: clim = f_clim.result()
+                        except Exception as e: logger.error(f'Climate validation failed: {e}', exc_info=True)
+                        
+                        try: poi = f_poi.result()
+                        except Exception as e: logger.error(f'POI validation failed: {e}', exc_info=True)
+                        
                     if not isinstance(est.get('evidence'), dict):
                         est['evidence'] = {}
                     est['evidence']['elevation'] = elev
                     est['evidence']['climate_consistency'] = clim
                     est['evidence']['poi_density'] = poi
+                    return est
+                
+                with concurrent.futures.ThreadPoolExecutor(max_workers=3) as val_exec:
+                    futures = [val_exec.submit(_val_candidate, est) for est in all_estimates[:3]]
+                    for f in concurrent.futures.as_completed(futures):
+                        try: f.result()
+                        except Exception as e: logger.error(f'Candidate validation failed: {e}', exc_info=True)
+                        
             except Exception as e:
-                logger.warning(f'  [-] Candidate validation skipped/failed: {e}')
-
+                logger.error(f'  [-] Candidate validation skipped/failed: {e}', exc_info=True)
 
         # ── Advanced OSINT: Weather Corroboration ──
         # Cross-reference the final estimates with historical weather if EXIF date is available
@@ -1268,7 +1309,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             weather_checker = WeatherCorroborator()
             all_estimates = weather_checker.verify_candidates(all_estimates, exif, "")
         except Exception as e:
-            logger.warning(f"  [-] Weather corroboration skipped/failed: {e}")
+            logger.error(f"  [-] Weather corroboration skipped/failed: {e}", exc_info=True)
 
         # ── Advanced OSINT: Reverse Geocode Validation ──
         try:
@@ -1278,24 +1319,50 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             sorted_ests = sorted(all_estimates, key=lambda x: x["confidence"], reverse=True)
             top_3 = sorted_ests[:3]
             
+            def _validate_geocode(est):
+                try:
+                    return geocoder.validate_estimate(est["latitude"], est["longitude"])
+                except Exception as e:
+                    logger.error(f'Nominatim failed: {e}', exc_info=True)
+                    return {"is_land": True}
+                    
             validated_estimates = []
+            import concurrent.futures
+            
+            # Since top_3 might have elements also in all_estimates, we validate them.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as geo_exec:
+                # Keep a map of est -> validation result
+                # but est is a dict, so use its id or just a list of futures
+                futures = {geo_exec.submit(_validate_geocode, est): est for est in top_3}
+                val_results = {}
+                for f in concurrent.futures.as_completed(futures):
+                    est = futures[f]
+                    try:
+                        val = f.result()
+                        if val.get("is_land", True):
+                            if val.get("country") or val.get("state"):
+                                if not isinstance(est.get("evidence"), dict):
+                                    est["evidence"] = {}
+                                if val.get("country"):
+                                    est["evidence"]["country"] = val["country"]
+                                if val.get("state"):
+                                    est["evidence"]["state"] = val["state"]
+                            val_results[id(est)] = True
+                        else:
+                            val_results[id(est)] = False
+                    except Exception as e:
+                        logger.error(f"Geocode processing failed: {e}", exc_info=True); val_results[id(est)] = True
+                        
             for est in all_estimates:
                 if est in top_3:
-                    val = geocoder.validate_estimate(est["latitude"], est["longitude"])
-                    if val.get("is_land", True):
-                        if val.get("country") or val.get("state"):
-                            if not isinstance(est.get("evidence"), dict):
-                                est["evidence"] = {}
-                            if val.get("country"):
-                                est["evidence"]["country"] = val["country"]
-                            if val.get("state"):
-                                est["evidence"]["state"] = val["state"]
+                    if val_results.get(id(est), True):
                         validated_estimates.append(est)
                 else:
                     validated_estimates.append(est)
+                    
             all_estimates = validated_estimates
         except Exception as e:
-            logger.warning(f"  [-] Reverse Geocode Validation skipped/failed: {e}")
+            logger.error(f"  [-] Reverse Geocode Validation skipped/failed: {e}", exc_info=True)
 
         # Merge nearby estimates
         merged = []
@@ -1308,7 +1375,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 merged = fused
                 fusion_success = True
         except Exception as e:
-            logger.warning(f'  [-] EvidenceFusion skipped/failed: {e}')
+            logger.error(f'  [-] EvidenceFusion skipped/failed: {e}', exc_info=True)
 
         if not fusion_success:
             for est in all_estimates:
@@ -1405,13 +1472,17 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
             m = folium.Map(location=[map_center_lat, map_center_lon],
                            zoom_start=11, control_scale=True)
             if best:
-                folium.Marker(
-                    location=[best.get("latitude", 0), best.get("longitude", 0)],
+                lat = best.get('latitude')
+                lon = best.get('longitude')
+                if lat is not None and lon is not None:
+                    folium.Marker(
+                    location=[lat, lon],
                     popup=f"<b>Best Estimate</b><br>Conf: {best.get('confidence', 0.0):.3f}",
                     icon=folium.Icon(color="red", icon="star")).add_to(m)
             colors = ["blue", "green", "purple", "orange", "darkred", "lightred", "beige"]
             for i, est in enumerate(estimates[:7]):
-                lat, lon = est.get("latitude", 0), est.get("longitude", 0)
+                lat, lon = est.get("latitude"), est.get("longitude")
+                if lat is None or lon is None: continue
                 if lat == 0 and lon == 0: continue
                 c = colors[i % len(colors)]
                 src = "<br>".join(est.get("sources", []))
@@ -1425,14 +1496,14 @@ def generate_html_report(pipeline_result: PipelineResult, output_path: str) -> s
                 for p in pk["parks"][:5]:
                     lat = p.get("latitude", p.get("lat", 0))
                     lon = p.get("longitude", p.get("lon", 0))
-                    if lat and lon:
+                    if lat is not None and lon is not None:
                         folium.Marker(
                             location=[lat, lon],
                             popup=f"<b>🌳 {p['name']}</b><br>{p.get('distance_km', 0.0):.3f} km",
                             icon=folium.Icon(color="green", icon="leaf")).add_to(m)
             map_html = m._repr_html_()
         except Exception as e:
-            logger.warning(f"Folium error: {e}")
+            logger.error(f"Folium error: {e}", exc_info=True)
 
     if not map_html:
         map_html = (f'<iframe width="100%" height="500" '
@@ -1807,7 +1878,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
                 candidate_coords.append({"latitude": val["latitude"], "longitude": val["longitude"]})
                 logger.info(f"  ✓ Region '{region}' geocoded to {val['latitude']}, {val['longitude']}")
         except Exception as e:
-            logger.warning(f"  [-] Failed to geocode region '{region}': {e}")
+            logger.error(f"  [-] Failed to geocode region '{region}': {e}", exc_info=True)
             
     # 3. Phase 4 DB Matches
     if pipeline_result.db_matches.get("matches"):

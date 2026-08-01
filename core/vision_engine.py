@@ -95,27 +95,9 @@ class VisionEngine:
     Multi-modal computer vision analysis engine for geolocation
     """
     
-    MATERIAL_COLORS = {
-        "red_brick": [(80, 20, 20), (200, 80, 60)],
-        "tan_brick": [(120, 90, 50), (200, 170, 120)],
-        "white_brick": [(180, 170, 160), (255, 250, 240)],
-        "grey_concrete": [(100, 100, 100), (180, 180, 180)],
-        "stucco": [(140, 120, 100), (220, 200, 180)],
-        "asphalt": [(30, 30, 30), (80, 80, 80)],
-        "green_vegetation": [(20, 80, 20), (120, 200, 80)],
-        "blue_sky": [(100, 150, 200), (200, 230, 255)]
-    }
-    
-    ARCHITECTURAL_REGIONS = {
-        "red_brick_apartments": {
-            "style": "brick residential",
-            "era": "1950s-1970s"
-        },
-        "tan_stucco": {
-            "style": "stucco residential",
-            "era": "1960s-1990s"
-        },
-    }
+    MATERIAL_COLORS = {}
+    ARCHITECTURAL_REGIONS = {}
+    HSV_THRESHOLDS = {}
     
     def __init__(self):
         self.features = VisionFeatures()
@@ -125,6 +107,26 @@ class VisionEngine:
     
     def _init_models(self):
         self.yolo = None
+        
+        config_path = Path(__file__).parent.parent / "config" / "vision_config.json"
+        try:
+            with open(config_path, "r") as f:
+                data = json.load(f)
+                
+                # Material colors are listed as lists of RGB values, convert to tuples
+                if "material_colors" in data:
+                    self.MATERIAL_COLORS = {
+                        k: [tuple(v[0]), tuple(v[1])] 
+                        for k, v in data["material_colors"].items()
+                    }
+                
+                if "architectural_regions" in data:
+                    self.ARCHITECTURAL_REGIONS = data["architectural_regions"]
+                
+                if "hsv_thresholds" in data:
+                    self.HSV_THRESHOLDS = data["hsv_thresholds"]
+        except Exception as e:
+            logger.error(f"Failed to load vision config: {e}")
     
     def analyze_image(self, image_path: str) -> VisionFeatures:
         self.features = VisionFeatures()
@@ -252,12 +254,16 @@ class VisionEngine:
     
     def _analyze_infrastructure(self, image: np.ndarray):
         bottom_half = image[self.height//2:, :]
-        road_mask = cv2.inRange(bottom_half, (20, 20, 20), (100, 100, 100))
+        lower = self.HSV_THRESHOLDS.get("road_asphalt", {}).get("lower", [20, 20, 20])
+        upper = self.HSV_THRESHOLDS.get("road_asphalt", {}).get("upper", [100, 100, 100])
+        road_mask = cv2.inRange(bottom_half, np.array(lower), np.array(upper))
         road_ratio = np.sum(road_mask > 0) / (bottom_half.shape[0] * bottom_half.shape[1])
         if road_ratio > 0.1:
             self.features.road_type = "asphalt_road"
         
-        sidewalk_mask = cv2.inRange(bottom_half, (150, 140, 130), (230, 225, 215))
+        lower_sw = self.HSV_THRESHOLDS.get("sidewalk_concrete", {}).get("lower", [150, 140, 130])
+        upper_sw = self.HSV_THRESHOLDS.get("sidewalk_concrete", {}).get("upper", [230, 225, 215])
+        sidewalk_mask = cv2.inRange(bottom_half, np.array(lower_sw), np.array(upper_sw))
         sidewalk_ratio = np.sum(sidewalk_mask > 0) / (bottom_half.shape[0] * bottom_half.shape[1])
         self.features.has_sidewalk = sidewalk_ratio > 0.05
         
@@ -269,8 +275,10 @@ class VisionEngine:
     
     def _analyze_vegetation(self, image: np.ndarray):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        green_lower = np.array([30, 30, 30])
-        green_upper = np.array([90, 255, 255])
+        lower_green = self.HSV_THRESHOLDS.get("vegetation_green", {}).get("lower", [30, 30, 30])
+        upper_green = self.HSV_THRESHOLDS.get("vegetation_green", {}).get("upper", [90, 255, 255])
+        green_lower = np.array(lower_green)
+        green_upper = np.array(upper_green)
         green_mask = cv2.inRange(hsv, green_lower, green_upper)
         self.features.vegetation_density = float(np.sum(green_mask > 0) / (self.height * self.width))
         
@@ -329,11 +337,15 @@ class VisionEngine:
     def _analyze_sky_and_weather(self, image: np.ndarray):
         top_third = image[:self.height//3, :]
         hsv_top = cv2.cvtColor(top_third, cv2.COLOR_BGR2HSV)
-        sky_mask = cv2.inRange(hsv_top, (80, 20, 100), (130, 255, 255))
+        lower_sky = self.HSV_THRESHOLDS.get("sky_blue", {}).get("lower", [80, 20, 100])
+        upper_sky = self.HSV_THRESHOLDS.get("sky_blue", {}).get("upper", [130, 255, 255])
+        sky_mask = cv2.inRange(hsv_top, np.array(lower_sky), np.array(upper_sky))
         sky_ratio = np.sum(sky_mask > 0) / (top_third.shape[0] * top_third.shape[1])
         self.features.sky_percentage = float(sky_ratio)
         
-        bright_mask = cv2.inRange(top_third, (200, 200, 200), (255, 255, 255))
+        lower_cloud = self.HSV_THRESHOLDS.get("cloud_bright", {}).get("lower", [200, 200, 200])
+        upper_cloud = self.HSV_THRESHOLDS.get("cloud_bright", {}).get("upper", [255, 255, 255])
+        bright_mask = cv2.inRange(top_third, np.array(lower_cloud), np.array(upper_cloud))
         cloud_ratio = np.sum(bright_mask > 0) / (top_third.shape[0] * top_third.shape[1])
         self.features.cloud_density = float(cloud_ratio)
         

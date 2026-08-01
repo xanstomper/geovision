@@ -1,0 +1,172 @@
+{
+    "material_colors": {
+        "red_brick": [
+            [
+                80,
+                20,
+                20
+            ],
+            [
+                200,
+                80,
+                60
+            ]
+        ],
+        "tan_brick": [
+            [
+                120,
+                90,
+                50
+            ],
+            [
+                200,
+                170,
+                120
+            ]
+        ],
+        "white_brick": [
+            [
+                180,
+                170,
+                160
+            ],
+            [
+                255,
+                250,
+                240
+            ]
+        ],
+        "grey_concrete": [
+            [
+                100,
+                100,
+                100
+            ],
+            [
+                180,
+                180,
+                180
+            ]
+        ],
+        "stucco": [
+            [
+                140,
+                120,
+                100
+            ],
+            [
+                220,
+                200,
+                180
+            ]
+        ],
+        "asphalt": [
+            [
+                30,
+                30,
+                30
+            ],
+            [
+                80,
+                80,
+                80
+            ]
+        ],
+        "green_vegetation": [
+            [
+                20,
+                80,
+                20
+            ],
+            [
+                120,
+                200,
+                80
+            ]
+        ],
+        "blue_sky": [
+            [
+                100,
+                150,
+                200
+            ],
+            [
+                200,
+                230,
+                255
+            ]
+        ]
+    },
+    "architectural_regions": {
+        "red_brick_apartments": {
+            "style": "brick residential",
+            "era": "1950s-1970s"
+        },
+        "tan_stucco": {
+            "style": "stucco residential",
+            "era": "1960s-1990s"
+        }
+    },
+    "hsv_thresholds": {
+        "vegetation_green": {
+            "lower": [
+                30,
+                30,
+                30
+            ],
+            "upper": [
+                90,
+                255,
+                255
+            ]
+        },
+        "sky_blue": {
+            "lower": [
+                80,
+                20,
+                100
+            ],
+            "upper": [
+                130,
+                255,
+                255
+            ]
+        },
+        "road_asphalt": {
+            "lower": [
+                20,
+                20,
+                20
+            ],
+            "upper": [
+                100,
+                100,
+                100
+            ]
+        },
+        "sidewalk_concrete": {
+            "lower": [
+                150,
+                140,
+                130
+            ],
+            "upper": [
+                230,
+                225,
+                215
+            ]
+        },
+        "cloud_bright": {
+            "lower": [
+                200,
+                200,
+                200
+            ],
+            "upper": [
+                255,
+                255,
+                255
+            ]
+        }
+    }
+}
