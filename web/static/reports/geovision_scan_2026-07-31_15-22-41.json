@@ -1,0 +1,396 @@
+{
+  "image_path": "/home/jewboy420/geovision/web/static/uploads/voni.jpg",
+  "timestamp": "2026-07-31_15-22-41",
+  "success": true,
+  "phases_completed": [
+    "phase0_exif_extraction",
+    "phase2_ocr",
+    "phase3_deep_features",
+    "phase4_db_matching",
+    "phase5_satellite_matching",
+    "phase6_park_proximity",
+    "phase7_cross_verification",
+    "phase8_vlm_analysis",
+    "phase9_synthesis"
+  ],
+  "phases_failed": [
+    "phase1b_shadow_analysis",
+    "phase1_visual_features",
+    "phase3b_reverse_image_search",
+    "phase4b_property_records"
+  ],
+  "exif_data": {
+    "phase": "phase0_exif_extraction",
+    "status": "success",
+    "data": {
+      "ResolutionUnit": "2",
+      "ExifOffset": "164",
+      "Software": "Adobe Photoshop CS6 (Windows)",
+      "Orientation": "1",
+      "DateTime": "2026:07:31 14:32:46",
+      "XResolution": "72.0",
+      "YResolution": "72.0",
+      "ColorSpace": "65535",
+      "ExifImageWidth": "941",
+      "ExifImageHeight": "940"
+    },
+    "gps": null
+  },
+  "visual_features": {
+    "phase": "phase1_visual_features",
+    "status": "failed",
+    "features": {},
+    "raw_analysis": {},
+    "error": "'VisionEngine' object has no attribute 'analyze'",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/jewboy420/geovision/geovision_deep_scan.py\", line 280, in phase1_visual_features\n    engine.analyze(image_path)\n    ^^^^^^^^^^^^^^\nAttributeError: 'VisionEngine' object has no attribute 'analyze'\n"
+  },
+  "shadow_analysis": {
+    "phase": "phase1b_shadow_analysis",
+    "status": "skipped",
+    "reason": "No EXIF DateTime"
+  },
+  "ocr_text": {
+    "phase": "phase2_ocr",
+    "status": "success",
+    "text": "2 2 2 Vaw",
+    "significant_text": "",
+    "word_count": 4,
+    "detections": [],
+    "source": "GeoVisionCore_EasyOCR"
+  },
+  "deep_features": {
+    "phase": "phase3_deep_features",
+    "status": "success",
+    "feature_vector": [
+      0.1678599864244461,
+      1.5328912734985352,
+      0.23874665796756744,
+      0.10988589376211166,
+      0.176003560423851,
+      0.3211013972759247,
+      0.0844646692276001,
+      0.6806755661964417,
+      0.1195649579167366,
+      0.7811829447746277,
+      0.781629741191864,
+      0.42493900656700134,
+      0.01394711434841156,
+      0.3064037561416626,
+      0.007548371329903603,
+      0.5517109632492065,
+      0.8183332085609436,
+      0.435659795999527,
+      0.07821246981620789,
+      0.3949252665042877,
+      0.5175644159317017,
+      0.951167643070221,
+      0.12991392612457275,
+      0.007940608076751232,
+      1.1678264141082764,
+      0.6109049916267395,
+      0.0005245982902124524,
+      0.25283607840538025,
+      0.8059634566307068,
+      0.030588651075959206,
+      0.2756193280220032,
+      0.8369770646095276,
+      0.16521455347537994,
+      0.4293443262577057,
+      1.687126636505127,
+      0.016336850821971893,
+      0.091509148478508,
+      0.6639982461929321,
+      0.4381936490535736,
+      0.23248067498207092,
+      0.8931655883789062,
+      1.489019751548767,
+      0.6774898171424866,
+      0.10418538749217987,
+      0.2614378035068512,
+      1.2903717756271362,
+      0.07276862859725952,
+      0.7649912238121033,
+      1.1553905010223389,
+      0.7613584399223328,
+      0.033500827848911285,
+      0.5087741017341614,
+      0.5296927094459534,
+      0.6462687849998474,
+      0.021807407960295677,
+      0.16913443803787231,
+      0.5221569538116455,
+      0.28745806217193604,
+      0.9918762445449829,
+      0.17543144524097443,
+      1.0488580465316772,
+      0.7996259927749634,
+      0.008108511567115784,
+      0.49030745029449463
+    ],
+    "feature_dim": 2048,
+    "method": "ResNet50",
+    "feature_norm": 31.2947
+  },
+  "reverse_image_search": {
+    "phase": "phase3b_reverse_image_search",
+    "status": "limited",
+    "matches": [],
+    "note": "No API keys configured for reverse image search."
+  },
+  "db_matches": {
+    "phase": "phase4_db_matching",
+    "status": "limited",
+    "matches": [],
+    "top_cities": [],
+    "matched_features": {},
+    "note": "No feature terms to match"
+  },
+  "property_records": {
+    "phase": "phase4b_property_records",
+    "status": "skipped",
+    "records": []
+  },
+  "satellite_matches": {
+    "phase": "phase5_satellite_matching",
+    "status": "limited",
+    "matches": [
+      {
+        "latitude": 43.653451,
+        "longitude": -79.394109,
+        "confidence": 0.7657,
+        "match_type": "db_fallback",
+        "metadata": {
+          "source": "GeolocationDatabase"
+        }
+      },
+      {
+        "latitude": 43.651178,
+        "longitude": -79.366139,
+        "confidence": 0.6901,
+        "match_type": "db_fallback",
+        "metadata": {
+          "source": "GeolocationDatabase"
+        }
+      },
+      {
+        "latitude": 43.657321,
+        "longitude": -79.389041,
+        "confidence": 0.6873,
+        "match_type": "db_fallback",
+        "metadata": {
+          "source": "GeolocationDatabase"
+        }
+      }
+    ],
+    "top_regions": [
+      "db_fallback"
+    ],
+    "note": "No satellite matches \u2014 DB fallback used"
+  },
+  "park_proximity": {
+    "phase": "phase6_park_proximity",
+    "status": "success",
+    "parks": [
+      {
+        "name": "Queen's Park",
+        "city": "Toronto",
+        "latitude": 43.6623,
+        "longitude": -79.3914,
+        "distance_km": 1.008,
+        "walk_minutes": 12.1,
+        "within_8_10_min": false,
+        "source": "GeolocationDatabase"
+      },
+      {
+        "name": "Allan Gardens",
+        "city": "Toronto",
+        "latitude": 43.655,
+        "longitude": -79.381,
+        "distance_km": 1.069,
+        "walk_minutes": 12.8,
+        "within_8_10_min": false,
+        "source": "GeolocationDatabase"
+      },
+      {
+        "name": "Trinity Bellwoods Park",
+        "city": "Toronto",
+        "latitude": 43.647,
+        "longitude": -79.411,
+        "distance_km": 1.537,
+        "walk_minutes": 18.4,
+        "within_8_10_min": false,
+        "source": "GeolocationDatabase"
+      }
+    ],
+    "nearest_park": {
+      "name": "Queen's Park",
+      "city": "Toronto",
+      "latitude": 43.6623,
+      "longitude": -79.3914,
+      "distance_km": 1.008,
+      "walk_minutes": 12.1,
+      "within_8_10_min": false,
+      "source": "GeolocationDatabase"
+    },
+    "walk_analysis": {
+      "nearest_park_distance_km": 1.008,
+      "nearest_park_walk_minutes": 12.1,
+      "walkable_parks_count": 2,
+      "parks_within_8_10_min": [],
+      "near_park_flag": false
+    }
+  },
+  "cross_verification": {
+    "phase": "phase7_cross_verification",
+    "status": "success",
+    "verifications": [
+      {
+        "latitude": 43.653451,
+        "longitude": -79.394109,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      },
+      {
+        "latitude": 43.651178,
+        "longitude": -79.366139,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      },
+      {
+        "latitude": 43.657321,
+        "longitude": -79.389041,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      }
+    ],
+    "browser_used": true,
+    "interactive": false
+  },
+  "vlm_analysis": {
+    "phase": "phase8_vlm_analysis",
+    "status": "skipped",
+    "model_used": null,
+    "raw_response": null,
+    "best_estimate": {},
+    "vision_features": {},
+    "deep_features_norm": null,
+    "nearby_parks": [],
+    "location_estimates": [],
+    "note": "VLM analysis skipped. Provide --vlm-provider and --vlm-model."
+  },
+  "synthesis_report": {
+    "phase": "phase9_synthesis",
+    "status": "success",
+    "location_estimates": [
+      {
+        "latitude": 43.653451,
+        "longitude": -79.394109,
+        "confidence": 0.6125600000000001,
+        "sources": [
+          "satellite:db_fallback",
+          "park_proximity"
+        ],
+        "evidence": {
+          "match_type": "db_fallback",
+          "park": "Queen's Park",
+          "distance_km": 1.008
+        },
+        "phase": "Satellite"
+      }
+    ],
+    "best_estimate": {
+      "latitude": 43.653451,
+      "longitude": -79.394109,
+      "confidence": 0.6125600000000001,
+      "sources": [
+        "satellite:db_fallback",
+        "park_proximity"
+      ],
+      "evidence": {
+        "match_type": "db_fallback",
+        "park": "Queen's Park",
+        "distance_km": 1.008
+      },
+      "phase": "Satellite"
+    },
+    "confidence_summary": {
+      "highest": 0.6126,
+      "lowest": 0.6126,
+      "average": 0.6126,
+      "estimates_count": 1
+    },
+    "evidence_summary": {
+      "unique_sources": [
+        "park_proximity",
+        "satellite:db_fallback"
+      ],
+      "source_count": 2,
+      "phases_contributing": [
+        "Satellite"
+      ]
+    },
+    "execution_summary": {
+      "phases_completed": [
+        "exif_data",
+        "ocr_text",
+        "deep_features",
+        "park_proximity",
+        "cross_verification"
+      ],
+      "phases_failed": [
+        "visual_features"
+      ],
+      "phases_limited": [
+        "reverse_image_search",
+        "db_matches",
+        "satellite_matches"
+      ],
+      "phases_skipped": [
+        "shadow_analysis",
+        "property_records",
+        "vlm_analysis"
+      ],
+      "total_phases": 12,
+      "success_rate": "5/12"
+    }
+  },
+  "location_estimates": [
+    {
+      "latitude": 43.653451,
+      "longitude": -79.394109,
+      "confidence": 0.6125600000000001,
+      "sources": [
+        "satellite:db_fallback",
+        "park_proximity"
+      ],
+      "evidence": {
+        "match_type": "db_fallback",
+        "park": "Queen's Park",
+        "distance_km": 1.008
+      },
+      "phase": "Satellite"
+    }
+  ],
+  "best_estimate": {
+    "latitude": 43.653451,
+    "longitude": -79.394109,
+    "confidence": 0.6125600000000001,
+    "sources": [
+      "satellite:db_fallback",
+      "park_proximity"
+    ],
+    "evidence": {
+      "match_type": "db_fallback",
+      "park": "Queen's Park",
+      "distance_km": 1.008
+    },
+    "phase": "Satellite"
+  },
+  "errors": []
+}

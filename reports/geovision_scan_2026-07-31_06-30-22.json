@@ -1,0 +1,371 @@
+{
+  "image_path": "/home/jewboy420/test_img.jpg",
+  "timestamp": "2026-07-31_06-30-22",
+  "success": true,
+  "phases_completed": [
+    "phase2_ocr",
+    "phase3_deep_features",
+    "phase4_db_matching",
+    "phase5_satellite_matching",
+    "phase6_park_proximity",
+    "phase7_cross_verification",
+    "phase8_vlm_analysis",
+    "phase9_synthesis"
+  ],
+  "phases_failed": [
+    "phase0_exif_extraction",
+    "phase1_visual_features",
+    "phase3b_reverse_image_search"
+  ],
+  "exif_data": {
+    "phase": "phase0_exif_extraction",
+    "status": "limited",
+    "data": {},
+    "gps": null
+  },
+  "visual_features": {
+    "phase": "phase1_visual_features",
+    "status": "failed",
+    "features": {},
+    "raw_analysis": {},
+    "error": "'VisionEngine' object has no attribute 'analyze'",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/jewboy420/geovision/geovision_deep_scan.py\", line 248, in phase1_visual_features\n    engine.analyze(image_path)\n    ^^^^^^^^^^^^^^\nAttributeError: 'VisionEngine' object has no attribute 'analyze'\n"
+  },
+  "ocr_text": {
+    "phase": "phase2_ocr",
+    "status": "success",
+    "text": "",
+    "significant_text": "",
+    "word_count": 0,
+    "detections": [],
+    "source": "GeoVisionCore_EasyOCR"
+  },
+  "deep_features": {
+    "phase": "phase3_deep_features",
+    "status": "success",
+    "feature_vector": [
+      0.307608038187027,
+      0.3909306526184082,
+      0.02057723142206669,
+      0.5147539377212524,
+      0.05427202582359314,
+      0.03125587850809097,
+      0.23915791511535645,
+      0.28756076097488403,
+      0.03716445341706276,
+      0.4013945162296295,
+      0.2109401524066925,
+      0.4279940128326416,
+      0.5515791177749634,
+      0.9504526257514954,
+      0.7454836368560791,
+      0.07776183634996414,
+      2.0583319664001465,
+      0.23178628087043762,
+      0.09539174288511276,
+      0.2140331268310547,
+      0.4435550570487976,
+      0.5433880090713501,
+      0.205494686961174,
+      0.1154392883181572,
+      0.13768422603607178,
+      0.06738188862800598,
+      0.012623278424143791,
+      0.006576915271580219,
+      0.8381560444831848,
+      0.236935555934906,
+      0.028980573639273643,
+      0.04084034264087677,
+      0.22237955033779144,
+      0.04637354612350464,
+      0.12501493096351624,
+      0.030474230647087097,
+      0.946479856967926,
+      0.021984362974762917,
+      0.11434809118509293,
+      0.06357886642217636,
+      0.08719149231910706,
+      1.7219038009643555,
+      0.18729564547538757,
+      0.316730797290802,
+      0.1261814683675766,
+      0.09781507402658463,
+      1.151877522468567,
+      0.5967196822166443,
+      0.4729156494140625,
+      0.17990180850028992,
+      0.16025856137275696,
+      0.386081725358963,
+      0.28115740418434143,
+      0.3728685677051544,
+      0.5572963356971741,
+      0.23887696862220764,
+      0.17368651926517487,
+      0.5473811030387878,
+      0.7914592027664185,
+      0.06985050439834595,
+      0.4707850515842438,
+      0.13571147620677948,
+      0.04714573547244072,
+      0.06916805356740952
+    ],
+    "feature_dim": 2048,
+    "method": "ResNet50",
+    "feature_norm": 24.929
+  },
+  "reverse_image_search": {
+    "phase": "phase3b_reverse_image_search",
+    "status": "limited",
+    "matches": [],
+    "note": "No API keys configured for reverse image search."
+  },
+  "db_matches": {
+    "phase": "phase4_db_matching",
+    "status": "limited",
+    "matches": [],
+    "top_cities": [],
+    "matched_features": {},
+    "note": "No feature terms to match"
+  },
+  "satellite_matches": {
+    "phase": "phase5_satellite_matching",
+    "status": "limited",
+    "matches": [
+      {
+        "latitude": 43.657715,
+        "longitude": -79.376984,
+        "confidence": 0.6617,
+        "match_type": "db_fallback",
+        "metadata": {
+          "source": "GeolocationDatabase"
+        }
+      },
+      {
+        "latitude": 43.648116,
+        "longitude": -79.393877,
+        "confidence": 0.6514,
+        "match_type": "db_fallback",
+        "metadata": {
+          "source": "GeolocationDatabase"
+        }
+      },
+      {
+        "latitude": 43.664873,
+        "longitude": -79.393011,
+        "confidence": 0.725,
+        "match_type": "db_fallback",
+        "metadata": {
+          "source": "GeolocationDatabase"
+        }
+      }
+    ],
+    "top_regions": [
+      "db_fallback"
+    ],
+    "note": "No satellite matches \u2014 DB fallback used"
+  },
+  "park_proximity": {
+    "phase": "phase6_park_proximity",
+    "status": "success",
+    "parks": [
+      {
+        "name": "Allan Gardens",
+        "city": "Toronto",
+        "latitude": 43.655,
+        "longitude": -79.381,
+        "distance_km": 0.442,
+        "walk_minutes": 5.3,
+        "within_8_10_min": false,
+        "source": "GeolocationDatabase"
+      },
+      {
+        "name": "Queen's Park",
+        "city": "Toronto",
+        "latitude": 43.6623,
+        "longitude": -79.3914,
+        "distance_km": 1.267,
+        "walk_minutes": 15.2,
+        "within_8_10_min": false,
+        "source": "GeolocationDatabase"
+      },
+      {
+        "name": "Trinity Bellwoods Park",
+        "city": "Toronto",
+        "latitude": 43.647,
+        "longitude": -79.411,
+        "distance_km": 1.383,
+        "walk_minutes": 16.6,
+        "within_8_10_min": false,
+        "source": "GeolocationDatabase"
+      }
+    ],
+    "nearest_park": {
+      "name": "Allan Gardens",
+      "city": "Toronto",
+      "latitude": 43.655,
+      "longitude": -79.381,
+      "distance_km": 0.442,
+      "walk_minutes": 5.3,
+      "within_8_10_min": false,
+      "source": "GeolocationDatabase"
+    },
+    "walk_analysis": {
+      "nearest_park_distance_km": 0.442,
+      "nearest_park_walk_minutes": 5.3,
+      "walkable_parks_count": 1,
+      "parks_within_8_10_min": [],
+      "near_park_flag": false
+    }
+  },
+  "cross_verification": {
+    "phase": "phase7_cross_verification",
+    "status": "success",
+    "verifications": [
+      {
+        "latitude": 43.657715,
+        "longitude": -79.376984,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      },
+      {
+        "latitude": 43.648116,
+        "longitude": -79.393877,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      },
+      {
+        "latitude": 43.664873,
+        "longitude": -79.393011,
+        "verified": false,
+        "street_view_available": false,
+        "satellite_confidence": 0.5,
+        "method": "GoogleMapsController"
+      }
+    ],
+    "browser_used": true,
+    "interactive": false
+  },
+  "vlm_analysis": {
+    "phase": "phase8_vlm_analysis",
+    "status": "skipped",
+    "model_used": null,
+    "raw_response": null,
+    "best_estimate": {},
+    "vision_features": {},
+    "deep_features_norm": null,
+    "nearby_parks": [],
+    "location_estimates": [],
+    "note": "VLM analysis skipped by user request"
+  },
+  "synthesis_report": {
+    "phase": "phase9_synthesis",
+    "status": "success",
+    "location_estimates": [
+      {
+        "latitude": 43.657715,
+        "longitude": -79.376984,
+        "confidence": 0.58,
+        "sources": [
+          "satellite:db_fallback",
+          "park_proximity"
+        ],
+        "evidence": {
+          "match_type": "db_fallback",
+          "park": "Allan Gardens",
+          "distance_km": 0.442
+        },
+        "phase": "Satellite"
+      }
+    ],
+    "best_estimate": {
+      "latitude": 43.657715,
+      "longitude": -79.376984,
+      "confidence": 0.58,
+      "sources": [
+        "satellite:db_fallback",
+        "park_proximity"
+      ],
+      "evidence": {
+        "match_type": "db_fallback",
+        "park": "Allan Gardens",
+        "distance_km": 0.442
+      },
+      "phase": "Satellite"
+    },
+    "confidence_summary": {
+      "highest": 0.58,
+      "lowest": 0.58,
+      "average": 0.58,
+      "estimates_count": 1
+    },
+    "evidence_summary": {
+      "unique_sources": [
+        "park_proximity",
+        "satellite:db_fallback"
+      ],
+      "source_count": 2,
+      "phases_contributing": [
+        "Satellite"
+      ]
+    },
+    "execution_summary": {
+      "phases_completed": [
+        "ocr_text",
+        "deep_features",
+        "park_proximity",
+        "cross_verification"
+      ],
+      "phases_failed": [
+        "visual_features"
+      ],
+      "phases_limited": [
+        "exif_data",
+        "reverse_image_search",
+        "db_matches",
+        "satellite_matches"
+      ],
+      "phases_skipped": [
+        "vlm_analysis"
+      ],
+      "total_phases": 10,
+      "success_rate": "4/10"
+    }
+  },
+  "location_estimates": [
+    {
+      "latitude": 43.657715,
+      "longitude": -79.376984,
+      "confidence": 0.58,
+      "sources": [
+        "satellite:db_fallback",
+        "park_proximity"
+      ],
+      "evidence": {
+        "match_type": "db_fallback",
+        "park": "Allan Gardens",
+        "distance_km": 0.442
+      },
+      "phase": "Satellite"
+    }
+  ],
+  "best_estimate": {
+    "latitude": 43.657715,
+    "longitude": -79.376984,
+    "confidence": 0.58,
+    "sources": [
+      "satellite:db_fallback",
+      "park_proximity"
+    ],
+    "evidence": {
+      "match_type": "db_fallback",
+      "park": "Allan Gardens",
+      "distance_km": 0.442
+    },
+    "phase": "Satellite"
+  },
+  "errors": []
+}

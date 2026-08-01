@@ -1,0 +1,11 @@
+node_modules/
+cache/
+*.png
+*.jpg
+*.jpeg
+geovision_screenshot*
+geovision_screenshot_native*
+.env
+.DS_Store
+*.pyc
+__pycache__/
