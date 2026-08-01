@@ -66,46 +66,24 @@ class StreetViewMatcher:
         except Exception:
             return None
 
-    def _extract_features(self, image: np.ndarray) -> dict:
+    def _extract_features(self, image: np.ndarray) -> np.ndarray:
         if image is None or image.size == 0:
-            return {}
+            return np.zeros(2048)
         
-        # Color histogram (BGR, 3x256 bins)
-        hists = []
-        for i in range(3):
-            hist = cv2.calcHist([image], [i], None, [256], [0, 256])
-            cv2.normalize(hist, hist, 0, 1, cv2.NORM_MINMAX)
-            hists.append(hist.flatten())
-        color_hist = np.concatenate(hists)
-        
-        # Edge density via Canny
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(gray, 100, 200)
-        edge_density = np.count_nonzero(edges) / max(1, edges.size)
-        
-        # Texture via grayscale histogram
-        texture_hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
-        cv2.normalize(texture_hist, texture_hist, 0, 1, cv2.NORM_MINMAX)
-        
-        return {
-            "color_hist": color_hist.astype(np.float32),
-            "edge_density": float(edge_density),
-            "texture_hist": texture_hist.flatten().astype(np.float32)
-        }
+        # Lazy import of ImageEmbedder to prevent circular deps
+        from modules.image_embeddings import ImageEmbedder
+        if not hasattr(self, 'embedder'):
+            self.embedder = ImageEmbedder()
+            
+        return self.embedder.embed_image(image)
 
-    def _compare_features(self, features1: dict, features2: dict) -> float:
-        if not features1 or not features2:
-            return 0.0
+    def _compare_features(self, features1: np.ndarray, features2: np.ndarray) -> float:
+        from modules.image_embeddings import ImageEmbedder
+        if not hasattr(self, 'embedder'):
+            self.embedder = ImageEmbedder()
         
-        # Histogram correlation
-        color_sim = max(0.0, cv2.compareHist(features1["color_hist"], features2["color_hist"], cv2.HISTCMP_CORREL))
-        texture_sim = max(0.0, cv2.compareHist(features1["texture_hist"], features2["texture_hist"], cv2.HISTCMP_CORREL))
-        
-        # Edge density difference
-        edge_diff = abs(features1["edge_density"] - features2["edge_density"])
-        edge_sim = max(0.0, 1.0 - edge_diff * 5.0)
-        
-        return float(color_sim * 0.5 + texture_sim * 0.3 + edge_sim * 0.2)
+        # Cosine similarity using the deep embeddings
+        return self.embedder.compare(features1, features2)
 
     def verify_location(self, image_path: str, lat: float, lon: float) -> dict:
         ground_img = cv2.imread(image_path)

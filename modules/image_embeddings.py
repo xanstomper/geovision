@@ -28,12 +28,17 @@ class ImageEmbedder:
             self.use_torch = False
             logger.warning("Torch/torchvision not available. Falling back to OpenCV.")
             
-    def embed(self, image_path: str) -> np.ndarray:
+    def embed_image(self, img) -> np.ndarray:
         if self.use_torch:
             try:
                 from PIL import Image
                 import torch
-                img = Image.open(image_path).convert('RGB')
+                # If it's a numpy array (from cv2), convert to PIL RGB
+                if isinstance(img, np.ndarray):
+                    # cv2 is BGR by default, convert to RGB
+                    import cv2
+                    img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                    
                 tensor = self.transform(img).unsqueeze(0).to(self.device)
                 with torch.no_grad():
                     embedding = self.model(tensor).squeeze().cpu().numpy()
@@ -44,8 +49,11 @@ class ImageEmbedder:
         else:
             try:
                 import cv2
-                img = cv2.imread(image_path)
-                if img is None:
+                if not isinstance(img, np.ndarray):
+                    img = np.array(img)
+                    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                    
+                if img is None or img.size == 0:
                     return np.zeros(2048)
                 img = cv2.resize(img, (224, 224))
                 hist = cv2.calcHist([img], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
@@ -53,6 +61,24 @@ class ImageEmbedder:
                 padded = np.zeros(2048)
                 padded[:len(hist)] = hist
                 return padded
+            except Exception as e:
+                logger.error(f"CV2 embedding failed: {e}")
+                return np.zeros(2048)
+
+    def embed(self, image_path: str) -> np.ndarray:
+        if self.use_torch:
+            try:
+                from PIL import Image
+                img = Image.open(image_path).convert('RGB')
+                return self.embed_image(img)
+            except Exception as e:
+                logger.error(f"Torch embedding failed: {e}")
+                return np.zeros(2048)
+        else:
+            try:
+                import cv2
+                img = cv2.imread(image_path)
+                return self.embed_image(img)
             except Exception as e:
                 logger.error(f"CV2 embedding failed: {e}")
                 return np.zeros(2048)

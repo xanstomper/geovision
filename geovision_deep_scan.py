@@ -1274,7 +1274,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as inner_exec:
                         f_elev = inner_exec.submit(ec.get_elevation, lat, lon)
                         f_clim = inner_exec.submit(ca.verify_climate, lat, lon, clim_est)
-                        f_poi = inner_exec.submit(osm.get_poi_density, lat, lon)
+                        f_poi = inner_exec.submit(osm.find_pois, lat, lon)
                         
                         try: elev = f_elev.result()
                         except Exception as e: logger.error(f'Elevation validation failed: {e}', exc_info=True)
