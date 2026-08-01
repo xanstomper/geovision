@@ -145,18 +145,6 @@ SCRIPT_DIR = Path(__file__).parent.resolve()
 DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "reports"
 DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# OpenCode / VLM API keys from environment
-try:
-    from dotenv import load_dotenv
-    load_dotenv(Path.home() / ".hermes" / ".env")
-    load_dotenv()
-except ImportError:
-    pass
-
-OPENCODE_ZEN_API_KEY = os.environ.get("OPENCODE_ZEN_API_KEY", "")
-OPENCODE_ZEN_BASE_URL = os.environ.get("OPENCODE_ZEN_BASE_URL", "https://opencode.ai/zen/v1")
-OPENCODE_GO_API_KEY = os.environ.get("OPENCODE_GO_API_KEY", "")
-OPENCODE_GO_BASE_URL = os.environ.get("OPENCODE_GO_BASE_URL", "https://opencode.ai/go/v1")
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
@@ -281,9 +269,9 @@ def phase1_visual_features(image_path: str) -> Dict[str, Any]:
         if VISION_ENGINE_AVAILABLE and VisionEngine is not None:
             logger.info("  Using VisionEngine...")
             engine = VisionEngine()
-            engine.analyze(image_path)
-            if hasattr(engine, 'features') and engine.features is not None:
-                fd = engine.features.to_dict() if hasattr(engine.features, 'to_dict') else {}
+            features = engine.analyze_image(image_path)
+            if features is not None:
+                fd = features.to_dict() if hasattr(features, 'to_dict') else {}
                 result["features"] = fd
                 result["status"] = "success"
                 result["source"] = "VisionEngine"
@@ -1034,7 +1022,7 @@ def phase8_vlm_analysis(image_paths: List[str], context: Dict[str, Any] = None, 
                 base64_images.append(base64.b64encode(f.read()).decode("utf-8"))
 
         vlm_provider = os.environ.get("VLM_PROVIDER", "opencode-zen")
-        model_vlm = os.environ.get("VLM_MODEL", "opencode/deepseek-v4-flash-free")
+        model_vlm = os.environ.get("VLM_MODEL", "deepseek-v4-flash-free")
 
         if vlm_provider == "cline":
             api_key = os.environ.get("CLINE_API_KEY")
@@ -1128,23 +1116,49 @@ Ensure confidence is between 0.0 and 1.0. Find real parks near your estimated co
         logger.info("  Sending request to VLM API via curl...")
         import tempfile
         import subprocess
-        
-        with tempfile.NamedTemporaryFile('w', delete=False) as f:
-            json.dump(payload, f)
-            tmp_path = f.name
+
+        max_retries = 2
+        last_error = None
+        for attempt in range(max_retries):
+            with tempfile.NamedTemporaryFile('w', delete=False) as f:
+                json.dump(payload, f)
+                tmp_path = f.name
+                
+            curl_cmd = [
+                'curl', '-s', '-X', 'POST', url,
+                '-H', 'Content-Type: application/json',
+                '-H', f'Authorization: Bearer {api_key}',
+                '-d', f'@{tmp_path}'
+            ]
             
-        curl_cmd = [
-            'curl', '-s', '-X', 'POST', url,
-            '-H', 'Content-Type: application/json',
-            '-H', f'Authorization: Bearer {api_key}',
-            '-d', f'@{tmp_path}'
-        ]
-        
-        result_json = subprocess.check_output(curl_cmd).decode('utf-8')
-        os.remove(tmp_path)
-        
-        response_data = json.loads(result_json)
-        raw_content = response_data["choices"][0]["message"]["content"]
+            try:
+                result_json = subprocess.check_output(curl_cmd).decode('utf-8')
+                os.remove(tmp_path)
+                
+                response_data = json.loads(result_json)
+                choices = response_data.get("choices")
+                if not choices:
+                    err_msg = response_data.get("error") or response_data
+                    raise ValueError(f"VLM provider returned no choices. Response: {err_msg}")
+                raw_content = choices[0]["message"]["content"]
+                break
+            except Exception as e:
+                last_error = e
+                err_str = str(e)
+                if "image_url" in err_str and attempt == 0:
+                    logger.warning("  ⚠ VLM provider does not support images. Retrying without images...")
+                    messages = [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
+                    payload = {
+                        "model": model_vlm,
+                        "messages": messages,
+                        "temperature": 0.2,
+                        "max_tokens": 2048
+                    }
+                    continue
+                else:
+                    raise
+        else:
+            raise last_error
 
         # Robust JSON extraction
         start_idx = raw_content.find('{')
@@ -1239,13 +1253,6 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 "evidence": {"exif_data": "GPS Coordinates embedded in file"},
                 "phase": "EXIF",
             })
-
-        # From VLM
-        vlm = phases.get("vlm_analysis", {})
-        if vlm.get("location_estimates"):
-            for est in vlm["location_estimates"]:
-                est["phase"] = "VLM"
-                all_estimates.append(est)
 
         # From satellite
         sat = phases.get("satellite_matches", {})
@@ -1772,7 +1779,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
             - output_dir  : Directory for output files.
             - near_park   : Enable park proximity filtering.
             - region      : Narrow search to specific region.
-            - no_vlm      : Skip VLM model call.
+
             - interactive : Open browser for verification.
             - verbose     : Enable verbose logging.
 
@@ -1784,7 +1791,6 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     output_dir = Path(options.get("output_dir", DEFAULT_OUTPUT_DIR))
     near_park = options.get("near_park", False)
     region = options.get("region", None)
-    no_vlm = options.get("no_vlm", False)
     interactive = options.get("interactive", False)
     verbose = options.get("verbose", False)
 
@@ -1809,8 +1815,8 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     logger.info("╚" + "═" * 60 + "╝")
     logger.info(f"  Image: {image_path_resolved}")
     logger.info(f"  Output: {output_dir}")
-    logger.info(f"  Options: near_park={near_park}, region={region}, "
-                 f"no_vlm={no_vlm}, interactive={interactive}")
+    logger.debug(f"  Options: near_park={near_park}, region={region}, "
+                 f"interactive={interactive}")
     logger.info("")
 
     # Validate image
@@ -1919,43 +1925,6 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.errors.append(f"Phase 4 error: {e}")
         phases["db_matches"] = {"status": "failed", "error": str(e)}
 
-    # Phase 8: VLM Analysis (with context)
-    try:
-        # Prepare context payload for VLM
-        vlm_context = {
-            "exif": pipeline_result.exif_data,
-            "shadow": pipeline_result.shadow_analysis,
-            "ocr": pipeline_result.ocr_text,
-            "db_matches": pipeline_result.db_matches.get("matches", [])[:3],
-            # property records not yet available
-            # satellite matches not yet available
-        }
-        
-        all_images = [image_path_resolved] + options.get("extra_images", [])
-        user_context = options.get("context_text", "")
-        
-        pipeline_result.vlm_analysis = phase8_vlm_analysis(all_images, vlm_context, user_context, no_vlm)
-        phases["vlm_analysis"] = pipeline_result.vlm_analysis
-        if pipeline_result.vlm_analysis.get("status") in ("success", "skipped"):
-            pipeline_result.phases_completed.append("phase8_vlm_analysis")
-        else:
-            pipeline_result.phases_failed.append("phase8_vlm_analysis")
-    except Exception as e:
-        pipeline_result.phases_failed.append("phase8_vlm_analysis")
-        pipeline_result.errors.append(f"Phase 8 error: {e}")
-        phases["vlm_analysis"] = {"status": "failed", "error": str(e)}
-
-
-    # Inject VLM estimates into db_matches for subsequent phases to use
-    if pipeline_result.vlm_analysis.get("location_estimates"):
-        for est in pipeline_result.vlm_analysis["location_estimates"]:
-            pipeline_result.db_matches.setdefault("matches", []).insert(0, {
-                "city": "VLM Estimate",
-                "latitude": est["latitude"],
-                "longitude": est["longitude"],
-                "confidence": est["confidence"],
-                "matched_feature": "VLM Intelligence"
-            })
     # Phase 4b: Property Records
     try:
         pipeline_result.property_records = phase4b_property_records(pipeline_result.db_matches.get("matches", []))
@@ -2093,7 +2062,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         epilog="""Examples:
   %(prog)s image.jpg
   %(prog)s image.jpg --output-dir ./reports --near-park
-  %(prog)s image.jpg --region Toronto --no-vlm
+  %(prog)s image.jpg --region Toronto
   %(prog)s image.jpg --interactive --verbose
         """,
     )
@@ -2104,8 +2073,6 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
                         help="Enable park proximity filtering")
     parser.add_argument("--region", type=str, default=None,
                         help="Narrow search to a specific region")
-    parser.add_argument("--no-vlm", action="store_true", default=False,
-                        help="Skip the VLM API call")
     parser.add_argument("--interactive", action="store_true", default=False,
                         help="Open browser for interactive verification")
     parser.add_argument("--verbose", action="store_true", default=False,
@@ -2127,7 +2094,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         "output_dir": args.output_dir,
         "near_park": args.near_park,
         "region": args.region,
-        "no_vlm": args.no_vlm,
         "interactive": args.interactive,
         "verbose": args.verbose,
     }
