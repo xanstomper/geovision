@@ -1402,14 +1402,33 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
         merged = []
         fusion_success = False
         try:
-            from modules.evidence_fusion import EvidenceFusion
-            fusion = EvidenceFusion()
-            fused = fusion.fuse(all_estimates)
-            if fused:
-                merged = fused
+            from modules.location_reasoner import LocationReasoner, LocationEstimate
+            reasoner = LocationReasoner(cluster_radius_km=15.0)
+            
+            estimates_objects = []
+            for est in all_estimates:
+                estimates_objects.append(LocationEstimate(
+                    latitude=est.get("latitude", 0.0),
+                    longitude=est.get("longitude", 0.0),
+                    confidence=est.get("confidence", 0.5),
+                    match_sources=est.get("sources", []),
+                    supporting_evidence=est.get("evidence", {})
+                ))
+            
+            fused_objects = reasoner.estimate_location(estimates_objects)
+            if fused_objects:
+                for fo in fused_objects:
+                    merged.append({
+                        "latitude": fo.latitude,
+                        "longitude": fo.longitude,
+                        "confidence": fo.confidence,
+                        "sources": fo.match_sources,
+                        "evidence": fo.supporting_evidence,
+                        "phase": "Synthesis"
+                    })
                 fusion_success = True
         except Exception as e:
-            logger.error(f'  [-] EvidenceFusion skipped/failed: {e}', exc_info=True)
+            logger.error(f'  [-] LocationReasoner fusion skipped/failed: {e}', exc_info=True)
 
         if not fusion_success:
             for est in all_estimates:
