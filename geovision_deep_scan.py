@@ -1187,7 +1187,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             
         def _run_sd():
             from modules.sign_detector import SignDetector
-            return SignDetector().detect(options.get('image_path', ''))
+            return SignDetector().detect_signs(options.get('image_path', ''))
             
         def _run_vd():
             from modules.vehicle_detector import VehicleDetector
@@ -1217,7 +1217,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                         geocoder = NominatimGeocoder()
                         for rh in scene['region_hints']:
                             try:
-                                val = geocoder.geocode(rh)
+                                val = geocoder.forward_geocode(rh)
                                 if val and val.get('latitude') and val.get('longitude'):
                                     all_estimates.append({
                                         "latitude": val["latitude"],
@@ -1925,8 +1925,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     if region:
         try:
             from modules.nominatim_geocoder import NominatimGeocoder
-            geocoder = NominatimGeocoder()
-            val = geocoder.geocode(region)
+            val = geocoder.forward_geocode(region)
             if val and val.get("latitude") and val.get("longitude"):
                 candidate_coords.append({"latitude": val["latitude"], "longitude": val["longitude"]})
                 logger.info(f"  ✓ Region '{region}' geocoded to {val['latitude']}, {val['longitude']}")
