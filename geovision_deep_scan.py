@@ -1191,7 +1191,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             
         def _run_vd():
             from modules.vehicle_detector import VehicleDetector
-            return VehicleDetector().detect(options.get('image_path', ''))
+            return VehicleDetector().detect_vehicles(options.get('image_path', ''))
             
         def _run_vc():
             from modules.vegetation_classifier import VegetationClassifier
