@@ -1291,7 +1291,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                     elev, clim, poi = None, None, None
                     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as inner_exec:
                         f_elev = inner_exec.submit(ec.get_elevation, lat, lon)
-                        f_clim = inner_exec.submit(ca.verify_climate, lat, lon, clim_est)
+                        f_clim = inner_exec.submit(ca.analyze_location, lat, lon)
                         f_poi = inner_exec.submit(osm.find_pois, lat, lon)
                         
                         try: elev = f_elev.result()

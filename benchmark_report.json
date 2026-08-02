@@ -1,0 +1,68 @@
+{
+  "summary": {
+    "average_phase_times": {
+      "phase0_exif_extraction": 0.0076825618743896484,
+      "phase1_visual_features": 7.806264479955037,
+      "phase1b_shadow_analysis": 0.007477204004923503,
+      "phase2_ocr": 3.9006636142730713,
+      "phase3_deep_features": 0.9546425342559814,
+      "phase3b_reverse_image_search": 0.008019685745239258,
+      "phase4_db_matching": 0.006986220677693685,
+      "phase4b_property_records": 0.007001082102457683,
+      "phase5_satellite_matching": 0.006858030954996745,
+      "phase6_park_proximity": 0.004961172739664714,
+      "phase7_cross_verification": 0.004601796468098958,
+      "phase9_synthesis": 3.9718240102132163
+    },
+    "average_total_time": 16.732358694076538
+  },
+  "per_image": {
+    "dummy_test_0.jpg": {
+      "phase0_exif_extraction": 0.008593082427978516,
+      "phase1b_shadow_analysis": 0.00842905044555664,
+      "phase1_visual_features": 8.044520139694214,
+      "phase2_ocr": 4.862512826919556,
+      "phase3_deep_features": 1.1608192920684814,
+      "phase3b_reverse_image_search": 0.010504484176635742,
+      "phase4_db_matching": 0.00845646858215332,
+      "phase4b_property_records": 0.008549928665161133,
+      "phase5_satellite_matching": 0.008910179138183594,
+      "phase6_park_proximity": 0.00604248046875,
+      "phase7_cross_verification": 0.005468606948852539,
+      "phase9_synthesis": 3.8849093914031982
+    },
+    "dummy_test_1.jpg": {
+      "phase0_exif_extraction": 0.00720524787902832,
+      "phase1b_shadow_analysis": 0.007170438766479492,
+      "phase1_visual_features": 8.145707130432129,
+      "phase2_ocr": 3.483959913253784,
+      "phase3_deep_features": 0.8781750202178955,
+      "phase3b_reverse_image_search": 0.006212949752807617,
+      "phase4_db_matching": 0.005988121032714844,
+      "phase4b_property_records": 0.005978822708129883,
+      "phase5_satellite_matching": 0.0060100555419921875,
+      "phase6_park_proximity": 0.0046041011810302734,
+      "phase7_cross_verification": 0.003940105438232422,
+      "phase9_synthesis": 4.154202461242676
+    },
+    "dummy_test_2.jpg": {
+      "phase0_exif_extraction": 0.007249355316162109,
+      "phase1b_shadow_analysis": 0.006832122802734375,
+      "phase1_visual_features": 7.2285661697387695,
+      "phase2_ocr": 3.355518102645874,
+      "phase3_deep_features": 0.8249332904815674,
+      "phase3b_reverse_image_search": 0.007341623306274414,
+      "phase4_db_matching": 0.006514072418212891,
+      "phase4b_property_records": 0.006474494934082031,
+      "phase5_satellite_matching": 0.005653858184814453,
+      "phase6_park_proximity": 0.004236936569213867,
+      "phase7_cross_verification": 0.004396677017211914,
+      "phase9_synthesis": 3.8763601779937744
+    }
+  },
+  "total_times": {
+    "dummy_test_0.jpg": 18.072113037109375,
+    "dummy_test_1.jpg": 16.751922369003296,
+    "dummy_test_2.jpg": 15.373040676116943
+  }
+}

@@ -155,12 +155,6 @@ def scan(
             expand=False
         ))
 
-    # Print VLM AI Reasoning if available
-    vlm_reasoning = result.vlm_analysis.get("reasoning") if result.vlm_analysis else None
-    if vlm_reasoning:
-        console.print("\n[bold cyan]🧠 AI Reasoning:[/bold cyan]")
-        console.print(Markdown(vlm_reasoning))
-        console.print("")
 
     # Estimates Table
     if result.location_estimates:
