@@ -1387,7 +1387,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                         extracted_weather = "sunny"
                         break
                         
-            all_estimates = weather_checker.verify_candidates(all_estimates, exif, extracted_weather)
+            all_estimates = weather_checker.verify_candidates(all_estimates, exif, extracted_weather, date_override=options.get('date'))
         except Exception as e:
             logger.error(f"  [-] Weather corroboration skipped/failed: {e}", exc_info=True)
 

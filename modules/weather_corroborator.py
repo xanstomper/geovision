@@ -60,20 +60,24 @@ class WeatherCorroborator:
             return "thunderstorm"
         return "mixed"
 
-    def verify_candidates(self, candidates: List[Dict[str, Any]], exif_data: Dict[str, Any], vlm_weather: str) -> List[Dict[str, Any]]:
+    def verify_candidates(self, candidates: List[Dict[str, Any]], exif_data: Dict[str, Any], vlm_weather: str, date_override: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Adjusts the confidence of candidate locations based on historical weather.
         """
-        if not exif_data or not exif_data.get("EXIF DateTimeOriginal"):
-            logger.info("  [-] No EXIF date found. Skipping weather corroboration.")
-            return candidates
-
-        try:
-            date_full = str(exif_data["EXIF DateTimeOriginal"]).strip()
-            dt = datetime.strptime(date_full, "%Y:%m:%d %H:%M:%S")
-            date_str = dt.strftime("%Y-%m-%d")
-        except Exception as e:
-            logger.warning(f"  [-] Could not parse EXIF date for weather check: {e}")
+        date_str = None
+        if date_override:
+            # Assume date_override is in YYYY-MM-DD format
+            date_str = date_override
+        elif exif_data and exif_data.get("EXIF DateTimeOriginal"):
+            try:
+                date_full = str(exif_data["EXIF DateTimeOriginal"]).strip()
+                dt = datetime.strptime(date_full, "%Y:%m:%d %H:%M:%S")
+                date_str = dt.strftime("%Y-%m-%d")
+            except Exception as e:
+                logger.warning(f"  [-] Could not parse EXIF date for weather check: {e}")
+        
+        if not date_str:
+            logger.info("  [-] No EXIF date or override date found. Skipping weather corroboration.")
             return candidates
 
         vlm_weather_low = vlm_weather.lower() if vlm_weather else ""

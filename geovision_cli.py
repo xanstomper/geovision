@@ -60,6 +60,11 @@ def scan(
         "--region", "-r", 
         help="Narrow the search to a specific region or city"
     ),
+    date: Optional[str] = typer.Option(
+        None,
+        "--date", "-d",
+        help="Date the image was taken (YYYY-MM-DD) for weather/season analysis. Overrides EXIF."
+    ),
     no_vlm: bool = typer.Option(
         False, 
         "--no-vlm", 
@@ -91,6 +96,7 @@ def scan(
         "output_dir": output_dir,
         "near_park": near_park,
         "region": region,
+        "date": date,
         "no_vlm": no_vlm,
         "interactive": interactive,
         "verbose": verbose,
