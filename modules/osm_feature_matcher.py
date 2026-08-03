@@ -1,22 +1,44 @@
 import requests
 import logging
-from typing import Dict, List
+import time
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+# Multiple Overpass endpoints for fallback
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
+
+
 class OSMFeatureMatcher:
     def __init__(self):
-        self.url = "https://overpass-api.de/api/interpreter"
         self.headers = {"User-Agent": "GeoVision/1.0"}
 
     def _query(self, query: str) -> dict:
-        try:
-            response = requests.post(self.url, data=query, headers=self.headers, timeout=15)
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"Overpass API query failed: {e}")
-            return {}
+        """Try multiple Overpass endpoints with fallback."""
+        for endpoint in OVERPASS_ENDPOINTS:
+            try:
+                response = requests.post(endpoint, data=query, headers=self.headers, timeout=15)
+                if response.status_code == 200:
+                    return response.json()
+                elif response.status_code == 429:
+                    logger.warning(f"Overpass rate-limited at {endpoint}. Trying next...")
+                    time.sleep(2)
+                    continue
+                elif response.status_code >= 500:
+                    logger.warning(f"Overpass {response.status_code} at {endpoint}. Trying next...")
+                    continue
+            except requests.Timeout:
+                logger.warning(f"Overpass timeout at {endpoint}. Trying next...")
+                continue
+            except Exception as e:
+                logger.error(f"Overpass error at {endpoint}: {e}")
+                continue
+        logger.error("All Overpass endpoints failed")
+        return {}
 
     def find_pois(self, lat: float, lon: float, radius_m: int = 500) -> dict:
         query = f"""

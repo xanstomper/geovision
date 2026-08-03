@@ -659,17 +659,41 @@ def phase4_db_matching(visual_features: Dict[str, Any],
         if ocr_result.get("text"):
             text = ocr_result.get("significant_text", ocr_result.get("text"))
             if len(text) > 4:
-                logger.info(f"  Searching Wikipedia for OCR text: {text[:50]}...")
-                wiki_results = wiki.search_public_records_by_text(text, limit=3)
-                for wr in wiki_results:
-                    if wr.get("lat") and wr.get("lon"):
-                        matches.append({
-                            "city": wr.get("title"),
-                            "latitude": wr.get("lat"),
-                            "longitude": wr.get("lon"),
-                            "confidence": 0.8,
-                            "matched_feature": f"OCR Text: {text[:20]}"
-                        })
+                # Load known chain store names to filter them out of Wikipedia results.
+                # Wikipedia returns corporate HQ coordinates for brand names (e.g. "Walmart" 
+                # returns Bentonville, AR), which poisons the location estimates.
+                # Chain stores are handled separately by ChainStoreLocator in Phase 9.
+                known_chains = set()
+                try:
+                    config_path = os.path.join(os.path.dirname(__file__), "config", "chain_stores.json")
+                    with open(config_path, "r") as f:
+                        known_chains = set(s.lower() for s in json.load(f))
+                except Exception:
+                    pass
+                
+                # Skip Wikipedia search if the text is just a chain store name
+                text_lower = text.strip().lower()
+                is_chain_only = text_lower in known_chains
+                
+                if not is_chain_only:
+                    logger.info(f"  Searching Wikipedia for OCR text: {text[:50]}...")
+                    wiki_results = wiki.search_public_records_by_text(text, limit=3)
+                    for wr in wiki_results:
+                        if wr.get("lat") and wr.get("lon"):
+                            # Double-check: skip if Wikipedia title is a known chain store
+                            title_lower = wr.get("title", "").lower()
+                            if title_lower in known_chains:
+                                logger.info(f"  [-] Skipping Wikipedia result '{wr.get('title')}' — chain store HQ coordinates")
+                                continue
+                            matches.append({
+                                "city": wr.get("title"),
+                                "latitude": wr.get("lat"),
+                                "longitude": wr.get("lon"),
+                                "confidence": 0.8,
+                                "matched_feature": f"OCR Text: {text[:20]}"
+                            })
+                else:
+                    logger.info(f"  [-] OCR text '{text}' is a known chain store — skipping Wikipedia (handled by ChainStoreLocator)")
 
         if matches:
             result["matches"] = matches
@@ -1157,11 +1181,24 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                     store_names = []
                 detected_stores = [s for s in store_names if s.lower() in sig_text.lower()]
                 if detected_stores:
-                    center_lat, center_lon = 0.0, 0.0
+                    center_lat, center_lon = None, None
                     if all_estimates:
                         best_est = sorted(all_estimates, key=lambda x: x["confidence"], reverse=True)[0]
                         center_lat = best_est["latitude"]
                         center_lon = best_est["longitude"]
+                    
+                    # If no prior estimates, try to get region center from the --region flag
+                    if center_lat is None and options.get('region'):
+                        try:
+                            from modules.nominatim_geocoder import NominatimGeocoder
+                            _geo = NominatimGeocoder()
+                            _rv = _geo.forward_geocode(options['region'])
+                            if _rv and _rv.get('latitude') and _rv.get('longitude'):
+                                center_lat = _rv['latitude']
+                                center_lon = _rv['longitude']
+                                logger.info(f"  ✓ Using region center for chain store search: {center_lat}, {center_lon}")
+                        except Exception as e:
+                            logger.error(f"  [-] Failed to geocode region for chain store: {e}")
                     
                     from modules.chain_store_locator import ChainStoreLocator
                     locator = ChainStoreLocator()
@@ -1235,27 +1272,36 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 
             try:
                 sign_data = fut_sd.result()
-                if sign_data.get('status') == 'success' and sign_data.get('text'):
-                    from modules.wikimedia_client import WikimediaClient
-                    wiki = WikimediaClient()
-                    wiki_results = wiki.search_public_records_by_text(sign_data['text'], limit=3)
-                    for wr in wiki_results:
-                        if wr.get("lat") and wr.get("lon"):
-                            all_estimates.append({
-                                "latitude": wr.get("lat"),
-                                "longitude": wr.get("lon"),
-                                "confidence": 0.8,
-                                "sources": [f"sign_detection:{wr.get('title')}"],
-                                "evidence": {"sign_text": sign_data['text'], "matched_title": wr.get('title')},
-                                "phase": "SignDetection"
-                            })
+                if sign_data.get('status') == 'success' and sign_data.get('detected_signs'):
+                    # Combine all detected sign text
+                    all_sign_text = " ".join(
+                        s.get('text', '') for s in sign_data['detected_signs'] if s.get('text')
+                    ).strip()
+                    if all_sign_text:
+                        phases['sign_detection'] = sign_data
+                        phases['sign_detection']['combined_text'] = all_sign_text
+                        logger.info(f"  ✓ Sign text detected: {all_sign_text[:60]}")
+                        from modules.wikimedia_client import WikimediaClient
+                        wiki = WikimediaClient()
+                        wiki_results = wiki.search_public_records_by_text(all_sign_text, limit=3)
+                        for wr in wiki_results:
+                            if wr.get("lat") and wr.get("lon"):
+                                all_estimates.append({
+                                    "latitude": wr.get("lat"),
+                                    "longitude": wr.get("lon"),
+                                    "confidence": 0.8,
+                                    "sources": [f"sign_detection:{wr.get('title')}"],
+                                    "evidence": {"sign_text": all_sign_text, "matched_title": wr.get('title')},
+                                    "phase": "SignDetection"
+                                })
             except Exception as e:
                 logger.error(f'  [-] Sign detection skipped/failed: {e}', exc_info=True)
                 
             try:
                 vehicle_data = fut_vd.result()
-                if vehicle_data.get('status') == 'success' and vehicle_data.get('driving_side'):
+                if vehicle_data.get('status') == 'success' and vehicle_data.get('driving_side_estimate'):
                     phases['vehicle_detection'] = vehicle_data
+                    logger.info(f"  ✓ Vehicle driving side: {vehicle_data.get('driving_side_estimate')}")
             except Exception as e:
                 logger.error(f'  [-] Vehicle detection skipped/failed: {e}', exc_info=True)
                 
@@ -1925,6 +1971,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     if region:
         try:
             from modules.nominatim_geocoder import NominatimGeocoder
+            geocoder = NominatimGeocoder()
             val = geocoder.forward_geocode(region)
             if val and val.get("latitude") and val.get("longitude"):
                 candidate_coords.append({"latitude": val["latitude"], "longitude": val["longitude"]})

@@ -35,6 +35,12 @@ class NominatimGeocoder:
             return None
             
     def forward_geocode(self, query: str) -> Optional[Dict[str, Any]]:
+        """Forward geocode a place name to lat/lon.
+        
+        Returns a normalized dict with 'latitude' and 'longitude' as floats,
+        plus all other Nominatim fields (name, boundingbox, etc).
+        Returns None if no results found.
+        """
         self._respect_rate_limit()
         url = f"{self.BASE_URL}/search"
         params = {
@@ -47,7 +53,14 @@ class NominatimGeocoder:
             response.raise_for_status()
             data = response.json()
             if data:
-                return data[0]
+                raw = data[0]
+                # Normalize: Nominatim returns 'lat'/'lon' as strings.
+                # We convert to floats and add 'latitude'/'longitude' keys
+                # so downstream code works with either key convention.
+                result = dict(raw)
+                result["latitude"] = float(raw["lat"])
+                result["longitude"] = float(raw["lon"])
+                return result
             return None
         except requests.RequestException as e:
             logger.error(f"Forward geocode failed: {e}")
