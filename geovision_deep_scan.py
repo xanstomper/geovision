@@ -783,26 +783,27 @@ def phase5_satellite_matching(visual_features: Dict[str, Any],
                 self.tree_types = data.get("tree_types", [])
                 self.vegetation_density = data.get("vegetation_density", 0.0)
 
-        # Get center coordinates from candidate_coords
-        center_lat, center_lon = None, None
-        if candidate_coords:
-            center_lat = candidate_coords[0]["latitude"]
-            center_lon = candidate_coords[0]["longitude"]
-            
-        if center_lat is None or center_lon is None:
-            logger.warning("  ⚠ No center coordinates provided by Phase 4. Skipping Satellite Matcher.")
-            result["status"] = "limited"
-            result["note"] = "No baseline coordinates to search from."
-            return result
+        top_candidates = candidate_coords[:10] if candidate_coords else []
+        if not top_candidates:
+            logger.warning("  [-] No coordinates available for satellite matching")
+            return {"status": "limited", "note": "No coordinates provided"}
 
         feature_obj = FeatureObj(visual_features)
         matcher = SatelliteMatcher()
+        all_satellite_matches = []
 
-        satellite_matches = matcher.match_features_to_satellite(
-            feature_obj, center_lat, center_lon, radius_km=5.0,
-        )
+        for cand in top_candidates:
+            lat = cand["latitude"]
+            lon = cand["longitude"]
+            logger.info(f"  [*] Querying satellite imagery around {lat:.4f}, {lon:.4f}...")
+            
+            matches = matcher.match_features_to_satellite(
+                feature_obj, lat, lon, radius_km=5.0,
+            )
+            if matches:
+                all_satellite_matches.extend(matches)
 
-        if satellite_matches:
+        if all_satellite_matches:
             result["matches"] = [
                 {
                     "latitude": round(m.latitude, 6),
@@ -811,11 +812,11 @@ def phase5_satellite_matching(visual_features: Dict[str, Any],
                     "match_type": m.match_type,
                     "metadata": m.metadata,
                 }
-                for m in satellite_matches
+                for m in all_satellite_matches
             ]
             result["top_regions"] = list(set(m["match_type"] for m in result["matches"]))
             result["status"] = "success"
-            logger.info(f"  ✓ {len(satellite_matches)} satellite matches found")
+            logger.info(f"  ✓ {len(all_satellite_matches)} satellite matches found across candidates")
         else:
             result["status"] = "limited"
             result["note"] = "No satellite matches found for features."
@@ -846,10 +847,10 @@ def phase6_park_proximity(visual_features: Dict[str, Any],
 
     local_coords: List[Tuple[float, float]] = []
     if satellite_matches.get("matches"):
-        for m in satellite_matches["matches"][:3]:
+        for m in satellite_matches["matches"][:10]:
             local_coords.append((m["latitude"], m["longitude"]))
     elif candidate_coords:
-        for c in candidate_coords[:3]:
+        for c in candidate_coords[:10]:
             local_coords.append((c["latitude"], c["longitude"]))
 
     try:
