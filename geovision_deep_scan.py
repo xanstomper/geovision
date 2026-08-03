@@ -853,8 +853,8 @@ def phase5_satellite_matching(visual_features: Dict[str, Any],
                 all_satellite_matches.extend(matches)
 
         if all_satellite_matches:
-            # Sort by confidence so the best visual matches rise to the top
-            all_satellite_matches.sort(key=lambda m: m.confidence, reverse=True)
+            # Sort by confidence, but round to 1 decimal place so noisy ties (0.19 vs 0.20) preserve the original distance-sorted order
+            all_satellite_matches.sort(key=lambda m: round(m.confidence, 1), reverse=True)
             # Keep top 20 to pass to Phase 6 Park Proximity
             all_satellite_matches = all_satellite_matches[:20]
             
