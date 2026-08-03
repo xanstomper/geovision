@@ -105,4 +105,15 @@ class ChainStoreLocator:
             else:
                 logger.warning(f"  [!] All Overpass endpoints failed for '{store}'")
 
+        if region_hint_lat is not None and region_hint_lon is not None:
+            # Sort by distance to the region hint to prioritize the center of the region
+            def haversine(lat1, lon1, lat2, lon2):
+                import math
+                dlat = math.radians(lat2 - lat1)
+                dlon = math.radians(lon2 - lon1)
+                a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+                return 6371 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+            results.sort(key=lambda r: haversine(region_hint_lat, region_hint_lon, r["latitude"], r["longitude"]))
+
         return results
