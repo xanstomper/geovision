@@ -1999,6 +1999,19 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
             if "latitude" in m and "longitude" in m:
                 candidate_coords.append({"latitude": m["latitude"], "longitude": m["longitude"]})
                 
+    # Phase 4c: Chain Store Geolocation
+    try:
+        pipeline_result.chain_stores = phase4c_chain_stores(pipeline_result.ocr_text, region)
+        phases["chain_stores"] = pipeline_result.chain_stores
+        if pipeline_result.chain_stores.get("matches"):
+            for m in pipeline_result.chain_stores["matches"]:
+                candidate_coords.append({"latitude": m["latitude"], "longitude": m["longitude"]})
+                if not hasattr(pipeline_result, "early_estimates"):
+                    pipeline_result.early_estimates = []
+                pipeline_result.early_estimates.append(m)
+    except Exception as e:
+        logger.error(f"Phase 4c error: {e}")
+
     # Remove duplicates
     seen_coords = set()
     unique_candidates = []
