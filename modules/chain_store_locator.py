@@ -23,7 +23,7 @@ class ChainStoreLocator:
     def __init__(self):
         self.headers = {'User-Agent': 'GeoVision OSINT Tool/2.0 (contact: admin@geovision.local)'}
 
-    def _query_overpass(self, query: str, timeout: int = 30) -> Optional[dict]:
+    def _query_overpass(self, query: str, timeout: int = 60) -> Optional[dict]:
         """Try multiple Overpass endpoints with retry logic."""
         for endpoint in OVERPASS_ENDPOINTS:
             try:
@@ -67,10 +67,12 @@ class ChainStoreLocator:
 
             if region_hint_lat is not None and region_hint_lon is not None:
                 query = f"""
-                [out:json][timeout:30];
+                [out:json][timeout:60];
                 (
-                  node["name"~"{safe_store}",i](around:{radius},{region_hint_lat},{region_hint_lon});
-                  way["name"~"{safe_store}",i](around:{radius},{region_hint_lat},{region_hint_lon});
+                  node["name"="{safe_store}"](around:{radius},{region_hint_lat},{region_hint_lon});
+                  way["name"="{safe_store}"](around:{radius},{region_hint_lat},{region_hint_lon});
+                  node["brand"="{safe_store}"](around:{radius},{region_hint_lat},{region_hint_lon});
+                  way["brand"="{safe_store}"](around:{radius},{region_hint_lat},{region_hint_lon});
                 );
                 out center;
                 """
