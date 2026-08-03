@@ -41,14 +41,8 @@ class SatelliteMatcher:
 
         logger.info(f"  [SatelliteMatcher] Validating coordinates {center_lat}, {center_lon}...")
         
-        # We sample a few points around the center to find the best match
-        samples = [
-            (center_lat, center_lon),
-            (center_lat + 0.005, center_lon),
-            (center_lat - 0.005, center_lon),
-            (center_lat, center_lon + 0.005),
-            (center_lat, center_lon - 0.005)
-        ]
+        # We only need the exact coordinate for chain stores and accurate DB matches
+        samples = [(center_lat, center_lon)]
         
         for lat, lon in samples:
             sat_img = self.fetch_satellite_tile(lat, lon, zoom=18)

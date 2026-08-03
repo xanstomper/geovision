@@ -751,6 +751,54 @@ def phase4b_property_records(db_matches: List[Dict[str, Any]]) -> Dict[str, Any]
         logger.error(f"  [!] Property records query failed: {e}")
         return {"phase": phase_name, "status": "failed", "error": str(e), "records": []}
 
+
+def phase4c_chain_stores(ocr_text, region):
+    logger.info("━" * 48)
+    logger.info("  Phase 4c: Chain Store Geolocation")
+    logger.info("━" * 48)
+    results = []
+    sig_text = ocr_text.get("significant_text", "") if isinstance(ocr_text, dict) else ""
+    if sig_text:
+        try:
+            import json, os
+            config_path = os.path.join(os.path.dirname(__file__), "config", "chain_stores.json")
+            try:
+                with open(config_path, "r") as f:
+                    store_names = json.load(f)
+            except Exception as e:
+                logger.error(f"Failed to load chain stores config: {e}")
+                store_names = []
+            detected_stores = [s for s in store_names if s.lower() in sig_text.lower()]
+            if detected_stores:
+                center_lat, center_lon = None, None
+                if region:
+                    try:
+                        from modules.nominatim_geocoder import NominatimGeocoder
+                        _geo = NominatimGeocoder()
+                        _rv = _geo.forward_geocode(region)
+                        if _rv and _rv.get('latitude') and _rv.get('longitude'):
+                            center_lat = _rv['latitude']
+                            center_lon = _rv['longitude']
+                            logger.info(f"  ✓ Using region center for chain store search: {center_lat}, {center_lon}")
+                    except Exception as e:
+                        logger.error(f"  [-] Failed to geocode region for chain store: {e}")
+                
+                from modules.chain_store_locator import ChainStoreLocator
+                locator = ChainStoreLocator()
+                store_results = locator.locate_chain_stores(detected_stores, center_lat, center_lon)
+                for res in store_results:
+                    results.append({
+                        "latitude": res["latitude"],
+                        "longitude": res["longitude"],
+                        "confidence": 0.92,
+                        "sources": [f"chain_store:{res.get('store_name', 'unknown')}"],
+                        "evidence": {"store_name": res.get("store_name"), "store_confidence": res.get("confidence")},
+                        "phase": "ChainStore"
+                    })
+        except Exception as e:
+            logger.error(f"  [-] Chain Store Geolocation skipped/failed: {e}", exc_info=True)
+    return {"status": "success", "matches": results}
+
 def phase5_satellite_matching(visual_features: Dict[str, Any],
                                candidate_coords: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
@@ -783,7 +831,8 @@ def phase5_satellite_matching(visual_features: Dict[str, Any],
                 self.tree_types = data.get("tree_types", [])
                 self.vegetation_density = data.get("vegetation_density", 0.0)
 
-        top_candidates = candidate_coords[:10] if candidate_coords else []
+        # Evaluate ALL candidates from ChainStoreLocator and DB matches
+        top_candidates = candidate_coords if candidate_coords else []
         if not top_candidates:
             logger.warning("  [-] No coordinates available for satellite matching")
             return {"status": "limited", "note": "No coordinates provided"}
@@ -804,6 +853,11 @@ def phase5_satellite_matching(visual_features: Dict[str, Any],
                 all_satellite_matches.extend(matches)
 
         if all_satellite_matches:
+            # Sort by confidence so the best visual matches rise to the top
+            all_satellite_matches.sort(key=lambda m: m.confidence, reverse=True)
+            # Keep top 20 to pass to Phase 6 Park Proximity
+            all_satellite_matches = all_satellite_matches[:20]
+            
             result["matches"] = [
                 {
                     "latitude": round(m.latitude, 6),
@@ -1035,7 +1089,13 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
     }
 
     try:
+
         all_estimates: List[Dict[str, Any]] = []
+        if hasattr(options.get("pipeline_result", None), "early_estimates"):
+            all_estimates.extend(options["pipeline_result"].early_estimates)
+        elif phases.get("chain_stores", {}).get("matches"):
+            all_estimates.extend(phases["chain_stores"]["matches"])
+
 
         # From EXIF (Highest Confidence)
         exif = phases.get("exif_data", {})
@@ -1168,53 +1228,6 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                         })
             except Exception as e:
                 logger.error(f"  [-] Road Analysis skipped/failed: {e}", exc_info=True)
-
-        # ── Advanced OSINT: Chain Store Geolocation ──
-        sig_text = phases.get("ocr_text", {}).get("significant_text", "")
-        if sig_text:
-            try:
-                config_path = os.path.join(os.path.dirname(__file__), "config", "chain_stores.json")
-                try:
-                    with open(config_path, "r") as f:
-                        store_names = json.load(f)
-                except Exception as e:
-                    logger.error(f"Failed to load chain stores config: {e}")
-                    store_names = []
-                detected_stores = [s for s in store_names if s.lower() in sig_text.lower()]
-                if detected_stores:
-                    center_lat, center_lon = None, None
-                    if all_estimates:
-                        best_est = sorted(all_estimates, key=lambda x: x["confidence"], reverse=True)[0]
-                        center_lat = best_est["latitude"]
-                        center_lon = best_est["longitude"]
-                    
-                    # If no prior estimates, try to get region center from the --region flag
-                    if center_lat is None and options.get('region'):
-                        try:
-                            from modules.nominatim_geocoder import NominatimGeocoder
-                            _geo = NominatimGeocoder()
-                            _rv = _geo.forward_geocode(options['region'])
-                            if _rv and _rv.get('latitude') and _rv.get('longitude'):
-                                center_lat = _rv['latitude']
-                                center_lon = _rv['longitude']
-                                logger.info(f"  ✓ Using region center for chain store search: {center_lat}, {center_lon}")
-                        except Exception as e:
-                            logger.error(f"  [-] Failed to geocode region for chain store: {e}")
-                    
-                    from modules.chain_store_locator import ChainStoreLocator
-                    locator = ChainStoreLocator()
-                    store_results = locator.locate_chain_stores(detected_stores, center_lat, center_lon)
-                    for res in store_results:
-                        all_estimates.append({
-                            "latitude": res["latitude"],
-                            "longitude": res["longitude"],
-                            "confidence": 0.92,
-                            "sources": [f"chain_store:{res.get('store_name', 'unknown')}"],
-                            "evidence": {"store_name": res.get("store_name"), "store_confidence": res.get("confidence")},
-                            "phase": "ChainStore"
-                        })
-            except Exception as e:
-                logger.error(f"  [-] Chain Store Geolocation skipped/failed: {e}", exc_info=True)
 
         # ── a-e) CV Modules (Concurrent) ──
         import concurrent.futures
