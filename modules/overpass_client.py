@@ -11,7 +11,36 @@ class OverpassClient:
     Provides access to global public infrastructure, buildings, parks, and amenities.
     """
     def __init__(self):
-        self.endpoint = "https://overpass-api.de/api/interpreter"
+        self.endpoints = [
+            "https://overpass-api.de/api/interpreter",
+            "https://overpass.kumi.systems/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+        ]
+        self.headers = {'User-Agent': 'GeoVision OSINT Tool/2.0 (contact: admin@geovision.local)'}
+
+    def _query_overpass(self, query: str) -> Optional[dict]:
+        import time
+        for endpoint in self.endpoints:
+            try:
+                resp = requests.post(endpoint, data={'data': query}, headers=self.headers, timeout=30)
+                if resp.status_code == 200:
+                    return resp.json()
+                elif resp.status_code == 429:
+                    logger.warning(f"  [!] Overpass rate-limited at {endpoint}. Trying next...")
+                    time.sleep(2)
+                    continue
+                elif resp.status_code >= 500:
+                    logger.warning(f"  [!] Overpass {resp.status_code} at {endpoint}. Trying next...")
+                    continue
+                else:
+                    logger.error(f"  [!] Overpass API error at {endpoint}: {resp.status_code}")
+            except requests.Timeout:
+                logger.warning(f"  [!] Overpass timeout at {endpoint}. Trying next...")
+                continue
+            except Exception as e:
+                logger.error(f"  [!] Overpass request failed at {endpoint}: {e}")
+                continue
+        return None
 
     def find_nearby_parks(self, lat: float, lon: float, radius_meters: int = 1500) -> List[Dict]:
         """Find parks near a specific coordinate using OSM."""
@@ -25,11 +54,9 @@ class OverpassClient:
         );
         out center;
         """
-        headers = {'User-Agent': 'GeoVision OSINT Tool/1.0 (contact: admin@geovision.local)'}
         try:
-            resp = requests.post(self.endpoint, data={'data': query}, headers=headers, timeout=30)
-            if resp.status_code == 200:
-                data = resp.json()
+            data = self._query_overpass(query)
+            if data:
                 parks = []
                 for element in data.get('elements', []):
                     tags = element.get('tags', {})
@@ -50,8 +77,6 @@ class OverpassClient:
                         "tags": tags
                     })
                 return parks
-            else:
-                logger.error(f"Overpass API error: {resp.status_code}")
         except Exception as e:
             logger.error(f"Overpass request failed: {e}")
         return []
@@ -68,11 +93,9 @@ class OverpassClient:
         );
         out center;
         """
-        headers = {'User-Agent': 'GeoVision OSINT Tool/1.0 (contact: admin@geovision.local)'}
         try:
-            resp = requests.post(self.endpoint, data={'data': query}, headers=headers, timeout=30)
-            if resp.status_code == 200:
-                data = resp.json()
+            data = self._query_overpass(query)
+            if data:
                 results = []
                 for element in data.get('elements', []):
                     tags = element.get('tags', {})

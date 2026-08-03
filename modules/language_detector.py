@@ -106,7 +106,7 @@ class LanguageDetector:
                         "region": data['region'],
                         "latitude": data['lat'],
                         "longitude": data['lon'],
-                        "confidence": 0.20  # Lower confidence
+                        "confidence": 0.05  # Lower confidence so generic country centers don't win
                     })
                 
         # Detect Scripts
@@ -129,8 +129,8 @@ class LanguageDetector:
             for script, count in script_counts.items():
                 if count / total_chars > 0.1:  # At least 10% of text
                     candidates = self.script_mapping[script]
-                    # Calculate a base confidence between 0.1 and 0.2 based on percentage
-                    base_conf = 0.1 + (0.1 * (count / total_chars))
+                    # Calculate a base confidence between 0.01 and 0.05 based on percentage
+                    base_conf = 0.01 + (0.04 * (count / total_chars))
                     for data in candidates:
                         results.append({
                             "type": "script",

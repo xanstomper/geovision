@@ -1259,7 +1259,7 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                                     all_estimates.append({
                                         "latitude": val["latitude"],
                                         "longitude": val["longitude"],
-                                        "confidence": 0.6,
+                                        "confidence": 0.1,  # Lowered from 0.6 so continent centers don't win
                                         "sources": [f"scene_region:{rh}"],
                                         "evidence": {"scene_type": scene.get("scene_type"), "matched_region": rh},
                                         "phase": "SceneClassification"

@@ -46,7 +46,7 @@ class TelecomOSINT:
                     "region": data["country"],
                     "latitude": data["lat"],
                     "longitude": data["lon"],
-                    "confidence": 0.85,
+                    "confidence": 0.1,  # Lowered from 0.85 so generic country centers don't win
                     "evidence": "international_code",
                     "sources": ["telecom_db"]
                 })

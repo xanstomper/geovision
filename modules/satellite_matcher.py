@@ -65,13 +65,13 @@ class SatelliteMatcher:
                 green_ratio = np.count_nonzero(mask) / (sat_img.shape[0] * sat_img.shape[1])
                 
                 # Compare to ground features
-                confidence = 0.5 # Base confidence for having a tile
+                confidence = 0.1 # Base confidence for having a tile (was 0.5)
                 
                 # Adjust confidence based on expected vegetation
                 expected_density = getattr(features, 'vegetation_density', 0.0)
                 if expected_density > 0:
                     diff = abs(green_ratio - expected_density)
-                    confidence += (0.2 * (1 - diff))
+                    confidence += (0.1 * (1 - diff)) # Was 0.2
                 
                 # Determine match type based on satellite dominant color
                 match_type = "urban_built_up"
@@ -83,7 +83,7 @@ class SatelliteMatcher:
                 matches.append(SatelliteMatch(
                     latitude=lat,
                     longitude=lon,
-                    confidence=min(0.95, confidence),
+                    confidence=min(0.25, confidence), # Was 0.95
                     match_type=f"satellite_validated:{match_type}",
                     metadata={"green_ratio": round(green_ratio, 3)}
                 ))
