@@ -90,3 +90,13 @@ try:
     from .geo_math import haversine_distance, bounding_box, weighted_centroid, validate_coordinates
 except ImportError:
     haversine_distance = bounding_box = weighted_centroid = validate_coordinates = None
+
+try:
+    from .evidence_chain import Evidence, EvidenceChain, EvidenceSource
+except ImportError:
+    Evidence = EvidenceChain = EvidenceSource = None
+
+try:
+    from .web_search_providers import search_web, get_available_providers, SerperClient, BraveClient, SearXNGClient
+except ImportError:
+    search_web = get_available_providers = SerperClient = BraveClient = SearXNGClient = None
