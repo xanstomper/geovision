@@ -1,0 +1,120 @@
+{
+  "metrics": {
+    "n_total": 8,
+    "n_with_prediction": 8,
+    "no_prediction_rate": 0.0,
+    "thresholds": {
+      "accuracy@1km": 0.875,
+      "accuracy@25km": 1.0,
+      "accuracy@50km": 1.0,
+      "accuracy@200km": 1.0,
+      "accuracy@750km": 1.0,
+      "accuracy@2500km": 1.0
+    },
+    "errors_km": {
+      "mean": 0.8,
+      "median": 0.08,
+      "min": 0.01,
+      "max": 5.78
+    },
+    "country_accuracy": 0.625
+  },
+  "samples": [
+    {
+      "image": "/home/jewboy420/geovision/data/eval/wikipedia_landmarks_v1/images/eiffel_tower.jpg",
+      "pred": [
+        48.8581,
+        2.294945
+      ],
+      "gt": [
+        48.8584,
+        2.2945
+      ],
+      "error_km": 0.04661155808652993
+    },
+    {
+      "image": "/home/jewboy420/geovision/data/eval/wikipedia_landmarks_v1/images/statue_of_liberty.jpg",
+      "pred": [
+        40.689274,
+        -74.044641
+      ],
+      "gt": [
+        40.6892,
+        -74.0445
+      ],
+      "error_km": 0.014458203591492013
+    },
+    {
+      "image": "/home/jewboy420/geovision/data/eval/wikipedia_landmarks_v1/images/taj_mahal.jpg",
+      "pred": [
+        27.17474,
+        78.042842
+      ],
+      "gt": [
+        27.1751,
+        78.0421
+      ],
+      "error_km": 0.08360552958285308
+    },
+    {
+      "image": "/home/jewboy420/geovision/data/eval/wikipedia_landmarks_v1/images/colosseum.jpg",
+      "pred": [
+        41.890625,
+        12.494904
+      ],
+      "gt": [
+        41.8902,
+        12.4922
+      ],
+      "error_km": 0.22876139312109595
+    },
+    {
+      "image": "/home/jewboy420/geovision/data/eval/wikipedia_landmarks_v1/images/sydney_opera_house.jpg",
+      "pred": [
+        -33.856777,
+        151.215692
+      ],
+      "gt": [
+        -33.8568,
+        151.2153
+      ],
+      "error_km": 0.03628752761920387
+    },
+    {
+      "image": "/home/jewboy420/geovision/data/eval/wikipedia_landmarks_v1/images/christ_the_redeemer.jpg",
+      "pred": [
+        -22.953178,
+        -43.210789
+      ],
+      "gt": [
+        -22.9519,
+        -43.2105
+      ],
+      "error_km": 0.14515552063989165
+    },
+    {
+      "image": "/home/jewboy420/geovision/data/eval/wikipedia_landmarks_v1/images/great_pyramid_of_giza.jpg",
+      "pred": [
+        30.00342,
+        31.187291
+      ],
+      "gt": [
+        29.9792,
+        31.1342
+      ],
+      "error_km": 5.77890278862492
+    },
+    {
+      "image": "/home/jewboy420/geovision/data/eval/wikipedia_landmarks_v1/images/big_ben.jpg",
+      "pred": [
+        51.500234,
+        -0.125565
+      ],
+      "gt": [
+        51.5007,
+        -0.1246
+      ],
+      "error_km": 0.08453905944723493
+    }
+  ]
+}
