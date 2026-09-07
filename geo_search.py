@@ -9,12 +9,21 @@ import os
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
-GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "AIzaSyD7AuD-KuRPukRoUH8laqbOg3iRMAkLYNw")
+GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "")
+if not GOOGLE_MAPS_API_KEY:
+    import logging as _logging
+    _logging.getLogger(__name__).warning(
+        "GOOGLE_MAPS_API_KEY not set — geo_search.py Google requests will fail. "
+        "Set the env var to enable; do NOT ship placeholder keys."
+    )
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 def google_request(params):
-    params["key"] = GOOGLE_MAPS_API_KEY or "demo"
+    if not GOOGLE_MAPS_API_KEY:
+        return {"status": "REQUEST_DENIED",
+                "error": "No GOOGLE_MAPS_API_KEY configured (real key required — no demo fallback)"}
+    params["key"] = GOOGLE_MAPS_API_KEY
     url = "https://maps.googleapis.com/maps/api/" + params.pop("endpoint") + "/json?" + urlencode(params)
     import hashlib
     key = hashlib.md5(url.encode()).hexdigest()

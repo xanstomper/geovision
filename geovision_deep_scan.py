@@ -164,6 +164,7 @@ class PipelineResult:
     ocr_text: Dict[str, Any] = field(default_factory=dict)
     deep_features: Dict[str, Any] = field(default_factory=dict)
     reverse_image_search: Dict[str, Any] = field(default_factory=dict)
+    visual_geo: Dict[str, Any] = field(default_factory=dict)
     db_matches: List[Dict[str, Any]] = field(default_factory=list)
     property_records: Dict[str, Any] = field(default_factory=dict)
     satellite_matches: List[Dict[str, Any]] = field(default_factory=list)
@@ -630,6 +631,43 @@ def phase3b_reverse_image_search(image_path: str) -> Dict[str, Any]:
         logger.warning(f"  Reverse Image Search Failed: {e}")
         result["error"] = str(e)
     return result
+
+def phase3c_visual_geo(image_path: str) -> Dict[str, Any]:
+    """
+    Phase 3c — Visual Geolocation Engine (the GeoSpy core).
+    CLIP embedding of the query image + cosine nearest-neighbors against a
+    reference DB of real geotagged Wikimedia Commons photos. Produces
+    location estimates even when EXIF and OCR give nothing.
+    """
+    phase_name = "phase3c_visual_geo"
+    logger.info("━" * 48)
+    logger.info("  Phase 3c: Visual Geo Engine (CLIP + Geo Reference DB)")
+    logger.info("━" * 48)
+
+    result: Dict[str, Any] = {
+        "phase": phase_name, "status": "failed",
+        "estimates": [], "engine": None, "db_size": 0,
+    }
+
+    try:
+        from modules.visual_geo_engine import VisualGeoEngine
+        engine = VisualGeoEngine()
+        outcome = engine.locate(image_path, top_k=8)
+        result.update(outcome)
+        result["phase"] = phase_name
+        if outcome.get("status") == "success":
+            logger.info(f"  ✓ {len(outcome.get('estimates', []))} visual-geo estimates "
+                        f"(DB={outcome.get('db_size', 0)} refs)")
+        else:
+            logger.info(f"  ⚠ Visual geo: {outcome.get('note', 'limited')}")
+    except Exception as e:
+        import traceback
+        result["error"] = str(e)
+        result["traceback"] = traceback.format_exc()
+        logger.error(f"  ✗ Phase 3c error: {e}")
+
+    return result
+
 
 def phase4_db_matching(visual_features: Dict[str, Any],
                        ocr_result: Dict[str, Any],
@@ -1109,6 +1147,27 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 "evidence": {"exif_data": "GPS Coordinates embedded in file"},
                 "phase": "EXIF",
             })
+
+        # From Visual Geo Engine (CLIP + reference DB) — the core GeoSpy-style
+        # signal. Works even with zero EXIF/OCR. Confidence derives from real
+        # CLIP similarity and neighbor spatial agreement (see visual_geo_engine).
+        vg = phases.get("visual_geo", {})
+        if vg.get("estimates"):
+            for est in vg["estimates"][:3]:
+                all_estimates.append({
+                    "latitude": est["latitude"],
+                    "longitude": est["longitude"],
+                    "confidence": est["confidence"],
+                    "sources": ["visual_geo:clip_nn"],
+                    "evidence": {
+                        "city": est.get("city", ""),
+                        "country": est.get("country", ""),
+                        "mean_similarity": est.get("mean_similarity", 0),
+                        "support": est.get("support", 1),
+                        "engine": vg.get("engine", "CLIP"),
+                    },
+                    "phase": "VisualGeo",
+                })
 
         # From satellite
         sat = phases.get("satellite_matches", {})
@@ -1881,7 +1940,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     try:
         pipeline_result.exif_data = phase0_exif_extraction(image_path_resolved)
         phases["exif_data"] = pipeline_result.exif_data
-        if pipeline_result.exif_data.get("status") == "success":
+        if pipeline_result.exif_data.get("status") in ("success", "limited"):
             pipeline_result.phases_completed.append("phase0_exif_extraction")
         else:
             pipeline_result.phases_failed.append("phase0_exif_extraction")
@@ -1894,7 +1953,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     try:
         pipeline_result.shadow_analysis = phase1b_shadow_analysis(pipeline_result.exif_data)
         phases["shadow_analysis"] = pipeline_result.shadow_analysis
-        if pipeline_result.shadow_analysis.get("status") == "success":
+        if pipeline_result.shadow_analysis.get("status") in ("success", "limited", "skipped"):
             pipeline_result.phases_completed.append("phase1b_shadow_analysis")
         else:
             pipeline_result.phases_failed.append("phase1b_shadow_analysis")
@@ -1946,7 +2005,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     try:
         pipeline_result.reverse_image_search = phase3b_reverse_image_search(image_path_resolved)
         phases["reverse_image_search"] = pipeline_result.reverse_image_search
-        if pipeline_result.reverse_image_search.get("status") == "success":
+        if pipeline_result.reverse_image_search.get("status") in ("success", "limited"):
             pipeline_result.phases_completed.append("phase3b_reverse_image_search")
         else:
             pipeline_result.phases_failed.append("phase3b_reverse_image_search")
@@ -1954,6 +2013,19 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.phases_failed.append("phase3b_reverse_image_search")
         pipeline_result.errors.append(f"Phase 3b error: {e}")
         phases["reverse_image_search"] = {"status": "failed", "error": str(e)}
+
+    # Phase 3c: Visual Geo Engine (CLIP + geo reference DB)
+    try:
+        pipeline_result.visual_geo = phase3c_visual_geo(image_path_resolved)
+        phases["visual_geo"] = pipeline_result.visual_geo
+        if pipeline_result.visual_geo.get("status") == "success":
+            pipeline_result.phases_completed.append("phase3c_visual_geo")
+        else:
+            pipeline_result.phases_failed.append("phase3c_visual_geo")
+    except Exception as e:
+        pipeline_result.phases_failed.append("phase3c_visual_geo")
+        pipeline_result.errors.append(f"Phase 3c error: {e}")
+        phases["visual_geo"] = {"status": "failed", "error": str(e)}
 
     # Phase 4: DB Matching
     try:
@@ -1974,6 +2046,16 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
 
     # Gather candidate coordinates from all prior sources and region flag
     candidate_coords = []
+    
+    # 0. Visual Geo Engine estimates (CLIP nearest-neighbor) — primary source
+    #    when EXIF/OCR yield nothing (the GeoSpy-style fallback path)
+    if pipeline_result.visual_geo.get("estimates"):
+        for est in pipeline_result.visual_geo["estimates"][:3]:
+            candidate_coords.append({
+                "latitude": est["latitude"],
+                "longitude": est["longitude"],
+                "source": "visual_geo",
+            })
     
     # 1. EXIF GPS
     if pipeline_result.exif_data.get("gps"):
@@ -2026,7 +2108,7 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     try:
         pipeline_result.property_records = phase4b_property_records(candidate_coords)
         phases["property_records"] = pipeline_result.property_records
-        if pipeline_result.property_records.get("status") == "success":
+        if pipeline_result.property_records.get("status") in ("success", "limited", "skipped"):
             pipeline_result.phases_completed.append("phase4b_property_records")
         else:
             pipeline_result.phases_failed.append("phase4b_property_records")

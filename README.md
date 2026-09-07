@@ -6,6 +6,25 @@ Rather than relying purely on subjective AI guessing, GeoVision fuses **Vision-L
 
 All data sources and tools are 100% real. There is zero mock data, zero hardcoded fallback logic, and zero API hallucination.
 
+## 🧠 Visual Geo Engine (GeoSpy-class core)
+
+The core geolocation signal — the thing GeoSpy actually does — is **image → CLIP embedding → nearest-neighbor against a database of real geotagged photos**:
+
+- **`modules/visual_geo_engine.py`** — embeds the query image with CLIP ViT-B-32 (LAION-2B, 151M params) and cosine-matches it against the reference DB. Produces location estimates with honest confidence derived from neighbor similarity + spatial agreement (no invented numbers — a weak match scores near 0).
+- **`scripts/build_reference_db.py`** — builds the reference DB from **real, existing, free datasets**:
+  - [GeoNames cities15000](https://download.geonames.org/export/dump/cities15000.zip) — the real 34k-city world gazetteer
+  - [Wikimedia Commons geosearch API](https://commons.wikimedia.org/w/api.php) — real geotagged photographs at each city
+  - Reference DB lands in `data/visual_geo_db/` (embeddings + per-photo metadata)
+
+```bash
+# Build the reference DB (real photos, real coordinates)
+python3 scripts/build_reference_db.py --max-cities 300 --per-city 12 --min-population 300000
+# Grow it later — appends without rebuilding
+python3 scripts/build_reference_db.py --max-cities 600 --per-city 16 --append
+```
+
+This is what makes the pipeline produce location estimates **even when EXIF and OCR give nothing** — previously the pipeline collapsed to zero candidates on metadata-free images.
+
 ## 🔥 Advanced OSINT Arsenal (18-Module Pipeline)
 
 GeoVision is equipped with cutting-edge investigative modules that typical AI tools lack:
@@ -25,6 +44,7 @@ GeoVision is equipped with cutting-edge investigative modules that typical AI to
 1. **Visual Feature Extraction**: OpenCV analysis for color, edges, and architecture.
 2. **Intelligent OCR**: EasyOCR/Tesseract with strict noise filtering to prevent hallucinated text matching.
 3. **Deep Features**: ResNet50 mathematical fingerprinting for the image.
+3c. **Visual Geo Engine**: CLIP ViT-B-32 embedding + cosine nearest-neighbor against the real geotagged reference DB — produces estimates with zero EXIF/OCR input (the GeoSpy core).
 4. **OSINT Database Matching**: Queries Wikipedia and OpenStreetMap APIs for exact text and infrastructure matches (protected by robust User-Agent headers).
 5. **Satellite Matching**: Correlates features with regional satellite imagery via OSM/Google tiles.
 6. **Park Proximity Analysis**: Uses haversine mathematics to find nearby parks based on precise walking times.
