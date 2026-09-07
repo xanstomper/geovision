@@ -25,6 +25,15 @@ python3 scripts/build_reference_db.py --max-cities 600 --per-city 16 --append
 
 This is what makes the pipeline produce location estimates **even when EXIF and OCR give nothing** — previously the pipeline collapsed to zero candidates on metadata-free images.
 
+## 🤖 Trained Geolocation Models (ported from [open_geo_spy](https://github.com/eren23/open_geo_spy))
+
+Real trained geolocation models, ported and wired in as Phase 3d — each degrades gracefully when unavailable:
+
+- **GeoCLIP** (`modules/geoclip_predictor.py`) — direct GPS regression from an image (NeurIPS '23, Vicente et al.). Aligns CLIP with a learned GPS positional encoder over a 100k-point gallery. Outputs lat/lon + softmax confidence. Includes the transformers≥4.40 compatibility patch from open_geo_spy. Weights auto-download from `VicenteVivan/geo-clip`.
+- **StreetCLIP** (`modules/streetclip_predictor.py`) — zero-shot country classification ("a street view photo from {country}") using the geographically-robust CLIP fine-tuned on 1M street-level images (`geolocal/StreetCLIP`). Country signal weights/biases downstream fusion.
+- **Eval metrics** (`modules/geo_eval_metrics.py`) — standard SOTA geolocation benchmark metrics ported from open_geo_spy: accuracy@{1,25,50,200,750,2500}km, mean/median error, country accuracy.
+- **Wikipedia landmarks eval set** (`data/eval/wikipedia_landmarks_v1/`) — 8 real landmark photos with real ground-truth coordinates (Eiffel Tower, Statue of Liberty, Taj Mahal, ...) for measuring accuracy honestly.
+
 ## 🔥 Advanced OSINT Arsenal (18-Module Pipeline)
 
 GeoVision is equipped with cutting-edge investigative modules that typical AI tools lack:

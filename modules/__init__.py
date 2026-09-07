@@ -59,3 +59,18 @@ try:
     from .evidence_fusion import EvidenceFusion
 except ImportError:
     EvidenceFusion = None
+
+try:
+    from .visual_geo_engine import VisualGeoEngine
+except ImportError:
+    VisualGeoEngine = None
+
+try:
+    from .geoclip_predictor import GeoCLIPPredictor
+except ImportError:
+    GeoCLIPPredictor = None
+
+try:
+    from .streetclip_predictor import StreetCLIPPredictor
+except ImportError:
+    StreetCLIPPredictor = None

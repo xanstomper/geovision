@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
+if (!GOOGLE_MAPS_API_KEY) console.error('[geo-engine] GOOGLE_MAPS_API_KEY not set — Google API calls will fail (no demo fallback).');
 const MAPBOX_API_KEY = process.env.MAPBOX_API_KEY || '';
 const CACHE_DIR = './cache';
 
@@ -25,7 +26,7 @@ async function cachedFetch(url) {
 }
 
 export async function reverseGeocode(lat, lng) {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY || 'demo'}`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
   const data = await cachedFetch(url);
   if (data.status === 'OK') {
     const result = data.results[0];
@@ -39,7 +40,7 @@ export async function reverseGeocode(lat, lng) {
 }
 
 export async function searchLocation(query, coords, radius = 1000) {
-  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}${coords ? `&location=${coords}` : ''}&radius=${radius}&key=${GOOGLE_MAPS_API_KEY || 'demo'}`;
+  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}${coords ? `&location=${coords}` : ''}&radius=${radius}&key=${GOOGLE_MAPS_API_KEY}`;
   const data = await cachedFetch(url);
   if (data.status === 'OK' || data.results) {
     return {
@@ -59,7 +60,7 @@ export async function searchLocation(query, coords, radius = 1000) {
 
 export async function findNearbyParks(lat, lng, walkMinutes = 10) {
   const radius = walkMinutes * 100; // approx 100m per minute walk
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=park&key=${GOOGLE_MAPS_API_KEY || 'demo'}`;
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=park&key=${GOOGLE_MAPS_API_KEY}`;
   const data = await cachedFetch(url);
   const parks = (data.results || []).map(r => ({
     name: r.name,
@@ -74,7 +75,7 @@ export async function findNearbyParks(lat, lng, walkMinutes = 10) {
 }
 
 export async function calculateWalkingDistance(startLat, startLng, endLat, endLng) {
-  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${startLat},${startLng}&destination=${endLat},${endLng}&mode=walking&key=${GOOGLE_MAPS_API_KEY || 'demo'}`;
+  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${startLat},${startLng}&destination=${endLat},${endLng}&mode=walking&key=${GOOGLE_MAPS_API_KEY}`;
   const data = await cachedFetch(url);
   if (data.routes && data.routes.length > 0) {
     const route = data.routes[0];

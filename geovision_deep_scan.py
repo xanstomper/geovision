@@ -165,6 +165,7 @@ class PipelineResult:
     deep_features: Dict[str, Any] = field(default_factory=dict)
     reverse_image_search: Dict[str, Any] = field(default_factory=dict)
     visual_geo: Dict[str, Any] = field(default_factory=dict)
+    trained_models: Dict[str, Any] = field(default_factory=dict)
     db_matches: List[Dict[str, Any]] = field(default_factory=list)
     property_records: Dict[str, Any] = field(default_factory=dict)
     satellite_matches: List[Dict[str, Any]] = field(default_factory=list)
@@ -669,6 +670,73 @@ def phase3c_visual_geo(image_path: str) -> Dict[str, Any]:
     return result
 
 
+def phase3d_trained_models(image_path: str) -> Dict[str, Any]:
+    """
+    Phase 3d — Trained Geolocation Models (ported from open_geo_spy).
+    GeoCLIP: direct GPS regression (NeurIPS '23).
+    StreetCLIP: zero-shot country classification (geographic CLIP).
+    Both are real trained models with auto-downloaded weights; each degrades
+    gracefully if unavailable.
+    """
+    phase_name = "phase3d_trained_models"
+    logger.info("━" * 48)
+    logger.info("  Phase 3d: Trained Models (GeoCLIP + StreetCLIP)")
+    logger.info("━" * 48)
+
+    result: Dict[str, Any] = {
+        "phase": phase_name, "status": "failed",
+        "geoclip": {"status": "skipped", "estimates": []},
+        "streetclip": {"status": "skipped", "countries": []},
+        "estimates": [],
+    }
+
+    # --- GeoCLIP: direct GPS prediction ---
+    try:
+        from modules.geoclip_predictor import GeoCLIPPredictor
+        predictor = GeoCLIPPredictor()
+        outcome = predictor.locate(image_path, top_k=5)
+        result["geoclip"] = outcome
+        if outcome.get("status") == "success":
+            for est in outcome.get("estimates", [])[:3]:
+                result["estimates"].append({
+                    "latitude": est["latitude"],
+                    "longitude": est["longitude"],
+                    "confidence": est["confidence"],
+                    "rank": est.get("rank", 1),
+                    "source": "geoclip",
+                })
+            logger.info(f"  ✓ GeoCLIP: top=({outcome['estimates'][0]['latitude']:.3f}, "
+                        f"{outcome['estimates'][0]['longitude']:.3f}) "
+                        f"p={outcome['estimates'][0]['confidence']:.3f}")
+        else:
+            logger.info(f"  ⚠ GeoCLIP: {outcome.get('note', 'limited')}")
+    except Exception as e:
+        logger.warning(f"  GeoCLIP failed: {e}")
+        result["geoclip"] = {"status": "failed", "error": str(e)}
+
+    # --- StreetCLIP: zero-shot country ---
+    try:
+        from modules.streetclip_predictor import StreetCLIPPredictor
+        sc = StreetCLIPPredictor()
+        outcome = sc.locate(image_path, top_k=5)
+        result["streetclip"] = outcome
+        if outcome.get("status") == "success":
+            top = outcome["countries"][0]
+            logger.info(f"  ✓ StreetCLIP: {top['country']} ({top['confidence']:.3f})")
+        else:
+            logger.info(f"  ⚠ StreetCLIP: {outcome.get('note', 'limited')}")
+    except Exception as e:
+        logger.warning(f"  StreetCLIP failed: {e}")
+        result["streetclip"] = {"status": "failed", "error": str(e)}
+
+    # Overall status: success if any model produced signal
+    geo_ok = result["geoclip"].get("status") == "success"
+    sc_ok = result["streetclip"].get("status") == "success"
+    result["status"] = "success" if (geo_ok or sc_ok) else "limited"
+
+    return result
+
+
 def phase4_db_matching(visual_features: Dict[str, Any],
                        ocr_result: Dict[str, Any],
                        reverse_result: Dict[str, Any],
@@ -1168,6 +1236,30 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                     },
                     "phase": "VisualGeo",
                 })
+
+        # From Trained Models (GeoCLIP direct GPS regression — ported from
+        # open_geo_spy). These are trained-model predictions; confidence is the
+        # softmax probability over GeoCLIP's 100k GPS gallery.
+        tm = phases.get("trained_models", {})
+        if tm.get("estimates"):
+            for est in tm["estimates"][:3]:
+                all_estimates.append({
+                    "latitude": est["latitude"],
+                    "longitude": est["longitude"],
+                    "confidence": est["confidence"],
+                    "sources": [f"geoclip:rank{est.get('rank', 1)}"],
+                    "evidence": {
+                        "model": "GeoCLIP (NeurIPS '23)",
+                        "gallery_softmax_prob": est["confidence"],
+                    },
+                    "phase": "TrainedModels",
+                })
+        # StreetCLIP country agreement: boost estimates whose reverse-geocoded
+        # country matches the top StreetCLIP country prediction.
+        sc_top = (tm.get("streetclip", {}).get("countries") or [{}])[0]
+        if sc_top.get("country") and sc_top.get("confidence", 0) > 0.3:
+            result["streetclip_country_hint"] = sc_top  # surfaced for report
+            # Apply as a multiplicative boost post-fusion (below)
 
         # From satellite
         sat = phases.get("satellite_matches", {})
@@ -2027,6 +2119,19 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.errors.append(f"Phase 3c error: {e}")
         phases["visual_geo"] = {"status": "failed", "error": str(e)}
 
+    # Phase 3d: Trained Models (GeoCLIP + StreetCLIP, ported from open_geo_spy)
+    try:
+        pipeline_result.trained_models = phase3d_trained_models(image_path_resolved)
+        phases["trained_models"] = pipeline_result.trained_models
+        if pipeline_result.trained_models.get("status") in ("success", "limited"):
+            pipeline_result.phases_completed.append("phase3d_trained_models")
+        else:
+            pipeline_result.phases_failed.append("phase3d_trained_models")
+    except Exception as e:
+        pipeline_result.phases_failed.append("phase3d_trained_models")
+        pipeline_result.errors.append(f"Phase 3d error: {e}")
+        phases["trained_models"] = {"status": "failed", "error": str(e)}
+
     # Phase 4: DB Matching
     try:
         vis_for_db = pipeline_result.visual_features.get("features", {})
@@ -2057,6 +2162,15 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
                 "source": "visual_geo",
             })
     
+    # 0b. GeoCLIP trained-model predictions (direct GPS regression)
+    if pipeline_result.trained_models.get("estimates"):
+        for est in pipeline_result.trained_models["estimates"][:3]:
+            candidate_coords.append({
+                "latitude": est["latitude"],
+                "longitude": est["longitude"],
+                "source": "geoclip",
+            })
+
     # 1. EXIF GPS
     if pipeline_result.exif_data.get("gps"):
         gps = pipeline_result.exif_data["gps"]

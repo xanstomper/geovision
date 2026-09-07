@@ -19,8 +19,8 @@ def test_pipeline_execution(mock_post, mock_get):
     mock_get.return_value = MagicMock(status_code=200, json=lambda: {"status": "ok", "results": []})
     mock_post.return_value = MagicMock(status_code=200, json=lambda: {"status": "ok", "results": []})
 
-    # Use existing test image
-    image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'test_building.jpg'))
+    # Use existing real test image (repo ships building_image.jpg)
+    image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'building_image.jpg'))
     
     # If the image doesn't exist, we can't test properly, but we assume it does based on ls output.
     assert os.path.exists(image_path), f"Test image not found at {image_path}"

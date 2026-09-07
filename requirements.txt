@@ -21,4 +21,4 @@ shapely>=2.0.0
 folium>=0.14.0
 exifread>=3.0.0
 huggingface-hub>=0.16.0
-open-clip-torch>=2.24.0
+open-clip-torch>=2.24.0geoclip>=0.1.0
