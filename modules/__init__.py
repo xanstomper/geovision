@@ -113,6 +113,6 @@ except ImportError:
     GroundingEngine = GroundingResult = GroundingVerdict = None
 
 try:
-    from .geo_hierarchy import GeoHierarchyResolver
+    from .geo_hierarchy import HierarchicalResolver
 except ImportError:
-    GeoHierarchyResolver = None
+    HierarchicalResolver = None
