@@ -10,3 +10,15 @@ geovision_screenshot_native*
 *.pyc
 __pycache__/
 reports/
+
+# Model weights — downloadable, never commit
+data/clip_cache/
+models--*/
+*.safetensors
+*.pt
+*.pth
+# Reference DB — rebuildable via scripts/build_reference_db.py
+data/visual_geo_db/embeddings.npy
+data/visual_geo_db/meta.jsonl.gz
+benchmark_images/
+benchmark_reports/
