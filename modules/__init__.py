@@ -74,3 +74,19 @@ try:
     from .streetclip_predictor import StreetCLIPPredictor
 except ImportError:
     StreetCLIPPredictor = None
+
+try:
+    from .vlm_geo_analyzer import vlm_analyze, vlm_geo_estimates
+except ImportError:
+    vlm_analyze = None
+    vlm_geo_estimates = None
+
+try:
+    from .country_matcher import get_iso_code, countries_match, extract_country_from_location
+except ImportError:
+    get_iso_code = countries_match = extract_country_from_location = None
+
+try:
+    from .geo_math import haversine_distance, bounding_box, weighted_centroid, validate_coordinates
+except ImportError:
+    haversine_distance = bounding_box = weighted_centroid = validate_coordinates = None

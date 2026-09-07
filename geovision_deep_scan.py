@@ -166,6 +166,7 @@ class PipelineResult:
     reverse_image_search: Dict[str, Any] = field(default_factory=dict)
     visual_geo: Dict[str, Any] = field(default_factory=dict)
     trained_models: Dict[str, Any] = field(default_factory=dict)
+    vlm_reasoning: Dict[str, Any] = field(default_factory=dict)
     db_matches: List[Dict[str, Any]] = field(default_factory=list)
     property_records: Dict[str, Any] = field(default_factory=dict)
     satellite_matches: List[Dict[str, Any]] = field(default_factory=list)
@@ -1176,6 +1177,52 @@ def phase7_cross_verification(location_estimates: List[Dict[str, Any]],
     return result
 
 
+def phase8b_vlm_reasoning(image_path: str,
+                          evidence_summary: Optional[str] = None,
+                          location_hint: Optional[str] = None,
+                          enabled: bool = True) -> Dict[str, Any]:
+    """
+    Phase 8b — VLM Geolocation Reasoning (ported from open_geo_spy's
+    extraction/features.py + reasoning pattern).
+
+    Two VLM calls: (1) structured feature extraction with the open_geo_spy
+    prompt, (2) reasoning to a location prediction. Uses any OpenAI-compatible
+    vision endpoint via GEOVISION_VLM_* env vars. Skips cleanly when no VLM
+    is configured — no fake outputs.
+    """
+    phase_name = "phase8b_vlm_reasoning"
+    result: Dict[str, Any] = {
+        "phase": phase_name, "status": "skipped",
+        "features": None, "prediction": None, "estimates": [],
+    }
+    if not enabled:
+        result["note"] = "disabled via no_vlm"
+        return result
+
+    logger.info("━" * 48)
+    logger.info("  Phase 8b: VLM Reasoning (open_geo_spy prompt pattern)")
+    logger.info("━" * 48)
+
+    try:
+        from modules.vlm_geo_analyzer import vlm_analyze, vlm_geo_estimates
+        outcome = vlm_analyze(image_path,
+                              evidence_summary=evidence_summary,
+                              location_hint=location_hint)
+        result.update(outcome)
+        result["phase"] = phase_name
+        result["estimates"] = vlm_geo_estimates(outcome)
+        if outcome.get("status") == "success":
+            logger.info(f"  ✓ VLM: {outcome.get('note', '')}")
+        else:
+            logger.info(f"  ⚠ VLM: {outcome.get('note', 'skipped')}")
+    except Exception as e:
+        logger.warning(f"  VLM reasoning failed: {e}")
+        result["status"] = "failed"
+        result["error"] = str(e)
+
+    return result
+
+
 def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                       options: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -1260,6 +1307,25 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
         if sc_top.get("country") and sc_top.get("confidence", 0) > 0.3:
             result["streetclip_country_hint"] = sc_top  # surfaced for report
             # Apply as a multiplicative boost post-fusion (below)
+
+        # From VLM reasoning (ported from open_geo_spy) — the model sees the
+        # extracted features + pipeline evidence and predicts a location.
+        vl = phases.get("vlm_reasoning", {})
+        if vl.get("estimates"):
+            for est in vl["estimates"][:2]:
+                all_estimates.append({
+                    "latitude": est["latitude"],
+                    "longitude": est["longitude"],
+                    "confidence": est["confidence"],
+                    "sources": ["vlm_reasoning"],
+                    "evidence": {
+                        "model": "VLM geo reasoning",
+                        "country": est.get("country", ""),
+                        "city": est.get("city", ""),
+                        "reasoning": est.get("reasoning", ""),
+                    },
+                    "phase": "VLM",
+                })
 
         # From satellite
         sat = phases.get("satellite_matches", {})
@@ -2291,6 +2357,37 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.phases_failed.append("phase7_cross_verification")
         pipeline_result.errors.append(f"Phase 7 error: {e}")
         phases["cross_verification"] = {"status": "failed", "error": str(e)}
+
+    # Phase 8b: VLM Reasoning (no_vlm honored now — was previously dead)
+    try:
+        # Build a compact evidence summary from earlier phases for the VLM
+        ev_parts = []
+        if pipeline_result.ocr_text.get("significant_text"):
+            ev_parts.append(f"OCR text: {pipeline_result.ocr_text['significant_text'][:200]}")
+        if pipeline_result.visual_geo.get("estimates"):
+            top_vg = pipeline_result.visual_geo["estimates"][0]
+            ev_parts.append(f"CLIP nearest-city: {top_vg.get('city', '?')} ({top_vg.get('country', '?')})")
+        if pipeline_result.trained_models.get("geoclip", {}).get("estimates"):
+            top_gc = pipeline_result.trained_models["geoclip"]["estimates"][0]
+            ev_parts.append(f"GeoCLIP top GPS: ({top_gc['latitude']:.2f}, {top_gc['longitude']:.2f})")
+        if pipeline_result.trained_models.get("streetclip", {}).get("countries"):
+            top_sc = pipeline_result.trained_models["streetclip"]["countries"][0]
+            ev_parts.append(f"StreetCLIP country: {top_sc['country']} ({top_sc['confidence']:.2f})")
+        pipeline_result.vlm_reasoning = phase8b_vlm_reasoning(
+            image_path_resolved,
+            evidence_summary="; ".join(ev_parts) if ev_parts else None,
+            location_hint=region,
+            enabled=not no_vlm,
+        )
+        phases["vlm_reasoning"] = pipeline_result.vlm_reasoning
+        if pipeline_result.vlm_reasoning.get("status") in ("success", "skipped", "limited"):
+            pipeline_result.phases_completed.append("phase8b_vlm_reasoning")
+        else:
+            pipeline_result.phases_failed.append("phase8b_vlm_reasoning")
+    except Exception as e:
+        pipeline_result.phases_failed.append("phase8b_vlm_reasoning")
+        pipeline_result.errors.append(f"Phase 8b error: {e}")
+        phases["vlm_reasoning"] = {"status": "failed", "error": str(e)}
 
     # Phase 9: Synthesis
     try:
