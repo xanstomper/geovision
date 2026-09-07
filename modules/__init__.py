@@ -131,3 +131,8 @@ try:
     from .osv5m_predictor import OSV5MPredictor
 except ImportError:
     OSV5MPredictor = None
+
+try:
+    from .candidate_visual_verification import verify_candidates, fetch_reference_photos
+except ImportError:
+    verify_candidates = fetch_reference_photos = None
