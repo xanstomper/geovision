@@ -116,3 +116,18 @@ try:
     from .geo_hierarchy import HierarchicalResolver
 except ImportError:
     HierarchicalResolver = None
+
+try:
+    from .browser_stealth import StealthConfig
+except ImportError:
+    StealthConfig = None
+
+try:
+    from .visual_similarity import VisualSimilarityScorer
+except ImportError:
+    VisualSimilarityScorer = None
+
+try:
+    from .osv5m_predictor import OSV5MPredictor
+except ImportError:
+    OSV5MPredictor = None
