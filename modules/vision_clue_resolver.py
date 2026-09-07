@@ -290,6 +290,14 @@ class VisionClueResolver:
                 "osm_url": f"https://www.openstreetmap.org/?mlat={lat:.6f}&mlon={lon:.6f}#map=17/{lat:.6f}/{lon:.6f}",
             })
 
+        # Apply spatial constraint solver (elimination of physical impossibilities)
+        try:
+            from modules.spatial_constraint_solver import SpatialConstraintSolver
+            solver = SpatialConstraintSolver()
+            enhanced_candidates = solver.filter_and_rerank_estimates(enhanced_candidates, clues)
+        except Exception as e:
+            logger.warning(f"SpatialConstraintSolver in vision clue resolver failed: {e}")
+
         enhanced_candidates.sort(key=lambda c: c["confidence"], reverse=True)
 
         return {

@@ -1800,6 +1800,31 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                         "phase": est.get("phase", "unknown"),
                     })
 
+        # Apply Spatial Constraint Solver (GeoGuessr Elimination Lattice)
+        try:
+            from modules.spatial_constraint_solver import SpatialConstraintSolver
+            solver = SpatialConstraintSolver()
+            gh = phases.get("visual_features", {}).get("geoguessr_heuristics", {})
+            constraints = {}
+            if gh.get("driving_side"):
+                constraints["driving_side"] = gh["driving_side"].get("side")
+                constraints["driving_side_conf"] = gh["driving_side"].get("confidence", 0.7)
+            if gh.get("road_markings"):
+                constraints["line_color"] = gh["road_markings"].get("line_color")
+                constraints["line_color_conf"] = gh["road_markings"].get("confidence", 0.7)
+            if gh.get("license_plates"):
+                constraints["license_plate_format"] = gh["license_plates"].get("aspect_ratio_type")
+                constraints["plate_conf"] = gh["license_plates"].get("confidence", 0.7)
+                constraints["has_blue_euroband"] = gh["license_plates"].get("has_blue_euroband", False)
+            if gh.get("soil_vegetation"):
+                constraints["soil_type"] = gh["soil_vegetation"].get("soil_type")
+
+            if constraints:
+                merged = solver.filter_and_rerank_estimates(merged, constraints)
+                logger.info(f"  ✓ SpatialConstraintSolver applied {len(constraints)} physical constraints")
+        except Exception as e:
+            logger.warning(f"SpatialConstraintSolver failed in synthesis: {e}")
+
         merged.sort(key=lambda x: x["confidence"], reverse=True)
         result["location_estimates"] = merged[:7]
         if merged:
