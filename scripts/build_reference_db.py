@@ -42,7 +42,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("build_reference_db")
 
 GEONAMES_URL = "https://download.geonames.org/export/dump/cities15000.zip"
-GEONAMES_LOCAL = Path("/tmp/cities15000.txt")
+GEONAMES_LOCAL = SCRIPT_DIR / "data" / "geonames" / "cities15000.txt"
+if not GEONAMES_LOCAL.exists():
+    GEONAMES_LOCAL = Path("/tmp/cities15000.txt")
 
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 THUMB_BASE = "https://commons.wikimedia.org/w/thumb.php?f={fname}&width=256"
@@ -188,6 +190,8 @@ def main() -> int:
         meta = meta[:]
         logger.info("Appending to existing DB: %d refs", len(meta))
 
+    seen_titles = {m.get("title") for m in meta if m.get("title")}
+
     t0 = time.time()
     n_ok = 0
     for ci, city in enumerate(cities):
@@ -200,6 +204,9 @@ def main() -> int:
 
         city_ok = 0
         for hit in hits:
+            if hit.get("title") in seen_titles:
+                continue
+            seen_titles.add(hit["title"])
             data = fetch_thumb(hit["title"], session)
             if not data:
                 continue

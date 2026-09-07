@@ -112,6 +112,23 @@ def tool_geolocate_quick(args: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         out["geoclip"] = {"status": "failed", "error": str(e)}
 
+    # Fast GeoGuessr CV heuristics (<100ms)
+    try:
+        from modules.geoguessr_heuristics import GeoGuessrAnalyzer
+        gh = GeoGuessrAnalyzer().analyze(str(p))
+        out["geoguessr_heuristics"] = gh
+        out["forensic_clues"] = gh.get("forensic_clues", [])
+    except Exception as e:
+        out["geoguessr_heuristics"] = {"status": "failed", "error": str(e)}
+
+    # Cached StreetCLIP country classification (~1s)
+    try:
+        from modules.streetclip_predictor import StreetCLIPPredictor
+        sc = StreetCLIPPredictor().locate(str(p), top_k=3)
+        out["streetclip"] = sc
+    except Exception as e:
+        out["streetclip"] = {"status": "failed", "error": str(e)}
+
     estimates = []
     gc_ests = out.get("geoclip", {}).get("estimates", [])
     if gc_ests:
@@ -135,6 +152,32 @@ def tool_geolocate_quick(args: Dict[str, Any]) -> Dict[str, Any]:
         estimates.append(est)
     out["estimates"] = estimates
     return out
+
+
+def tool_geoguessr_heuristics(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Fast computer vision classifiers for driving side, road markings,
+    utility poles, license plates, and soil/vegetation biome (<100ms, offline)."""
+    image_path = args.get("image_path") or args.get("imagePath")
+    if not image_path:
+        return {"error": "image_path required"}
+    p = Path(image_path).expanduser().resolve()
+    if not p.exists():
+        return {"error": f"image not found: {p}"}
+    from modules.geoguessr_heuristics import GeoGuessrAnalyzer
+    return GeoGuessrAnalyzer().analyze(str(p))
+
+
+def tool_reverse_image_search(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Un-gated reverse image search: searches Wikimedia Commons, Wikipedia,
+    and open web OSINT for matching landmarks and geographic entities."""
+    image_path = args.get("image_path") or args.get("imagePath")
+    if not image_path:
+        return {"error": "image_path required"}
+    p = Path(image_path).expanduser().resolve()
+    if not p.exists():
+        return {"error": f"image not found: {p}"}
+    from modules.reverse_image_search import ReverseImageSearcher
+    return ReverseImageSearcher().search_similar_images(str(p))
 
 
 def tool_ocr_extract(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -264,6 +307,31 @@ TOOLS = [
             "required": ["query"],
         },
     },
+    {
+        "name": "geoguessr_heuristics",
+        "description": "Fast computer vision classifiers for GeoGuessr cues: driving side (left vs right), "
+                       "road line color (yellow vs white), utility pole archetypes (wooden crossarms, "
+                       "concrete ladder, holey poles), license plate format, and soil/canopy ecology.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to the image file"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
+        "name": "reverse_image_search",
+        "description": "Un-gated reverse image search and geotagged web entity matching across Wikimedia Commons, "
+                       "Wikipedia, and open OSINT endpoints (zero API keys required).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to the image file"},
+            },
+            "required": ["image_path"],
+        },
+    },
 ]
 
 TOOL_IMPLS = {
@@ -273,6 +341,8 @@ TOOL_IMPLS = {
     "reverse_geocode": tool_reverse_geocode,
     "verify_location": tool_verify_location,
     "search_web": tool_search_web,
+    "geoguessr_heuristics": tool_geoguessr_heuristics,
+    "reverse_image_search": tool_reverse_image_search,
 }
 
 

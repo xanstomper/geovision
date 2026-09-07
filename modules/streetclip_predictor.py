@@ -55,17 +55,45 @@ class StreetCLIPPredictor:
             return
         try:
             from transformers import CLIPModel, CLIPProcessor
+            import torch
+            from pathlib import Path
             self.model = CLIPModel.from_pretrained(MODEL_NAME)
             self.processor = CLIPProcessor.from_pretrained(MODEL_NAME)
             self.model.to(self.device)
             self.model.eval()
-            logger.info("StreetCLIP loaded on %s", self.device)
+
+            # Precompute/cache text features for static countries
+            cache_file = Path(__file__).parent.parent / "data" / "clip_cache" / "streetclip_country_features.pt"
+            if cache_file.exists():
+                try:
+                    self._country_features = torch.load(cache_file, map_location=self.device, weights_only=True)
+                except Exception:
+                    self._country_features = None
+            else:
+                self._country_features = None
+
+            if self._country_features is None:
+                logger.info("Computing StreetCLIP country text embeddings...")
+                labels = [f"a street view photo from {c}" for c in COUNTRIES]
+                text_inputs = self.processor(text=labels, return_tensors="pt", padding=True).to(self.device)
+                with torch.no_grad():
+                    tf = self.model.get_text_features(**text_inputs)
+                    if hasattr(tf, "pooler_output") and tf.pooler_output is not None:
+                        tf = tf.pooler_output
+                    self._country_features = tf / tf.norm(dim=-1, keepdim=True)
+                try:
+                    cache_file.parent.mkdir(parents=True, exist_ok=True)
+                    torch.save(self._country_features, cache_file)
+                except Exception as e:
+                    logger.warning("Could not cache StreetCLIP text features: %s", e)
+
+            logger.info("StreetCLIP loaded on %s (text features ready)", self.device)
         except Exception as e:
             logger.error("Failed to load StreetCLIP: %s", e)
             raise
 
     def predict_country(self, image_path: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Predict country from image using zero-shot classification.
+        """Predict country from image using zero-shot classification with cached country features.
 
         Returns: [{"country": str, "confidence": float}, ...]
         """
@@ -75,21 +103,15 @@ class StreetCLIPPredictor:
 
         try:
             image = Image.open(image_path).convert("RGB")
-            labels = [f"a street view photo from {c}" for c in COUNTRIES]
-
-            inputs = self.processor(
-                text=labels,
-                images=image,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            img_inputs = self.processor(images=image, return_tensors="pt").to(self.device)
 
             with torch.no_grad():
-                outputs = self.model(**inputs)
-                logits = outputs.logits_per_image[0]
-                probs = logits.softmax(dim=0)
+                img_feat = self.model.get_image_features(**img_inputs)
+                if hasattr(img_feat, "pooler_output") and img_feat.pooler_output is not None:
+                    img_feat = img_feat.pooler_output
+                img_feat = img_feat / img_feat.norm(dim=-1, keepdim=True)
+                logits = (img_feat @ self._country_features.T) * self.model.logit_scale.exp()
+                probs = logits.squeeze(0).softmax(dim=-1)
 
             top_indices = probs.argsort(descending=True)[:top_k]
             results = []

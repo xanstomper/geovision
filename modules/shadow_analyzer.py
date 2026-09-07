@@ -21,8 +21,8 @@ class ShadowAnalyzer:
         if not exif_data:
             return None
 
-        # Look for DateTimeOriginal
-        date_str = exif_data.get("EXIF DateTimeOriginal")
+        # Look for DateTimeOriginal (supports both PIL TAGS and ExifRead key formats)
+        date_str = exif_data.get("DateTimeOriginal") or exif_data.get("EXIF DateTimeOriginal") or exif_data.get("DateTime")
         if not date_str:
             return None
 

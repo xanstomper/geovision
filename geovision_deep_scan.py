@@ -276,26 +276,25 @@ def phase1_visual_features(image_path: str) -> Dict[str, Any]:
                 result["status"] = "success"
                 result["source"] = "VisionEngine"
                 logger.info("  ✓ VisionEngine complete")
-                return result
 
-        # Strategy 2: GeoVisionCore
-        try:
-            from geovision import GeoVisionCore
-            logger.info("  Using GeoVisionCore...")
-            core = GeoVisionCore()
-            analysis = core.analyze_image(image_path)
-            building = core.detect_building_style(image_path)
-            veg = core.analyze_vegetation(image_path)
-            result["features"] = {
-                "image_analysis": analysis,
-                "building_style": building,
-                "vegetation": veg,
-            }
-            result["status"] = "success"
-            result["source"] = "GeoVisionCore"
-            return result
-        except Exception:
-            logger.warning("  GeoVisionCore unavailable, falling back to raw OpenCV")
+        # Strategy 2: GeoVisionCore (if VisionEngine not used)
+        elif not result.get("features"):
+            try:
+                from geovision import GeoVisionCore
+                logger.info("  Using GeoVisionCore...")
+                core = GeoVisionCore()
+                analysis = core.analyze_image(image_path)
+                building = core.detect_building_style(image_path)
+                veg = core.analyze_vegetation(image_path)
+                result["features"] = {
+                    "image_analysis": analysis,
+                    "building_style": building,
+                    "vegetation": veg,
+                }
+                result["status"] = "success"
+                result["source"] = "GeoVisionCore"
+            except Exception:
+                logger.warning("  GeoVisionCore unavailable, falling back to raw OpenCV")
 
         # Strategy 3: Raw OpenCV
         if cv2 is None or np is None:
@@ -348,8 +347,21 @@ def phase1_visual_features(image_path: str) -> Dict[str, Any]:
             "is_high_res": w >= 1000,
         }
         result["status"] = "success"
-        result["source"] = "OpenCV"
-        logger.info("  ✓ OpenCV feature extraction complete")
+        result["source"] = result.get("source") or "OpenCV"
+        logger.info("  ✓ Visual feature extraction complete")
+
+        # Enrich with GeoGuessr heuristic battery (driving side, road markings, poles, plates, soil/canopy)
+        try:
+            from modules.geoguessr_heuristics import GeoGuessrAnalyzer
+            gh_res = GeoGuessrAnalyzer().analyze(image_path)
+            if gh_res.get("status") == "success":
+                result["features"]["geoguessr_heuristics"] = gh_res
+                result["geoguessr_clues"] = gh_res.get("forensic_clues", [])
+                result["geoguessr_regional_votes"] = gh_res.get("top_regional_votes", [])
+                if gh_res.get("forensic_clues"):
+                    logger.info("  ✓ GeoGuessr heuristics: %s", ", ".join(gh_res["forensic_clues"][:3]))
+        except Exception as e:
+            logger.warning("  GeoGuessr heuristics extraction failed: %s", e)
 
     except Exception as e:
         result["error"] = str(e)
@@ -614,20 +626,26 @@ def phase3_deep_features(image_path: str) -> Dict[str, Any]:
 
     return result
 
-def phase3b_reverse_image_search(image_path: str) -> Dict[str, Any]:
+def phase3b_reverse_image_search(
+    image_path: str,
+    ocr_data: Optional[Dict[str, Any]] = None,
+    visual_features: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """
-    Phase 3b — Reverse Image Search (GeoSpy Method).
+    Phase 3b — Reverse Image Search & Open Entity OSINT (GeoSpy Method).
     """
     phase_name = "phase3b_reverse_image_search"
     logger.info("━" * 48)
     logger.info("  Phase 3b: Reverse Image Search OSINT")
     logger.info("━" * 48)
 
-    result = {"phase": phase_name, "status": "failed", "matches": []}
+    result = {"phase": phase_name, "status": "failed", "matches": [], "candidates": []}
     try:
         from modules.reverse_image_search import ReverseImageSearcher
         searcher = ReverseImageSearcher()
-        search_results = searcher.search_similar_images(image_path)
+        search_results = searcher.search_similar_images(
+            image_path, ocr_data=ocr_data, visual_features=visual_features
+        )
         result.update(search_results)
     except Exception as e:
         logger.warning(f"  Reverse Image Search Failed: {e}")
@@ -1283,6 +1301,23 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                     },
                     "phase": "VisualGeo",
                 })
+
+        # From Reverse Image Search (Un-gated Open OSINT + Wikipedia/Commons)
+        ris = phases.get("reverse_image_search", {})
+        if ris.get("candidates"):
+            for cand in ris["candidates"][:3]:
+                if cand.get("latitude") is not None and cand.get("longitude") is not None:
+                    all_estimates.append({
+                        "latitude": float(cand["latitude"]),
+                        "longitude": float(cand["longitude"]),
+                        "confidence": float(cand.get("confidence", 0.80)),
+                        "sources": [f"reverse_image_search:{cand.get('source', 'open_entity')}"],
+                        "evidence": {
+                            "name": cand.get("name", ""),
+                            "source": cand.get("source", ""),
+                        },
+                        "phase": "ReverseImageSearch",
+                    })
 
         # From Trained Models (GeoCLIP direct GPS regression — ported from
         # open_geo_spy). GeoCLIP's gallery softmax (~0.01 by construction over
@@ -2196,7 +2231,11 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
 
     # Phase 3b: Reverse Image Search
     try:
-        pipeline_result.reverse_image_search = phase3b_reverse_image_search(image_path_resolved)
+        ocr_ctx = phases.get("ocr_text") or phases.get("ocr")
+        feat_ctx = phases.get("visual_features", {}).get("features")
+        pipeline_result.reverse_image_search = phase3b_reverse_image_search(
+            image_path_resolved, ocr_data=ocr_ctx, visual_features=feat_ctx
+        )
         phases["reverse_image_search"] = pipeline_result.reverse_image_search
         if pipeline_result.reverse_image_search.get("status") in ("success", "limited"):
             pipeline_result.phases_completed.append("phase3b_reverse_image_search")
@@ -2509,6 +2548,8 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
                         help="Enable verbose (debug) logging")
     parser.add_argument("--json-only", action="store_true", default=False,
                         help="Output only JSON to stdout (no HTML report)")
+    parser.add_argument("--no-vlm", action="store_true", default=False,
+                        help="Disable VLM reasoning phase (runs purely offline models + OSINT)")
     return parser.parse_args(argv)
 
 
@@ -2526,6 +2567,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "region": args.region,
         "interactive": args.interactive,
         "verbose": args.verbose,
+        "no_vlm": args.no_vlm,
     }
 
     if args.json_only:
