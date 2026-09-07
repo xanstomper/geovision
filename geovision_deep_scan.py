@@ -1285,19 +1285,43 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 })
 
         # From Trained Models (GeoCLIP direct GPS regression — ported from
-        # open_geo_spy). These are trained-model predictions; confidence is the
-        # softmax probability over GeoCLIP's 100k GPS gallery.
+        # open_geo_spy). GeoCLIP's gallery softmax (~0.01 by construction over
+        # 100k GPS points) is a RANKING signal, not an absolute probability;
+        # used raw it undercuts the strongest real signal in the pipeline.
+        # Calibrate from top-k spatial tightness instead: top-3 predictions
+        # clustered within 25km means the model has locked onto a place
+        # (landmark-grade); scattered predictions mean genuine uncertainty.
         tm = phases.get("trained_models", {})
         if tm.get("estimates"):
-            for est in tm["estimates"][:3]:
+            gc_ests = tm["estimates"]
+            from modules.geo_math import haversine_distance as _hav
+            if len(gc_ests) >= 3:
+                spread_km = max(
+                    _hav(gc_ests[0]["latitude"], gc_ests[0]["longitude"],
+                         gc_ests[i]["latitude"], gc_ests[i]["longitude"])
+                    for i in (1, 2)
+                )
+            else:
+                spread_km = 250.0  # unknown — treat as scattered
+            if spread_km <= 25:
+                calib = 0.90          # tight cluster: model locked on
+            elif spread_km <= 100:
+                calib = 0.70          # regional agreement
+            elif spread_km <= 500:
+                calib = 0.45          # country-scale hint
+            else:
+                calib = 0.25          # scattered — weak signal
+            for est in gc_ests[:3]:
                 all_estimates.append({
                     "latitude": est["latitude"],
                     "longitude": est["longitude"],
-                    "confidence": est["confidence"],
+                    "confidence": calib if est.get("rank", 1) == 1 else calib * 0.5,
                     "sources": [f"geoclip:rank{est.get('rank', 1)}"],
                     "evidence": {
                         "model": "GeoCLIP (NeurIPS '23)",
                         "gallery_softmax_prob": est["confidence"],
+                        "top3_spread_km": round(spread_km, 1),
+                        "calibration": "spatial-tightness of top-k",
                     },
                     "phase": "TrainedModels",
                 })
@@ -1354,16 +1378,27 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                         "phase": "PublicRecords",
                     })
                     
-        # From property records (OSM/Land Use)
+        # From property records (OSM/Land Use) — CRITICAL calibration: records
+        # with source_match=null only prove "buildings exist near this candidate",
+        # which is true for nearly every coordinate on Earth. That is category
+        # validation, NOT location identification, and gets 0.30. Only a record
+        # that matched a SPECIFIC named feature (from OCR/sign text) earns high
+        # confidence. (Fix: eval showed null-matched records at 0.88 + fusion
+        # corroboration = 0.99 on answers 700-16000km wrong.)
         prop = phases.get("property_records", {})
         if prop.get("status") == "success" and prop.get("records"):
             for pr in prop["records"]:
+                matched_name = pr.get("source_match")
+                conf = 0.85 if matched_name else 0.30
                 all_estimates.append({
                     "latitude": pr["latitude"],
                     "longitude": pr["longitude"],
-                    "confidence": 0.88,
-                    "sources": [f"property_records:{pr.get('source_match', 'osm')}"],
-                    "evidence": {"records_count": len(pr.get("records", []))},
+                    "confidence": conf,
+                    "sources": [f"property_records:{matched_name or 'generic_osm_nearby'}"],
+                    "evidence": {
+                        "records_count": len(pr.get("records", [])),
+                        "matched_specific_feature": bool(matched_name),
+                    },
                     "phase": "PropertyRecords",
                 })
 
