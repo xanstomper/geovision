@@ -223,6 +223,142 @@ def tool_search_web(args: Dict[str, Any]) -> Dict[str, Any]:
     return {"providers": providers, "results": search_web(query, num_results=int(args.get("limit", 10)))}
 
 
+def tool_resolve_vision_clues(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Bridge for cloud vision models: accepts visual observations (city/country hints,
+    street names, OCR text, chain stores, amenities, driving side, park proximity)
+    and executes deterministic GIS grounding, OSM searches, city snap, and satellite verification."""
+    from modules.vision_clue_resolver import VisionClueResolver
+    return VisionClueResolver().resolve(args)
+
+
+def tool_city_snap(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Instant offline nearest-city lookup via the 70k GeoNames dataset."""
+    lat, lon = args.get("lat"), args.get("lon")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    max_km = float(args.get("max_distance_km", 75.0))
+    k = int(args.get("k", 3))
+    from modules.geonames_city_snap import get_city_index
+    idx = get_city_index()
+    return {
+        "snapped_city": idx.snap(float(lat), float(lon), max_km=max_km),
+        "nearest_cities": idx.nearest(float(lat), float(lon), k=k),
+    }
+
+
+def tool_forward_geocode(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Forward geocode a place name, street, or address to lat/lon (OSM Nominatim)."""
+    query = args.get("query")
+    if not query:
+        return {"error": "query required"}
+    from modules.nominatim_geocoder import NominatimGeocoder
+    hit = NominatimGeocoder().forward_geocode(query)
+    return hit or {"error": f"No geocoding results found for '{query}'"}
+
+
+def tool_osm_query(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Query OpenStreetMap Overpass for POIs, parks, road types, or building density."""
+    lat, lon = args.get("lat"), args.get("lon")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    lat, lon = float(lat), float(lon)
+    radius_m = int(args.get("radius_m", 500))
+    q_type = args.get("query_type", "pois").lower()
+
+    if q_type == "parks":
+        from modules.overpass_client import OverpassClient
+        return {"parks": OverpassClient().find_nearby_parks(lat, lon, radius_meters=radius_m)}
+    elif q_type == "roads":
+        from modules.osm_feature_matcher import OSMFeatureMatcher
+        return OSMFeatureMatcher().get_road_characteristics(lat, lon)
+    elif q_type == "density":
+        from modules.osm_feature_matcher import OSMFeatureMatcher
+        return OSMFeatureMatcher().get_building_density(lat, lon, radius_m=radius_m)
+    elif q_type == "amenity_search":
+        name = args.get("name_query", "")
+        if not name:
+            return {"error": "name_query required for amenity_search"}
+        from modules.overpass_client import OverpassClient
+        return {"matches": OverpassClient().search_amenities_by_name(name, lat, lon, radius_meters=radius_m)}
+    else:
+        from modules.osm_feature_matcher import OSMFeatureMatcher
+        return OSMFeatureMatcher().find_pois(lat, lon, radius_m=radius_m)
+
+
+def tool_satellite_landcover(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Inspect satellite tile (ESRI/ArcGIS World Imagery) at coordinates for vegetation
+    density and landcover type (urban, suburban, rural)."""
+    lat, lon = args.get("lat"), args.get("lon")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    lat, lon = float(lat), float(lon)
+    zoom = int(args.get("zoom", 18))
+    from modules.satellite_matcher import SatelliteMatcher
+    sm = SatelliteMatcher()
+    tile = sm.fetch_satellite_tile(lat, lon, zoom=zoom)
+    if tile is None:
+        return {"error": f"Failed to fetch satellite tile for {lat}, {lon}"}
+    import cv2
+    import numpy as np
+    hsv = cv2.cvtColor(tile, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, np.array([35, 40, 40]), np.array([85, 255, 255]))
+    green_ratio = float(np.count_nonzero(mask) / (tile.shape[0] * tile.shape[1]))
+    landcover = "urban_built_up"
+    if green_ratio > 0.40:
+        landcover = "rural_or_park"
+    elif green_ratio > 0.15:
+        landcover = "suburban"
+    cache_file = sm.cache_dir / f"sat_{lat}_{lon}_{zoom}.jpg"
+    return {
+        "latitude": lat,
+        "longitude": lon,
+        "zoom": zoom,
+        "classification": landcover,
+        "green_ratio": round(green_ratio, 3),
+        "tile_path": str(cache_file) if cache_file.exists() else None,
+    }
+
+
+def tool_sun_shadow_estimate(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate solar declination, day of year, and estimated latitude band
+    from a datetime string and optional shadow angle."""
+    dt_str = args.get("datetime_str") or args.get("date") or args.get("datetime")
+    if not dt_str:
+        return {"error": "datetime_str required (e.g. '2024:05:15 14:30:00' or '2024-05-15 14:30:00')"}
+    dt_str = str(dt_str).replace("-", ":")
+    shadow_angle = args.get("shadow_angle_deg")
+    if shadow_angle is not None:
+        shadow_angle = float(shadow_angle)
+    from modules.shadow_analyzer import ShadowAnalyzer
+    sa = ShadowAnalyzer()
+    res = sa.estimate_latitude_from_sun({"DateTimeOriginal": dt_str}, shadow_angle_deg=shadow_angle)
+    return res or {"error": "Failed to parse datetime for solar analysis"}
+
+
+def tool_weather_corroborate(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Fetch historical weather conditions from Open-Meteo archive for lat/lon and date (YYYY-MM-DD)."""
+    lat, lon = args.get("lat"), args.get("lon")
+    date_str = args.get("date")
+    if lat is None or lon is None or not date_str:
+        return {"error": "lat, lon, and date (YYYY-MM-DD) required"}
+    from modules.weather_corroborator import WeatherCorroborator
+    wc = WeatherCorroborator()
+    data = wc.fetch_historical_weather(float(lat), float(lon), str(date_str))
+    if not data:
+        return {"error": f"No historical weather data available for {lat}, {lon} on {date_str}"}
+    data["weather_description"] = wc.interpret_wmo_code(data.get("weather_code"))
+    return data
+
+
+def tool_elevation_lookup(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Query ground elevation in meters at specific coordinates."""
+    lat, lon = args.get("lat"), args.get("lon")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    from modules.elevation_client import ElevationClient
+    return ElevationClient().get_elevation(float(lat), float(lon))
+
+
 def _vlm_configured() -> bool:
     return bool(os.environ.get("GEOVISION_VLM_API_KEY")
                 or os.environ.get("OPENCODE_ZEN_API_KEY"))
@@ -332,6 +468,142 @@ TOOLS = [
             "required": ["image_path"],
         },
     },
+    {
+        "name": "resolve_vision_clues",
+        "description": "Bridge for external AI vision models: resolves visual observations (city/country hints, "
+                       "street names, OCR text, store chains, amenities, driving side, park proximity) into "
+                       "grounded GPS coordinates using Nominatim, Overpass, GeoNames, and satellite verification.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "city_hint": {"type": "string", "description": "Observed or deduced city name"},
+                "country_hint": {"type": "string", "description": "Observed or deduced country name or code"},
+                "state_or_province": {"type": "string", "description": "Observed state, province, or region"},
+                "street_names": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Street names or intersection clues spotted in the image"
+                },
+                "detected_text": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "OCR text or signs spotted in the image"
+                },
+                "chain_stores": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Identified brand or chain store names (e.g. Tim Hortons, Lawson, Target)"
+                },
+                "amenities": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Amenity types (e.g. cafe, pharmacy, school, bank)"
+                },
+                "near_park": {"type": "boolean", "description": "True if a park or public green space is visible"},
+                "driving_side": {"type": "string", "enum": ["left", "right"], "description": "Observed driving side"},
+                "radius_meters": {"type": "number", "description": "Search radius around city centroid (default 35000m)"}
+            },
+        },
+    },
+    {
+        "name": "city_snap",
+        "description": "Instant offline nearest-city lookup via the 70k GeoNames dataset. Snaps any lat/lon to "
+                       "the nearest city with distance, country code, and population (no web calls).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Latitude"},
+                "lon": {"type": "number", "description": "Longitude"},
+                "max_distance_km": {"type": "number", "default": 75.0, "description": "Maximum snap radius in km"},
+                "k": {"type": "number", "default": 3, "description": "Number of nearest cities to return"}
+            },
+            "required": ["lat", "lon"],
+        },
+    },
+    {
+        "name": "forward_geocode",
+        "description": "Convert an address, street name, landmark, or city name into exact coordinates and bounding box (OSM Nominatim).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Place name, street, or address to geocode"}
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "osm_query",
+        "description": "Query OpenStreetMap infrastructure near coordinates: POIs/shops, nearby parks, road characteristics, "
+                       "building density, or specific amenity search.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Latitude"},
+                "lon": {"type": "number", "description": "Longitude"},
+                "radius_m": {"type": "number", "default": 500, "description": "Search radius in meters"},
+                "query_type": {
+                    "type": "string",
+                    "enum": ["pois", "parks", "roads", "density", "amenity_search"],
+                    "default": "pois",
+                    "description": "Type of OSM query to run"
+                },
+                "name_query": {"type": "string", "description": "Amenity name to search for if query_type is amenity_search"}
+            },
+            "required": ["lat", "lon"],
+        },
+    },
+    {
+        "name": "satellite_landcover",
+        "description": "Inspect high-resolution satellite imagery (ArcGIS/ESRI World Imagery) at coordinates for vegetation "
+                       "green ratio and landcover classification (urban, suburban, rural).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Latitude"},
+                "lon": {"type": "number", "description": "Longitude"},
+                "zoom": {"type": "number", "default": 18, "description": "Tile zoom level (15-19)"}
+            },
+            "required": ["lat", "lon"],
+        },
+    },
+    {
+        "name": "sun_shadow_estimate",
+        "description": "Estimate solar declination, day of year, and latitude constraints from an image date/time string and optional shadow angle.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "datetime_str": {"type": "string", "description": "Date/time string (e.g. '2024:05:15 14:30:00' or '2024-05-15')"},
+                "shadow_angle_deg": {"type": "number", "description": "Estimated shadow angle in degrees if visible"}
+            },
+            "required": ["datetime_str"],
+        },
+    },
+    {
+        "name": "weather_corroborate",
+        "description": "Retrieve historical weather conditions from Open-Meteo archive for lat/lon on a specific date (YYYY-MM-DD) "
+                       "to corroborate or eliminate candidate locations.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Latitude"},
+                "lon": {"type": "number", "description": "Longitude"},
+                "date": {"type": "string", "description": "Date in YYYY-MM-DD format"}
+            },
+            "required": ["lat", "lon", "date"],
+        },
+    },
+    {
+        "name": "elevation_lookup",
+        "description": "Look up ground elevation in meters above sea level for any coordinates.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Latitude"},
+                "lon": {"type": "number", "description": "Longitude"}
+            },
+            "required": ["lat", "lon"],
+        },
+    },
 ]
 
 TOOL_IMPLS = {
@@ -343,6 +615,14 @@ TOOL_IMPLS = {
     "search_web": tool_search_web,
     "geoguessr_heuristics": tool_geoguessr_heuristics,
     "reverse_image_search": tool_reverse_image_search,
+    "resolve_vision_clues": tool_resolve_vision_clues,
+    "city_snap": tool_city_snap,
+    "forward_geocode": tool_forward_geocode,
+    "osm_query": tool_osm_query,
+    "satellite_landcover": tool_satellite_landcover,
+    "sun_shadow_estimate": tool_sun_shadow_estimate,
+    "weather_corroborate": tool_weather_corroborate,
+    "elevation_lookup": tool_elevation_lookup,
 }
 
 

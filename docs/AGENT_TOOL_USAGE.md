@@ -1,13 +1,22 @@
-# GeoVision as an Agent Tool (MCP)
+# GeoVision Agent Integration Guide (MCP & CLI)
 
-GeoVision exposes its full geolocation pipeline as MCP tools, so ANY AI agent
-(Claude Desktop, Cursor, Hermes, custom agents) with computer vision can
-geolocate images by invoking GeoVision — the agent sees the image, reasons
-about it, calls the tool, and returns located coordinates with evidence.
+GeoVision is an open-source, GeoSpy-class geospatial OSINT and computer vision engine designed specifically to be called by **any AI agent or cloud model with computer vision** (Claude 3.5 Sonnet, GPT-4o, Gemini Pro/Flash, Hermes, Cline, Cursor, Antigravity).
 
-## Quick Start (any MCP client)
+GeoVision requires **no internal LLM or API keys** to run. When an AI vision model inspects an image, the model performs visual perception (reading signs, identifying architecture, spotting store chains), while GeoVision executes deterministic geospatial grounding:
+- Coordinate prediction via GeoCLIP ViT regression
+- Zero-shot country classification via StreetCLIP (1.5s with precomputed text cache)
+- Instant offline nearest-city snapping across 70k GeoNames cities
+- Fast OpenCV GeoGuessr classifiers (<100ms: driving side, road marks, utility poles, license plates, soil/canopy)
+- Overpass OpenStreetMap queries (POIs, parks, roads, building density)
+- High-res satellite landcover verification (ArcGIS/ESRI World Imagery)
+- Historical weather corroboration (Open-Meteo archive)
+- Un-gated reverse image search (Wikimedia Commons / Wikipedia Geo APIs)
 
-Register the server:
+---
+
+## 1. Quick Start: Register MCP Server
+
+Register `mcp_geovision_server.py` with any MCP-compatible agent (Claude Desktop, Cursor, Hermes, Continue, Roo Code):
 
 ```json
 {
@@ -20,62 +29,127 @@ Register the server:
 }
 ```
 
-Then the user says: **"use geovision and geolocate this image"** — the agent
-calls `geolocate_image` with the image path and returns coordinates,
-confidence, and the full evidence chain.
+The MCP server communicates via JSON-RPC 2.0 over standard I/O and exposes **16 modular tools**.
 
-## Tools
+---
 
-| Tool | Speed | What it does |
-|------|-------|--------------|
-| `geolocate_image` | 2–10 min (full pipeline: EXIF, OCR, models, OSINT, satellite, fusion) | Complete deep-scan with ranked estimates + evidence |
-| `geolocate_quick` | ~2–5 min cold, seconds warm (models only) | GeoCLIP direct GPS + StreetCLIP country + CLIP nearest-neighbor vs reference DB |
-| `ocr_extract` | seconds | EasyOCR text extraction (signs, storefronts, plates) |
-| `reverse_geocode` | ~1s | lat/lon → address (OSM Nominatim) |
-| `verify_location` | ~10–30s | Visual verification of a candidate coordinate against the query image using real reference photos + StreetCLIP similarity |
-| `search_web` | ~1s | OSINT web search (needs SERPER_API_KEY / BRAVE_API_KEY / SEARXNG_URL) |
+## 2. MCP Tools Reference
 
-## Model/API requirements (all optional — graceful degradation)
+### A. Core Geolocation
+| Tool | Speed | Description |
+|------|-------|-------------|
+| `geolocate_image` | 1–3 min | **Full deep-scan pipeline**: EXIF, OCR, GeoCLIP, StreetCLIP, 6.7k reference DB matching, OSM Overpass, satellite tiles, evidence fusion with ranked estimates. |
+| `geolocate_quick` | ~1.5s warm | **Fast model triage**: GeoCLIP direct GPS + StreetCLIP country + instant GeoNames city snap + GeoGuessr heuristics. Zero web calls. |
+| `resolve_vision_clues` | ~2–5s | **Cloud Vision Model Bridge**: Give it your visual observations (`city_hint`, `street_names`, `chain_stores`, `amenities`, `near_park`, `driving_side`), and GeoVision resolves grounded GPS coordinates with GIS proof. |
 
-GeoVision needs NO API key for its core (models + OSM/Wikimedia/Overpass are
-free). Optional keys unlock more:
+### B. Computer Vision & Heuristics
+| Tool | Speed | Description |
+|------|-------|-------------|
+| `geoguessr_heuristics` | <100ms | OpenCV classifiers: driving side (left vs right), road markings (yellow vs white), utility poles (wooden, holey concrete, ladder), license plate aspect ratio, soil/canopy biome. |
+| `ocr_extract` | ~1–2s | EasyOCR text extraction for road signs, shop fronts, vehicle plates. |
+| `reverse_image_search` | ~2–4s | Un-gated reverse image search across Wikimedia Commons and Wikipedia Geo APIs for matching landmarks and geotagged web entities (zero API keys). |
+| `verify_location` | ~5–10s | Visually verify candidate coordinates against reference photos using StreetCLIP cosine similarity. |
 
-| Env var | Unlocks |
-|---------|---------|
-| `GEOVISION_VLM_API_KEY` (+ `GEOVISION_VLM_BASE_URL`, `GEOVISION_VLM_MODEL`) | VLM reasoning phase (structured feature extraction + strict evidence-hierarchy reasoning). Any OpenAI-compatible vision endpoint. |
-| `SERPER_API_KEY` / `BRAVE_API_KEY` / `SEARXNG_URL` | Web-search OSINT |
-| `MAPILLARY_ACCESS_TOKEN` | Street-level imagery verification |
-| `GOOGLE_MAPS_API_KEY` | Google Maps geocoding/Street View cross-check |
+### C. Geospatial & Environmental Grounding
+| Tool | Speed | Description |
+|------|-------|-------------|
+| `city_snap` | <10ms | Instant offline nearest-city lookup via 70k GeoNames dataset (`lat`, `lon`, `max_distance_km`). |
+| `forward_geocode` | ~500ms | Convert place name, street, or address to exact lat/lon and bounding box (OSM Nominatim). |
+| `reverse_geocode` | ~500ms | Convert lat/lon to human-readable street address. |
+| `osm_query` | ~1–2s | Query OpenStreetMap infrastructure: POIs, nearby parks (`query_type="parks"`), road types, building density, or named amenity search. |
+| `satellite_landcover` | ~1s | Fetch ESRI/ArcGIS World Imagery tile at coordinates; returns green vegetation ratio and landcover classification (`urban_built_up`, `suburban`, `rural_or_park`). |
+| `weather_corroborate` | ~500ms | Check historical weather from Open-Meteo archive for `lat`, `lon`, and `date` (`YYYY-MM-DD`). |
+| `sun_shadow_estimate` | <10ms | Compute solar declination, day of year, and estimated latitude band from timestamp and shadow angle. |
+| `elevation_lookup` | ~500ms | Query elevation above sea level in meters. |
+| `search_web` | ~1s | OSINT web search (activates if `SERPER_API_KEY`, `BRAVE_API_KEY`, or `SEARXNG_URL` is set). |
 
-Model weights (CLIP ViT-B-32, GeoCLIP, StreetCLIP) auto-download on first
-use (~1.2GB total) and cache locally. First call is slow (model load);
-a persistent MCP server process keeps them warm.
+---
 
-## Architecture
+## 3. The Vision Model Bridge: `resolve_vision_clues`
 
+When an AI model with vision (e.g. Claude 3.5 Sonnet or GPT-4o) receives a photo from a user, the model can inspect the image and call `resolve_vision_clues`:
+
+```json
+{
+  "name": "resolve_vision_clues",
+  "arguments": {
+    "city_hint": "Toronto",
+    "country_hint": "Canada",
+    "street_names": ["Yonge St"],
+    "chain_stores": ["Tim Hortons"],
+    "near_park": true,
+    "driving_side": "right"
+  }
+}
 ```
-User: "geolocate this image"
-  └─ Agent (any vision model) ── sees image, saves path
-       └─ MCP call: geolocate_image {image_path}
-            └─ GeoVision pipeline (9+ phases, all real):
-                 EXIF → OCR → ResNet50 → CLIP-NN vs 1.7k+ real geotagged
-                 Commons photos → GeoCLIP GPS regression → StreetCLIP
-                 country → Wikimedia/Overpass OSINT → satellite tiles →
-                 evidence fusion (haversine clustering + confidence
-                 calibration) → ranked estimates + evidence chain
-       └─ Agent reads result: coords + confidence + evidence
-  └─ Answer to user with map link + reasoning
+
+**GeoVision returns:**
+```json
+{
+  "status": "success",
+  "best_estimate": {
+    "latitude": 43.782123,
+    "longitude": -79.416194,
+    "confidence": 0.92,
+    "display_name": "Yonge Street, North York, Toronto, Ontario, Canada",
+    "nearest_city": {"name": "Willowdale West", "country_code": "CA", "distance_km": 0.0},
+    "satellite": {"classification": "urban_built_up", "green_ratio": 0.059, "verified": true},
+    "nearby_parks": [{"name": "Hendon Park", "distance_m": 343}],
+    "evidence": [
+      "Street / intersection match for 'Yonge St'",
+      "Corroborated: 35 park(s) within 1.5km (nearest: Hendon Park)",
+      "Satellite landcover: urban_built_up (green ratio: 5.9%)"
+    ],
+    "google_maps_url": "https://www.google.com/maps?q=43.782123,-79.416194"
+  }
+}
 ```
 
-Every estimate carries its sources (geoclip / clip_nn / ocr_osint / exif /
-satellite / vlm) — full traceability, no invented numbers.
+---
 
-## Accuracy expectations (honest)
+## 4. CLI Subcommands (for Bash-calling Agents)
 
-- Landmarks & distinctive scenes: GeoCLIP is near-exact (Eiffel Tower photo
-  → 48.8584,2.2946 vs truth 48.8584,2.2945)
-- Generic street scenes: city/region level accuracy; improves as the
-  reference DB grows (`scripts/build_reference_db.py --append`)
-- The strict confidence calibration (ported from open_geo_spy) caps
-  confidence at 0.5 when there's no city-specific evidence — GeoVision
-  tells the truth rather than guessing confidently
+Coding agents with bash tools (Cline, Claude Code, Cursor, Antigravity, OpenCode) can invoke subcommands directly from the terminal. All subcommands support `-j` / `--json-only` for silent, pure JSON output pipeable directly to `jq`:
+
+```bash
+# 1. Fast triage (<2s)
+python3 ~/geovision/geovision_cli.py quick /path/to/image.jpg -j | jq .
+
+# 2. GeoGuessr CV heuristics (<100ms)
+python3 ~/geovision/geovision_cli.py heuristics /path/to/image.jpg -j
+
+# 3. Vision clue resolution (GIS grounding)
+python3 ~/geovision/geovision_cli.py resolve --city "Toronto" --street "Yonge St" --near-park -j
+
+# 4. Instant offline GeoNames city snap
+python3 ~/geovision/geovision_cli.py snap --lat 48.8584 --lon 2.2945 -j
+
+# 5. Forward and reverse geocoding
+python3 ~/geovision/geovision_cli.py geocode "Eiffel Tower" -j
+python3 ~/geovision/geovision_cli.py reverse-geocode --lat 48.8584 --lon 2.2945 -j
+
+# 6. OpenStreetMap Overpass queries
+python3 ~/geovision/geovision_cli.py osm --lat 48.8584 --lon 2.2945 --type parks --radius 1000 -j
+
+# 7. Satellite landcover check
+python3 ~/geovision/geovision_cli.py satellite --lat 48.8584 --lon 2.2945 -j
+
+# 8. Historical weather check
+python3 ~/geovision/geovision_cli.py weather --lat 48.8584 --lon 2.2945 --date 2024-05-01 -j
+
+# 9. OCR text extraction
+python3 ~/geovision/geovision_cli.py ocr /path/to/image.jpg -j
+
+# 10. Full deep scan
+python3 ~/geovision/geovision_cli.py scan /path/to/image.jpg --no-vlm -j
+```
+
+---
+
+## 5. Confidence Calibration & Honesty Principles
+
+GeoVision enforces strict confidence calibration (derived from `open_geo_spy` architecture):
+- **0.85 – 0.98**: Grounded by specific named street entities, verified chain store addresses, or tight GeoCLIP spatial consensus ($\le 25\text{km}$ spread).
+- **0.50 – 0.70**: Distinctive regional architecture, confirmed city-level match, or broad cluster agreement.
+- **0.20 – 0.45**: Generic street scene, unconfirmed city centroid, or scattered model predictions.
+- **Null OSM Matches**: Never assigned high confidence simply because "buildings exist nearby"; unverified generic infrastructure is labeled `generic_osm_nearby` and capped at 0.30 confidence.

@@ -50,12 +50,12 @@ from typing import Any, Dict, List, Optional, Tuple
 try:
     from rich.logging import RichHandler
     from rich.console import Console
-    console = Console()
+    log_console = Console(stderr=True)
     logging.basicConfig(
         level=logging.INFO,
         format="%(message)s",
         datefmt="[%X]",
-        handlers=[RichHandler(console=console, markup=True, rich_tracebacks=True)]
+        handlers=[RichHandler(console=log_console, markup=True, rich_tracebacks=True)]
     )
 except ImportError:
     logging.basicConfig(
