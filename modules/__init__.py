@@ -100,3 +100,19 @@ try:
     from .web_search_providers import search_web, get_available_providers, SerperClient, BraveClient, SearXNGClient
 except ImportError:
     search_web = get_available_providers = SerperClient = BraveClient = SearXNGClient = None
+
+try:
+    from .geo_scorer import GeoScorer
+    from .scoring_config import ScoringConfig
+except ImportError:
+    GeoScorer = ScoringConfig = None
+
+try:
+    from .grounding import GroundingEngine, GroundingResult, GroundingVerdict
+except ImportError:
+    GroundingEngine = GroundingResult = GroundingVerdict = None
+
+try:
+    from .geo_hierarchy import GeoHierarchyResolver
+except ImportError:
+    GeoHierarchyResolver = None
