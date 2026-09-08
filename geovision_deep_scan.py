@@ -1818,12 +1818,47 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 constraints["has_blue_euroband"] = gh["license_plates"].get("has_blue_euroband", False)
             if gh.get("soil_vegetation"):
                 constraints["soil_type"] = gh["soil_vegetation"].get("soil_type")
+            if gh.get("bollards") and gh["bollards"].get("detected"):
+                constraints["bollard_archetype"] = gh["bollards"].get("archetype")
+                constraints["bollard_conf"] = gh["bollards"].get("confidence", 0.7)
+            if gh.get("road_signs") and gh["road_signs"].get("detected"):
+                constraints["sign_type"] = gh["road_signs"].get("sign_type")
+                constraints["sign_conf"] = gh["road_signs"].get("confidence", 0.7)
+            sun = phases.get("sun_position", {})
+            if sun.get("solar_hemisphere"):
+                constraints["solar_hemisphere"] = sun["solar_hemisphere"]
 
             if constraints:
                 merged = solver.filter_and_rerank_estimates(merged, constraints)
                 logger.info(f"  ✓ SpatialConstraintSolver applied {len(constraints)} physical constraints")
         except Exception as e:
             logger.warning(f"SpatialConstraintSolver failed in synthesis: {e}")
+
+        # Check Road Heading Alignment on Top Estimates
+        try:
+            image_path = options.get("image_path")
+            if image_path:
+                from modules.road_orientation_matcher import RoadOrientationMatcher
+                road_matcher = RoadOrientationMatcher()
+                image_road = road_matcher.extract_image_road_heading(image_path)
+                if image_road.get("road_detected"):
+                    heading_deg = image_road.get("perspective_angle_deg")
+                    logger.info(f"  ✓ Road perspective heading detected: {heading_deg}° (conf: {image_road.get('confidence')})")
+                    for est in merged[:3]:
+                        lat, lon = est.get("latitude"), est.get("longitude")
+                        if lat is not None and lon is not None:
+                            align = road_matcher.match_candidate_road_alignment(
+                                lat, lon, expected_azimuth_deg=heading_deg, radius_m=350, tolerance_deg=25.0
+                            )
+                            if align.get("matched"):
+                                est["confidence"] = round(min(0.98, est["confidence"] + 0.10), 3)
+                                if not isinstance(est.get("evidence"), dict):
+                                    est["evidence"] = {}
+                                est["evidence"]["road_alignment_verified"] = (
+                                    f"OSM highway azimuth matches photo road yaw within {align['best_alignment_diff_deg']}°"
+                                )
+        except Exception as e:
+            logger.warning(f"Road heading alignment check skipped: {e}")
 
         merged.sort(key=lambda x: x["confidence"], reverse=True)
         result["location_estimates"] = merged[:7]

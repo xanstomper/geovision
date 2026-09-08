@@ -558,6 +558,26 @@ def road_heading(
     console.print(json.dumps(out, indent=2))
 
 
+@app.command()
+def benchmark(
+    dataset: Optional[Path] = typer.Option(None, "--dataset", "-d", help="Path to evaluation manifest JSON"),
+    no_vlm: bool = typer.Option(True, "--no-vlm/--vlm", help="Run without external VLM"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Run GeoVision benchmark suite and report accuracy metrics (@1km, @25km, @200km, country)."""
+    from scripts.run_eval import run_eval, DEFAULT_MANIFEST
+    from modules.geo_eval_metrics import compute_metrics, format_report
+    manifest = dataset or DEFAULT_MANIFEST
+    with clean_json_context(json_only):
+        results = run_eval(manifest, no_vlm=no_vlm)
+        metrics = compute_metrics(results)
+    if json_only:
+        print(json.dumps(metrics, indent=2))
+        return
+    console.print(Panel.fit("[bold green]🏆 GeoVision Benchmark Evaluation[/bold green]", border_style="green"))
+    console.print(format_report(metrics))
+
+
 if __name__ == "__main__":
     app()
 

@@ -153,6 +153,68 @@ class SpatialConstraintSolver:
                 multiplier *= 0.35
                 violations.append(f"Red laterite soil observed, incompatible with boreal/cool {country_code}")
 
+        # 6. Delineator / Bollard Archetypes
+        bollard = (constraints.get("bollard_archetype") or "").lower()
+        bollard_conf = float(constraints.get("bollard_conf", 0.7))
+        if bollard and bollard_conf >= 0.65:
+            if bollard == "polish_red_stripe":
+                if country_code == "PL":
+                    multiplier = min(1.30, multiplier * 1.25)
+                    corroborated.append("Polish delineator post (red diagonal band) matches PL")
+                elif country_code not in ("PL", "UA", "BY"):
+                    multiplier *= 0.35
+                    violations.append(f"Polish-style red stripe bollard observed, but candidate is in {country_code}")
+            elif bollard == "french_red_ring":
+                if country_code == "FR":
+                    multiplier = min(1.30, multiplier * 1.25)
+                    corroborated.append("French cylinder delineator (red reflector ring) matches FR")
+                elif country_code not in ("FR", "BE", "LU"):
+                    multiplier *= 0.35
+                    violations.append(f"French-style red ring bollard observed, but candidate is in {country_code}")
+            elif bollard == "australian_reflector":
+                if country_code in ("AU", "NZ"):
+                    multiplier = min(1.30, multiplier * 1.25)
+                    corroborated.append(f"Australian/NZ delineator post matches {country_code}")
+                else:
+                    multiplier *= 0.30
+                    violations.append(f"Australian/NZ delineator post observed, but candidate is in {country_code}")
+            elif bollard == "nordic_black_cap":
+                if country_code in ("NO", "SE", "FI", "RU", "EE", "LV", "LT"):
+                    multiplier = min(1.30, multiplier * 1.20)
+                    corroborated.append(f"Nordic/Baltic black diagonal cap bollard matches {country_code}")
+                else:
+                    multiplier *= 0.40
+                    violations.append(f"Nordic/Baltic black cap bollard observed, but candidate is in {country_code}")
+            elif bollard == "japanese_yellow_cap":
+                if country_code == "JP":
+                    multiplier = min(1.30, multiplier * 1.25)
+                    corroborated.append("Japanese yellow cap delineator matches JP")
+                else:
+                    multiplier *= 0.35
+                    violations.append(f"Japanese yellow cap delineator observed, but candidate is in {country_code}")
+
+        # 7. Road Sign Geometry (Vienna Convention vs MUTCD)
+        sign_type = (constraints.get("sign_type") or constraints.get("road_sign_type") or "").lower()
+        sign_conf = float(constraints.get("sign_conf", 0.7))
+        if sign_type and sign_conf >= 0.70:
+            if sign_type == "yellow_diamond_warning":
+                yellow_diamond_countries = {
+                    "US", "CA", "MX", "BR", "AR", "CL", "CO", "PE", "AU", "NZ", "JP", "IE", "TH", "MY"
+                }
+                if country_code in yellow_diamond_countries:
+                    multiplier = min(1.30, multiplier * 1.10)
+                    corroborated.append(f"Yellow diamond warning sign matches {country_code}")
+                elif country_code in EUROBAND_CODES and country_code != "IE":
+                    multiplier *= 0.35
+                    violations.append(f"Yellow diamond warning sign observed, but standard in {country_code} is red triangle")
+            elif sign_type == "red_triangle_warning":
+                if country_code in EUROBAND_CODES or country_code in ("GB", "ZA", "EG", "TR", "AE", "SA"):
+                    multiplier = min(1.30, multiplier * 1.10)
+                    corroborated.append(f"Vienna Convention red-triangle warning sign matches {country_code}")
+                elif country_code in ("US", "CA", "MX"):
+                    multiplier *= 0.35
+                    violations.append(f"Red triangle warning sign observed, incompatible with MUTCD standards in {country_code}")
+
         return round(multiplier, 3), corroborated, violations
 
     def filter_and_rerank_estimates(
