@@ -29,7 +29,7 @@ Register `mcp_geovision_server.py` with any MCP-compatible agent (Claude Desktop
 }
 ```
 
-The MCP server communicates via JSON-RPC 2.0 over standard I/O and exposes **16 modular tools**.
+The MCP server communicates via JSON-RPC 2.0 over standard I/O and exposes **17 modular tools**.
 
 ---
 
@@ -40,12 +40,13 @@ The MCP server communicates via JSON-RPC 2.0 over standard I/O and exposes **16 
 |------|-------|-------------|
 | `geolocate_image` | 1–3 min | **Full deep-scan pipeline**: EXIF, OCR, GeoCLIP, StreetCLIP, 6.7k reference DB matching, OSM Overpass, satellite tiles, evidence fusion with ranked estimates. |
 | `geolocate_quick` | ~1.5s warm | **Fast model triage**: GeoCLIP direct GPS + StreetCLIP country + instant GeoNames city snap + GeoGuessr heuristics. Zero web calls. |
-| `resolve_vision_clues` | ~2–5s | **Cloud Vision Model Bridge**: Give it your visual observations (`city_hint`, `street_names`, `chain_stores`, `amenities`, `near_park`, `driving_side`), and GeoVision resolves grounded GPS coordinates with GIS proof. |
+| `resolve_vision_clues` | ~2–5s | **Cloud Vision Model Bridge**: Give it your visual observations (`city_hint`, `street_names`, `chain_stores`, `amenities`, `near_park`, `driving_side`, `road_heading_deg`), and GeoVision resolves grounded GPS coordinates with GIS proof. |
 
 ### B. Computer Vision & Heuristics
 | Tool | Speed | Description |
 |------|-------|-------------|
-| `geoguessr_heuristics` | <100ms | OpenCV classifiers: driving side (left vs right), road markings (yellow vs white), utility poles (wooden, holey concrete, ladder), license plate aspect ratio, soil/canopy biome. |
+| `geoguessr_heuristics` | <100ms | OpenCV classifiers: driving side (left vs right), road markings (yellow vs white), utility poles (wooden, holey concrete, ladder), license plate aspect ratio, soil/canopy biome, delineator bollards (Polish, French, Aussie/NZ, Nordic, Japanese), and road signs (yellow diamond vs red triangle). |
+| `road_heading_match` | ~1–2s | **Micro-localization via road azimuths**: Extracts road vanishing perspective from ground-level image and matches candidate coordinates against OSM highway vectors to pinpoint exact street segment. |
 | `ocr_extract` | ~1–2s | EasyOCR text extraction for road signs, shop fronts, vehicle plates. |
 | `reverse_image_search` | ~2–4s | Un-gated reverse image search across Wikimedia Commons and Wikipedia Geo APIs for matching landmarks and geotagged web entities (zero API keys). |
 | `verify_location` | ~5–10s | Visually verify candidate coordinates against reference photos using StreetCLIP cosine similarity. |
@@ -140,7 +141,11 @@ python3 ~/geovision/geovision_cli.py weather --lat 48.8584 --lon 2.2945 --date 2
 # 9. OCR text extraction
 python3 ~/geovision/geovision_cli.py ocr /path/to/image.jpg -j
 
-# 10. Full deep scan
+# 10. Road heading extraction & OSM street azimuth micro-matching
+python3 ~/geovision/geovision_cli.py road-heading --image /path/to/image.jpg -j
+python3 ~/geovision/geovision_cli.py road-heading --lat 43.6532 --lon -79.3832 --heading 350 -j
+
+# 11. Full deep scan
 python3 ~/geovision/geovision_cli.py scan /path/to/image.jpg --no-vlm -j
 ```
 
@@ -153,3 +158,50 @@ GeoVision enforces strict confidence calibration (derived from `open_geo_spy` ar
 - **0.50 – 0.70**: Distinctive regional architecture, confirmed city-level match, or broad cluster agreement.
 - **0.20 – 0.45**: Generic street scene, unconfirmed city centroid, or scattered model predictions.
 - **Null OSM Matches**: Never assigned high confidence simply because "buildings exist nearby"; unverified generic infrastructure is labeled `generic_osm_nearby` and capped at 0.30 confidence.
+
+---
+
+## 6. Frontier Computer Vision Model (September 2026) Protocol
+
+Premier frontier vision models (Claude 3.5/3.7 Sonnet, GPT-4o, Gemini 1.5/2.0 Pro, Hermes Vision) excel at fine-grained visual OSINT:
+- Architecture: brick masonry, window lintels, roof pitch, chimney styles
+- Infrastructure: concrete vs wood utility poles, ladder rungs, holey poles
+- Delineators & Bollards: Polish red diagonal stripes, French red reflective rings, Australian rectangular markers, Nordic black diagonal caps, Japanese yellow caps
+- Road Markings & Signs: yellow vs white centerlines, Vienna Convention red-bordered triangles vs MUTCD yellow diamonds
+- License Plates: square vs rectangular aspect ratios, yellow rear plates (UK, Netherlands, France pre-2009), blue Eurobands
+- Environmental & Sun: soil color, tree species (e.g., birch, eucalyptus, olive), shadow angle / solar hemisphere
+
+However, frontier models cannot perform GIS spatial calculations, KD-tree nearest neighbors, or Overpass vector azimuth searches in their heads. GeoVision provides deterministic spatial grounding.
+
+### Recommended 4-Step Execution Workflow
+
+1. **Visual Perception & Feature Extraction**:
+   Inspect the image for:
+   - Driving side: `left` vs `right`
+   - Road markings: `yellow` centerlines (Americas, Japan, Norway) vs `white` (majority Europe)
+   - Plate morphology: `european_narrow`, `north_america_standard`, `yellow_rear`, etc.
+   - Road heading: angle of the road vanishing line
+
+2. **Run Quick Heuristics / Triage**:
+   ```bash
+   python3 ~/geovision/geovision_cli.py quick /path/to/image.jpg -j
+   ```
+   Or via MCP: `geolocate_quick(image_path="...")`
+
+3. **Resolve Clues with Hard Elimination**:
+   Pass your observed visual clues to `resolve_vision_clues`. The `SpatialConstraintSolver` automatically penalizes physical impossibilities (e.g. left-hand drive in France or double-yellow lines in Germany):
+   ```bash
+   python3 ~/geovision/geovision_cli.py resolve \
+     --city "Toronto" \
+     --street "Yonge St" \
+     --driving-side "right" \
+     --road-heading 350.0 \
+     --near-park -j
+   ```
+
+4. **Micro-Pinpoint Street Segments**:
+   Use `road_heading_match` to align the street vector with OSM:
+   ```bash
+   python3 ~/geovision/geovision_cli.py road-heading --lat 43.6532 --lon -79.3832 --heading 350 -j
+   ```
+   This isolates the exact $\le 50\text{m}$ street segment matching the photo's orientation.

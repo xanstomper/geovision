@@ -359,6 +359,26 @@ def tool_elevation_lookup(args: Dict[str, Any]) -> Dict[str, Any]:
     return ElevationClient().get_elevation(float(lat), float(lon))
 
 
+def tool_road_heading_match(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract road perspective heading from an image and/or match candidate coordinates against OSM highway azimuths."""
+    from modules.road_orientation_matcher import RoadOrientationMatcher
+    matcher = RoadOrientationMatcher()
+    out = {}
+    image_path = args.get("image_path")
+    if image_path:
+        out["image_road_perspective"] = matcher.extract_image_road_heading(str(Path(image_path).expanduser().resolve()))
+    lat, lon = args.get("lat"), args.get("lon")
+    heading = args.get("expected_heading_deg") or args.get("heading")
+    if lat is not None and lon is not None:
+        if heading is not None:
+            out["candidate_alignment"] = matcher.match_candidate_road_alignment(
+                float(lat), float(lon), expected_azimuth_deg=float(heading), radius_m=int(args.get("radius_m", 300))
+            )
+        else:
+            out["osm_roads"] = matcher.fetch_osm_road_azimuths(float(lat), float(lon), radius_m=int(args.get("radius_m", 300)))
+    return out
+
+
 def _vlm_configured() -> bool:
     return bool(os.environ.get("GEOVISION_VLM_API_KEY")
                 or os.environ.get("OPENCODE_ZEN_API_KEY"))
@@ -501,6 +521,7 @@ TOOLS = [
                 },
                 "near_park": {"type": "boolean", "description": "True if a park or public green space is visible"},
                 "driving_side": {"type": "string", "enum": ["left", "right"], "description": "Observed driving side"},
+                "road_heading_deg": {"type": "number", "description": "Observed or calculated road compass azimuth in degrees (0-360)"},
                 "radius_meters": {"type": "number", "description": "Search radius around city centroid (default 35000m)"}
             },
         },
@@ -604,6 +625,20 @@ TOOLS = [
             "required": ["lat", "lon"],
         },
     },
+    {
+        "name": "road_heading_match",
+        "description": "Extract road perspective angle/heading from an image and/or match candidate coordinates against OpenStreetMap highway compass azimuths to pinpoint exact street segments.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Optional image path to extract perspective road yaw/heading"},
+                "lat": {"type": "number", "description": "Candidate latitude to check OSM highway azimuths"},
+                "lon": {"type": "number", "description": "Candidate longitude to check OSM highway azimuths"},
+                "expected_heading_deg": {"type": "number", "description": "Expected or observed road compass azimuth (0-360 or 0-180)"},
+                "radius_m": {"type": "integer", "description": "Search radius around coordinates in meters (default: 300)"}
+            },
+        },
+    },
 ]
 
 TOOL_IMPLS = {
@@ -623,6 +658,7 @@ TOOL_IMPLS = {
     "sun_shadow_estimate": tool_sun_shadow_estimate,
     "weather_corroborate": tool_weather_corroborate,
     "elevation_lookup": tool_elevation_lookup,
+    "road_heading_match": tool_road_heading_match,
 }
 
 

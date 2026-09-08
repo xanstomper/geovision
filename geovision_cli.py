@@ -48,11 +48,7 @@ def clean_json_context(json_only: bool):
 if "--json-only" in sys.argv or "-j" in sys.argv:
     logging.disable(logging.CRITICAL)
 
-try:
-    from geovision_deep_scan import run_pipeline, DEFAULT_OUTPUT_DIR
-except ImportError as e:
-    rprint(f"[red]Error importing GeoVision core modules: {e}[/red]")
-    sys.exit(1)
+DEFAULT_OUTPUT_DIR = Path(__file__).parent.resolve() / "reports"
 
 app = typer.Typer(
     name="geovision",
@@ -129,6 +125,12 @@ def scan(
         "interactive": interactive,
         "verbose": verbose,
     }
+
+    try:
+        from geovision_deep_scan import run_pipeline
+    except ImportError as e:
+        rprint(f"[red]Error importing GeoVision deep scan pipeline: {e}[/red]")
+        raise typer.Exit(1)
 
     if json_only:
         with clean_json_context(True):
@@ -329,6 +331,7 @@ def resolve(
     amenity: Optional[str] = typer.Option(None, "--amenity", help="Amenity type"),
     near_park: bool = typer.Option(False, "--near-park", help="Image shows proximity to a park"),
     driving_side: Optional[str] = typer.Option(None, "--driving-side", help="Driving side (left/right)"),
+    road_heading: Optional[float] = typer.Option(None, "--road-heading", help="Observed road compass heading in degrees (0-360)"),
     json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
 ):
     """Resolve external visual observations (from any AI vision model) to exact GPS coordinates."""
@@ -358,6 +361,8 @@ def resolve(
         clues_dict["near_park"] = True
     if driving_side:
         clues_dict["driving_side"] = driving_side
+    if road_heading is not None:
+        clues_dict["road_heading_deg"] = road_heading
 
     res = VisionClueResolver().resolve(clues_dict)
     if json_only:
@@ -520,6 +525,37 @@ def verify(
         return
     console.print(Panel.fit("[bold green]🔍 Visual Candidate Verification[/bold green]", border_style="green"))
     console.print(json.dumps(res, indent=2))
+
+
+@app.command(name="road-heading")
+def road_heading(
+    image: Optional[Path] = typer.Option(None, "--image", "-i", help="Image path to extract road perspective heading"),
+    lat: Optional[float] = typer.Option(None, "--lat", help="Candidate latitude"),
+    lon: Optional[float] = typer.Option(None, "--lon", help="Candidate longitude"),
+    expected_heading: Optional[float] = typer.Option(None, "--heading", help="Expected compass azimuth in degrees (0-360)"),
+    radius: int = typer.Option(300, "--radius", "-r", help="Radius in meters for OSM roads"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Extract road vanishing perspective or verify candidate coordinates against OSM road azimuths."""
+    from modules.road_orientation_matcher import RoadOrientationMatcher
+    out = {}
+    with clean_json_context(json_only):
+        matcher = RoadOrientationMatcher()
+        if image:
+            out["image_road_perspective"] = matcher.extract_image_road_heading(str(image))
+        if lat is not None and lon is not None:
+            if expected_heading is not None:
+                out["candidate_alignment"] = matcher.match_candidate_road_alignment(
+                    lat, lon, expected_azimuth_deg=expected_heading, radius_m=radius
+                )
+            else:
+                out["osm_roads"] = matcher.fetch_osm_road_azimuths(lat, lon, radius_m=radius)
+
+    if json_only:
+        print(json.dumps(out, indent=2))
+        return
+    console.print(Panel.fit("[bold blue]🧭 Road Orientation & Azimuth Alignment[/bold blue]", border_style="blue"))
+    console.print(json.dumps(out, indent=2))
 
 
 if __name__ == "__main__":

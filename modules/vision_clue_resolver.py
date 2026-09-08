@@ -43,12 +43,14 @@ class VisionClueResolver:
         from modules.overpass_client import OverpassClient
         from modules.satellite_matcher import SatelliteMatcher
         from modules.chain_store_locator import ChainStoreLocator
+        from modules.road_orientation_matcher import RoadOrientationMatcher
 
         self.geocoder = NominatimGeocoder()
         self.city_index = get_city_index()
         self.overpass = OverpassClient()
         self.sat_matcher = SatelliteMatcher()
         self.chain_locator = ChainStoreLocator()
+        self.road_matcher = RoadOrientationMatcher()
 
     def resolve(self, clues: Dict[str, Any]) -> Dict[str, Any]:
         """Resolve a dictionary of visual observations into ranked GPS coordinates."""
@@ -79,6 +81,14 @@ class VisionClueResolver:
             amenities = [amenities]
 
         search_radius_m = int(clues.get("radius_meters") or clues.get("search_radius_m") or 35000)
+
+        # Handle road compass heading (0-360 deg) from perspective / sun vectors
+        road_heading = clues.get("road_heading_deg") or clues.get("road_azimuth_deg") or clues.get("road_heading")
+        if road_heading is not None:
+            try:
+                road_heading = float(road_heading)
+            except (ValueError, TypeError):
+                road_heading = None
 
         # -------------------------------------------------------------------
         # Phase 1: Ground City / Region
@@ -272,6 +282,27 @@ class VisionClueResolver:
             except Exception:
                 sat_info = {"verified": False}
 
+            # 4. Road orientation compass heading check (if road_heading provided)
+            road_align_info = None
+            if road_heading is not None:
+                try:
+                    align_res = self.road_matcher.match_candidate_road_alignment(
+                        lat, lon, expected_azimuth_deg=float(road_heading), radius_m=350, tolerance_deg=25.0
+                    )
+                    road_align_info = align_res
+                    if align_res.get("matched"):
+                        conf = min(0.98, conf + 0.12)
+                        best_st = align_res["matching_roads"][0]
+                        evidence.append(
+                            f"Road azimuth {road_heading:.0f}° verified by OSM street '{best_st['name']}' "
+                            f"(angular diff: {align_res['best_alignment_diff_deg']}°)"
+                        )
+                    elif align_res.get("best_alignment_diff_deg") is not None:
+                        conf = max(0.15, conf - 0.10)
+                        evidence.append(f"Road heading divergence: nearest street differs by {align_res['best_alignment_diff_deg']}°")
+                except Exception as e:
+                    logger.warning(f"Road alignment check failed: {e}")
+
             # Final calibrated confidence
             conf = round(min(0.98, max(0.10, conf)), 3)
 
@@ -285,6 +316,7 @@ class VisionClueResolver:
                 "nearest_city": nearest_city_snap,
                 "satellite": sat_info,
                 "nearby_parks": nearby_parks,
+                "road_alignment": road_align_info,
                 "evidence": evidence,
                 "google_maps_url": f"https://www.google.com/maps?q={lat:.6f},{lon:.6f}",
                 "osm_url": f"https://www.openstreetmap.org/?mlat={lat:.6f}&mlon={lon:.6f}#map=17/{lat:.6f}/{lon:.6f}",

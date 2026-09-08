@@ -417,6 +417,168 @@ class SoilVegetationClassifier:
         }
 
 
+class BollardClassifier:
+    """
+    Detects roadside delineator posts (bollards) — one of the strongest country indicators in OSINT:
+    - polish_bollard: white rectangular post with red diagonal reflector band (Poland, Slovakia, Hungary)
+    - french_bollard: cylindrical white post with red reflector ring (France, Spain, Portugal)
+    - australia_bollard: white post with red rectangular reflector stripe (Australia, New Zealand)
+    - nordic_russian_bollard: white post with black diagonal cap/stripe (Norway, Sweden, Finland, Russia, Baltics)
+    - japanese_bollard: white post with yellow/orange top reflector (Japan, Taiwan)
+    """
+
+    def classify(self, image: np.ndarray) -> Dict[str, Any]:
+        h, w = image.shape[:2]
+        left_roi = image[int(h * 0.40):int(h * 0.90), :int(w * 0.35)]
+        right_roi = image[int(h * 0.40):int(h * 0.90), int(w * 0.65):]
+
+        candidates = []
+        for roi in (left_roi, right_roi):
+            if roi.size == 0:
+                continue
+            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            edges = cv2.Canny(gray, 70, 180)
+            contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            for cnt in contours:
+                x, y, bw, bh = cv2.boundingRect(cnt)
+                if bh < 25 or bw < 6 or bw > 80:
+                    continue
+                aspect = float(bh) / float(bw)
+                if not (2.2 <= aspect <= 9.0):
+                    continue
+
+                bollard_crop = roi[y:y + bh, x:x + bw]
+                hsv = cv2.cvtColor(bollard_crop, cv2.COLOR_BGR2HSV)
+                total_px = bw * bh
+
+                white_mask = cv2.inRange(hsv, (0, 0, 160), (180, 50, 255))
+                white_ratio = float(np.sum(white_mask > 0) / total_px)
+                if white_ratio < 0.20:
+                    continue
+
+                red1 = cv2.inRange(hsv, (0, 90, 80), (10, 255, 255))
+                red2 = cv2.inRange(hsv, (170, 90, 80), (180, 255, 255))
+                red_mask = cv2.bitwise_or(red1, red2)
+                red_ratio = float(np.sum(red_mask > 0) / total_px)
+
+                black_mask = cv2.inRange(hsv, (0, 0, 0), (180, 255, 45))
+                black_ratio = float(np.sum(black_mask > 0) / total_px)
+
+                yellow_mask = cv2.inRange(hsv, (18, 90, 90), (32, 255, 255))
+                yellow_ratio = float(np.sum(yellow_mask > 0) / total_px)
+
+                if red_ratio > 0.05 and white_ratio > 0.25:
+                    if aspect > 4.5:
+                        candidates.append({
+                            "archetype": "polish_eastern_euro_bollard",
+                            "confidence": 0.78,
+                            "countries": ["Poland", "Czech Republic", "Slovakia", "Hungary", "Austria"]
+                        })
+                    else:
+                        candidates.append({
+                            "archetype": "french_western_euro_bollard",
+                            "confidence": 0.72,
+                            "countries": ["France", "Spain", "Portugal", "Italy"]
+                        })
+                elif black_ratio > 0.12 and white_ratio > 0.25:
+                    candidates.append({
+                        "archetype": "nordic_baltic_russian_bollard",
+                        "confidence": 0.75,
+                        "countries": ["Norway", "Sweden", "Finland", "Russia", "Estonia", "Latvia", "Lithuania"]
+                    })
+                elif yellow_ratio > 0.08 and white_ratio > 0.20:
+                    candidates.append({
+                        "archetype": "japanese_taiwan_bollard",
+                        "confidence": 0.75,
+                        "countries": ["Japan", "Taiwan", "South Korea"]
+                    })
+
+        if not candidates:
+            return {
+                "detected": False,
+                "archetype": None,
+                "confidence": 0.0,
+                "countries": []
+            }
+
+        candidates.sort(key=lambda c: c["confidence"], reverse=True)
+        top = candidates[0]
+        return {
+            "detected": True,
+            "archetype": top["archetype"],
+            "confidence": top["confidence"],
+            "countries": top["countries"],
+        }
+
+
+class RoadSignClassifier:
+    """
+    Classifies road warning sign shapes and hazard markers:
+    - yellow_diamond: Warning signs in Americas (USA, Canada, Mexico, Brazil), Japan, Australia, New Zealand, Ireland
+    - red_triangle: Warning signs in Europe (Vienna Convention), UK, Africa, Middle East, Central Asia
+    """
+
+    def classify(self, image: np.ndarray) -> Dict[str, Any]:
+        h, w = image.shape[:2]
+        roi = image[int(h * 0.15):int(h * 0.75), :]
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+        yellow_mask = cv2.inRange(hsv, (18, 100, 100), (35, 255, 255))
+        yellow_contours, _ = cv2.findContours(yellow_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        red1 = cv2.inRange(hsv, (0, 100, 90), (10, 255, 255))
+        red2 = cv2.inRange(hsv, (170, 100, 90), (180, 255, 255))
+        red_mask = cv2.bitwise_or(red1, red2)
+        red_contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        findings = []
+
+        for cnt in yellow_contours:
+            area = cv2.contourArea(cnt)
+            if 300 < area < 35000:
+                peri = cv2.arcLength(cnt, True)
+                approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
+                if len(approx) == 4:
+                    _, _, sw, sh = cv2.boundingRect(cnt)
+                    aspect = float(sw) / float(sh or 1)
+                    if 0.8 <= aspect <= 1.25:
+                        findings.append({
+                            "sign_type": "yellow_diamond_warning",
+                            "confidence": 0.80,
+                            "regions": ["North America (USA, Canada, Mexico)", "Japan", "Australia", "New Zealand", "Brazil"]
+                        })
+
+        for cnt in red_contours:
+            area = cv2.contourArea(cnt)
+            if 300 < area < 35000:
+                peri = cv2.arcLength(cnt, True)
+                approx = cv2.approxPolyDP(cnt, 0.05 * peri, True)
+                if len(approx) == 3:
+                    findings.append({
+                        "sign_type": "red_triangle_warning",
+                        "confidence": 0.82,
+                        "regions": ["Europe (Vienna Convention)", "United Kingdom", "Middle East", "Africa"]
+                    })
+
+        if not findings:
+            return {
+                "detected": False,
+                "sign_type": None,
+                "confidence": 0.0,
+                "regions": []
+            }
+
+        findings.sort(key=lambda f: f["confidence"], reverse=True)
+        top = findings[0]
+        return {
+            "detected": True,
+            "sign_type": top["sign_type"],
+            "confidence": top["confidence"],
+            "regions": top["regions"],
+        }
+
+
 class GeoGuessrAnalyzer:
     """
     Unified GeoGuessr-class Heuristic Analyzer.
@@ -429,6 +591,8 @@ class GeoGuessrAnalyzer:
         self.pole_clf = UtilityPoleClassifier()
         self.plate_clf = LicensePlateClassifier()
         self.soil_clf = SoilVegetationClassifier()
+        self.bollard_clf = BollardClassifier()
+        self.sign_clf = RoadSignClassifier()
 
     def analyze(self, image_path: str) -> Dict[str, Any]:
         """Runs the complete GeoGuessr heuristic battery on an image path."""
@@ -441,6 +605,8 @@ class GeoGuessrAnalyzer:
         poles = self.pole_clf.classify(image)
         plates = self.plate_clf.classify(image)
         soil_veg = self.soil_clf.classify(image)
+        bollards = self.bollard_clf.classify(image)
+        signs = self.sign_clf.classify(image)
 
         # Evidence Synthesis & Regional Votes
         votes: Dict[str, float] = {}
@@ -479,6 +645,16 @@ class GeoGuessrAnalyzer:
             for r in soil_veg["soil_candidate_regions"]:
                 add_vote(r, 0.50 * soil_veg["soil_confidence"])
 
+        # 6. Bollard votes
+        if bollards["detected"]:
+            for c in bollards["countries"]:
+                add_vote(c, 0.65 * bollards["confidence"])
+
+        # 7. Road sign votes
+        if signs["detected"]:
+            for r in signs["regions"]:
+                add_vote(r, 0.55 * signs["confidence"])
+
         # Top synthesized regions
         ranked_regions = sorted(votes.items(), key=lambda kv: kv[1], reverse=True)[:6]
 
@@ -491,6 +667,10 @@ class GeoGuessrAnalyzer:
             summary_clues.append(f"Utility pole archetype: {poles['dominant_type']} ({poles['confidence']:.2f})")
         if plates["detected"]:
             summary_clues.append(f"License plate morphology: {plates['format']} ({plates['confidence']:.2f})")
+        if bollards["detected"]:
+            summary_clues.append(f"Roadside delineator (bollard): {bollards['archetype']} ({bollards['confidence']:.2f})")
+        if signs["detected"]:
+            summary_clues.append(f"Road sign standard: {signs['sign_type']} ({signs['confidence']:.2f})")
         if soil_veg["soil_type"] != "temperate_soil":
             summary_clues.append(f"Distinctive soil profile: {soil_veg['soil_type']} ({soil_veg['soil_confidence']:.2f})")
         if soil_veg["vegetation_biome"] != "mixed_temperate":
@@ -502,6 +682,8 @@ class GeoGuessrAnalyzer:
             "road_markings": road,
             "utility_poles": poles,
             "license_plates": plates,
+            "bollards": bollards,
+            "road_signs": signs,
             "soil_and_vegetation": soil_veg,
             "top_regional_votes": [{"region": r, "score": round(s, 3)} for r, s in ranked_regions],
             "forensic_clues": summary_clues,
