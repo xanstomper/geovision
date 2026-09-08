@@ -363,6 +363,17 @@ def phase1_visual_features(image_path: str) -> Dict[str, Any]:
         except Exception as e:
             logger.warning("  GeoGuessr heuristics extraction failed: %s", e)
 
+        # Enrich with Environment Classification (urban, suburban, rural, coastal, etc.)
+        try:
+            from modules.environment_classifier import EnvironmentClassifier
+            env_res = EnvironmentClassifier().classify(image_path)
+            if env_res.get("primary_type") != "UNKNOWN":
+                result["features"]["environment"] = env_res
+                result["environment_type"] = env_res.get("primary_type")
+                logger.info(f"  ✓ Environment context: {env_res.get('primary_type')} (conf: {env_res.get('confidence')})")
+        except Exception as e:
+            logger.warning(f"  Environment classification failed: {e}")
+
     except Exception as e:
         result["error"] = str(e)
         result["traceback"] = traceback.format_exc()
@@ -1864,6 +1875,31 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
         result["location_estimates"] = merged[:7]
         if merged:
             result["best_estimate"] = merged[0]
+
+        # Calculate spatial uncertainty bounding radius & granularity (GeoSpy-class)
+        try:
+            from modules.uncertainty_estimator import UncertaintyEstimator
+            unc_est = UncertaintyEstimator()
+            result["uncertainty"] = unc_est.estimate(merged, result.get("best_estimate"))
+            logger.info(
+                f"  ✓ Spatial uncertainty: ±{result['uncertainty']['uncertainty_radius_km']} km "
+                f"({result['uncertainty']['granularity']})"
+            )
+        except Exception as e:
+            logger.warning(f"Uncertainty estimation failed in synthesis: {e}")
+
+        # Retrieve ground-level reference photos near best estimate
+        if result.get("best_estimate"):
+            try:
+                from modules.ground_imagery_client import GroundImageryClient
+                be = result["best_estimate"]
+                ground_client = GroundImageryClient()
+                result["nearby_ground_photos"] = ground_client.get_nearby_ground_photos(
+                    be["latitude"], be["longitude"], radius_m=1200, limit=6
+                )
+                logger.info(f"  ✓ Retrieved {result['nearby_ground_photos']['total_found']} nearby ground photos")
+            except Exception as e:
+                logger.warning(f"Ground photos retrieval failed in synthesis: {e}")
 
         if merged:
             confs = [m["confidence"] for m in merged]

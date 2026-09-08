@@ -78,6 +78,19 @@ class SpatialConstraintSolver:
         if not country_code:
             return multiplier, corroborated, violations
 
+        # 0. Country Hint / Knowledge Graph Match
+        country_hint = constraints.get("country_hint") or constraints.get("country")
+        if country_hint:
+            from modules.country_matcher import countries_match, extract_country_from_location
+            expected_iso = extract_country_from_location(country_hint)
+            if expected_iso:
+                if country_code == expected_iso or countries_match(country_hint, country_code):
+                    multiplier = min(1.30, multiplier * 1.20)
+                    corroborated.append(f"Candidate {country_code} matches country hint '{country_hint}' ({expected_iso})")
+                else:
+                    multiplier *= 0.20
+                    violations.append(f"Candidate {country_code} conflicts with country hint '{country_hint}' ({expected_iso})")
+
         # 1. Driving Side Constraint
         driving_side = (constraints.get("driving_side") or "").lower()
         driving_side_conf = float(constraints.get("driving_side_conf", 0.7))

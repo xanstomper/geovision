@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import cv2
 from dataclasses import dataclass
@@ -267,3 +267,23 @@ class EnvironmentClassifier:
                     path_like_objects += 1
 
         return min(1.0, path_like_objects * 0.1)
+
+    def classify(self, image_path: str, features: Optional[Dict] = None) -> Dict[str, Any]:
+        """Convenience method to classify an image path directly."""
+        img = cv2.imread(image_path)
+        if img is None:
+            return {
+                "primary_type": "UNKNOWN",
+                "secondary_types": [],
+                "confidence": 0.0,
+                "features": {},
+                "error": f"Failed to load image from {image_path}"
+            }
+        info = self.classify_environment(img, features or {})
+        return {
+            "primary_type": info.primary_type.name,
+            "secondary_types": [t.name for t in info.secondary_types],
+            "confidence": round(info.confidence, 3),
+            "features": {k: round(v, 3) for k, v in info.features.items()},
+        }
+

@@ -379,6 +379,42 @@ def tool_road_heading_match(args: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def tool_environment_classify(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Classify environmental scene context (urban, suburban, rural, coastal, forest, mountain, desert, park, highway)."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    from modules.environment_classifier import EnvironmentClassifier
+    p = Path(image_path).expanduser().resolve()
+    if not p.exists():
+        return {"error": f"image not found: {p}"}
+    return EnvironmentClassifier().classify(str(p), args.get("features"))
+
+
+def tool_nearby_ground_imagery(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Retrieve ground-truth photographs and street-level imagery near GPS coordinates (Wikimedia Commons + Mapillary)."""
+    lat, lon = args.get("lat"), args.get("lon")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    radius_m = int(args.get("radius_m", 1000))
+    limit = int(args.get("limit", 6))
+    from modules.ground_imagery_client import GroundImageryClient
+    return GroundImageryClient().get_nearby_ground_photos(float(lat), float(lon), radius_m=radius_m, limit=limit)
+
+
+def tool_uncertainty_bounds(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate 95% uncertainty radius, bounding box, and geographic scale granularity from candidate coordinates."""
+    candidates = args.get("candidates") or []
+    if not candidates:
+        lat, lon = args.get("lat"), args.get("lon")
+        if lat is not None and lon is not None:
+            candidates = [{"latitude": float(lat), "longitude": float(lon), "confidence": float(args.get("confidence", 0.8))}]
+        else:
+            return {"error": "candidates list or lat/lon required"}
+    from modules.uncertainty_estimator import UncertaintyEstimator
+    return UncertaintyEstimator().estimate(candidates, candidates[0] if candidates else None)
+
+
 def _vlm_configured() -> bool:
     return bool(os.environ.get("GEOVISION_VLM_API_KEY")
                 or os.environ.get("OPENCODE_ZEN_API_KEY"))
@@ -639,6 +675,44 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "environment_classify",
+        "description": "Classify environmental scene biome (urban, suburban, rural, coastal, forest, mountain, desert, park, highway) and get feature density scores.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to the image file"}
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
+        "name": "nearby_ground_imagery",
+        "description": "Retrieve real ground-level photographs and street-level imagery near GPS coordinates (Wikimedia Commons Geosearch + Mapillary v4) for visual ground truth comparison.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Latitude to search around"},
+                "lon": {"type": "number", "description": "Longitude to search around"},
+                "radius_m": {"type": "integer", "description": "Search radius in meters (default: 1000)"},
+                "limit": {"type": "integer", "description": "Maximum number of photos to return (default: 6)"}
+            },
+            "required": ["lat", "lon"],
+        },
+    },
+    {
+        "name": "uncertainty_bounds",
+        "description": "Calculate 95% uncertainty radius in kilometers, spatial bounding box, and geographic scale granularity from candidate coordinates.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Best estimate latitude"},
+                "lon": {"type": "number", "description": "Best estimate longitude"},
+                "confidence": {"type": "number", "description": "Estimate confidence (0.0 - 1.0)"},
+                "candidates": {"type": "array", "items": {"type": "object"}, "description": "Optional list of multiple candidates"}
+            },
+        },
+    },
 ]
 
 TOOL_IMPLS = {
@@ -659,6 +733,9 @@ TOOL_IMPLS = {
     "weather_corroborate": tool_weather_corroborate,
     "elevation_lookup": tool_elevation_lookup,
     "road_heading_match": tool_road_heading_match,
+    "environment_classify": tool_environment_classify,
+    "nearby_ground_imagery": tool_nearby_ground_imagery,
+    "uncertainty_bounds": tool_uncertainty_bounds,
 }
 
 

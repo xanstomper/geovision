@@ -578,6 +578,67 @@ def benchmark(
     console.print(format_report(metrics))
 
 
+@app.command()
+def environment(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Classify environmental scene biome (urban, suburban, rural, coastal, forest, mountain, desert, park, highway)."""
+    from modules.environment_classifier import EnvironmentClassifier
+    with clean_json_context(json_only):
+        res = EnvironmentClassifier().classify(str(image))
+    if json_only:
+        print(json.dumps(res, indent=2))
+        return
+    console.print(Panel.fit(f"[bold cyan]🌲 Environment Classification[/bold cyan]", border_style="cyan"))
+    console.print(f"[bold]Primary Type:[/] {res.get('primary_type')} (conf: {res.get('confidence')})")
+    if res.get("secondary_types"):
+        console.print(f"[bold]Secondary Types:[/] {', '.join(res.get('secondary_types'))}")
+    console.print(json.dumps(res.get("features", {}), indent=2))
+
+
+@app.command(name="ground-photos")
+def ground_photos(
+    lat: float = typer.Option(..., "--lat", help="Latitude"),
+    lon: float = typer.Option(..., "--lon", help="Longitude"),
+    radius: int = typer.Option(1000, "--radius", "-r", help="Radius in meters"),
+    limit: int = typer.Option(6, "--limit", "-l", help="Number of photos to return"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Retrieve real ground-level photographs and street-level imagery near GPS coordinates."""
+    from modules.ground_imagery_client import GroundImageryClient
+    with clean_json_context(json_only):
+        res = GroundImageryClient().get_nearby_ground_photos(lat, lon, radius_m=radius, limit=limit)
+    if json_only:
+        print(json.dumps(res, indent=2))
+        return
+    console.print(Panel.fit(f"[bold green]📸 Ground-Truth Reference Photos[/bold green]", border_style="green"))
+    console.print(f"Total found within {radius}m: {res.get('total_found')}")
+    for p in res.get("ground_photos", []):
+        console.print(f"  • [bold]{p.get('title')}[/] ({p.get('distance_m')}m away) -> {p.get('thumbnail_url')}")
+
+
+@app.command()
+def uncertainty(
+    lat: float = typer.Option(..., "--lat", help="Latitude"),
+    lon: float = typer.Option(..., "--lon", help="Longitude"),
+    conf: float = typer.Option(0.80, "--conf", help="Confidence score (0-1)"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Calculate 95% spatial uncertainty radius, bounding box, and geographic granularity."""
+    from modules.uncertainty_estimator import UncertaintyEstimator
+    with clean_json_context(json_only):
+        res = UncertaintyEstimator().estimate([{"latitude": lat, "longitude": lon, "confidence": conf}])
+    if json_only:
+        print(json.dumps(res, indent=2))
+        return
+    console.print(Panel.fit(f"[bold yellow]🎯 Spatial Uncertainty & Granularity[/bold yellow]", border_style="yellow"))
+    console.print(f"[bold]Uncertainty Radius:[/] ±{res.get('uncertainty_radius_km')} km")
+    console.print(f"[bold]Scale Granularity:[/] {res.get('granularity')}")
+    console.print(f"[bold]Confidence Level:[/] {res.get('confidence_level')}")
+    console.print(json.dumps(res.get("bounding_box", {}), indent=2))
+
+
 if __name__ == "__main__":
     app()
 

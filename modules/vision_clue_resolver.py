@@ -331,12 +331,35 @@ class VisionClueResolver:
             logger.warning(f"SpatialConstraintSolver in vision clue resolver failed: {e}")
 
         enhanced_candidates.sort(key=lambda c: c["confidence"], reverse=True)
+        best_est = enhanced_candidates[0] if enhanced_candidates else None
+
+        # Compute spatial uncertainty and resolution granularity
+        uncertainty_info = None
+        ground_photos_info = None
+        if enhanced_candidates:
+            try:
+                from modules.uncertainty_estimator import UncertaintyEstimator
+                uncertainty_info = UncertaintyEstimator().estimate(enhanced_candidates, best_est)
+            except Exception as e:
+                logger.warning(f"Uncertainty estimation failed: {e}")
+
+            if best_est:
+                try:
+                    from modules.ground_imagery_client import GroundImageryClient
+                    ground_photos_info = GroundImageryClient().get_nearby_ground_photos(
+                        best_est["latitude"], best_est["longitude"], radius_m=1000, limit=4
+                    )
+                except Exception as e:
+                    logger.warning(f"Ground photos retrieval failed: {e}")
 
         return {
             "status": "success" if enhanced_candidates else "no_match",
             "query_clues": clues,
             "city_grounding": city_meta,
             "candidate_count": len(enhanced_candidates),
-            "best_estimate": enhanced_candidates[0] if enhanced_candidates else None,
+            "uncertainty": uncertainty_info,
+            "best_estimate": best_est,
+            "nearby_ground_photos": ground_photos_info,
             "candidates": enhanced_candidates[:5],
         }
+
