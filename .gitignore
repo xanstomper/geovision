@@ -22,3 +22,4 @@ data/visual_geo_db/embeddings.npy
 data/visual_geo_db/meta.jsonl.gz
 benchmark_images/
 benchmark_reports/
+data/cases.db

@@ -197,6 +197,62 @@ def api_status():
         ]
     })
 
+@app.route("/api/oceanir", methods=["POST"])
+def oceanir_analyze():
+    """OceanIR-style modern-harness analysis: runs the GeoVisionHarness directly
+    (not the heavy legacy run_pipeline) and returns ranked alternatives, reference
+    imagery, evidence chain, honest confidence, and optionally a live canvas viewer.
+    This is the 'evidence workspace' backend: pixels-not-metadata, tells-you-when-
+    unsure, review-and-compare.""" 
+    if "images" not in request.files:
+        return jsonify({"error": "No images uploaded"}), 400
+    files = request.files.getlist("images")
+    if not files or files[0].filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+    try:
+        job_dir = UPLOAD_FOLDER / ("oceanir_" + str(random.randint(10000, 99999)))
+        job_dir.mkdir(parents=True, exist_ok=True)
+        path = job_dir / files[0].filename
+        files[0].save(str(path))
+        hint = request.form.get("hint") or request.form.get("location_hint") or None
+        use_canvas = request.form.get("canvas", "1") != "0"
+        with_canvas_flag = request.form.get("with_listings", "0") == "1"
+
+        from modules.geo_harness import GeoVisionHarness
+        canvas = None
+        if use_canvas:
+            from modules.canvas import DetectiveCanvas
+            canvas = DetectiveCanvas(session=f"oceanir_{path.stem[:20]}",
+                                     title=f"OceanIR-style — {path.name}")
+        res = GeoVisionHarness().investigate(str(path), location_hint=hint,
+                                             canvas=canvas, with_listings=with_canvas_flag)
+        best = res.get("best_estimate") or {}
+        return {
+            "status": "success",
+            "best": {
+                "latitude": best.get("latitude"), "longitude": best.get("longitude"),
+                "confidence": best.get("confidence"),
+                "uncalibrated": not best.get("confidence_calibrated"),
+                "place": best.get("city") or best.get("place_name") or None,
+                "country": best.get("country"),
+            },
+            "unsure": (best.get("confidence") or 0) < 0.3,
+            "candidates": [
+                {"latitude": c.get("latitude"), "longitude": c.get("longitude"),
+                 "confidence": c.get("confidence"),
+                 "place": c.get("city") or c.get("place_name"), 
+                 "source": c.get("source")}
+                for c in res.get("candidates", [])[:10]
+            ],
+            "reasoning": res.get("reasoning_chain", []),
+            "reference_urls": res.get("reference_urls_by_candidate", {}),
+            "canvas_viewer_url": canvas.viewer_url if canvas else None,
+            "record": res,
+        }
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/cases")
 def cases_page():
     return render_template("cases.html")
