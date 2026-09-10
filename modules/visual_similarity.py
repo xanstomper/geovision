@@ -50,7 +50,7 @@ class VisualSimilarityScorer:
             raise
 
     def encode_image(self, image: Image.Image) -> np.ndarray:
-        """Encode a PIL image to an L2-normalized 768-dim CLIP embedding."""
+        """Encode a PIL image to a flat, L2-normalized CLIP embedding vector."""
         self._ensure_loaded()
 
         inputs = self.processor(images=image, return_tensors="pt")
@@ -58,8 +58,23 @@ class VisualSimilarityScorer:
 
         with torch.no_grad():
             features = self.model.get_image_features(**inputs)
-
-        embedding = features[0].cpu().numpy().astype(np.float32)
+        # get_image_features may return a raw tensor or a
+        # BaseModelOutputWithPooling (transformers>=4.40). Extract a tensor:
+        if hasattr(features, "pooler_output") and features.pooler_output is not None:
+            f = features.pooler_output
+        elif hasattr(features, "last_hidden_state"):
+            f = features.last_hidden_state
+        elif hasattr(features, "image_embeds"):
+            f = features.image_embeds
+        else:
+            f = features
+        # Reduce to a single vector (skip the batch dim; CLS token if tokenized):
+        f = f.detach() if hasattr(f, "detach") else f
+        if f.dim() == 3:
+            f = f[:, 0, :]
+        else:
+            f = f[0]
+        embedding = f.cpu().numpy().astype(np.float32).reshape(-1)
         norm = np.linalg.norm(embedding)
         if norm > 0:
             embedding = embedding / norm

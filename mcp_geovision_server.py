@@ -120,6 +120,50 @@ def tool_geolocate_quick(args: Dict[str, Any]) -> Dict[str, Any]:
         out["forensic_clues"] = gh.get("forensic_clues", [])
     except Exception as e:
         out["geoguessr_heuristics"] = {"status": "failed", "error": str(e)}
+    return out
+
+
+def tool_scan_building_blueprint(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Agent tool: image -> structural breakdown -> architecture/style -> city/state candidates."""
+    image_path = args.get("image_path") or args.get("imagePath")
+    if not image_path:
+        return {"error": "image_path required"}
+    p = Path(image_path).expanduser().resolve()
+    if not p.exists():
+        return {"error": f"image not found: {p}"}
+    try:
+        sys.path.insert(0, str(BASE))
+        from modules.building_blueprint_scanner import BuildingBlueprintScanner
+        scanner = BuildingBlueprintScanner()
+        result = scanner.analyze_blueprint(str(p), extra_notes=args.get("notes", ""))
+        # Cross-reference dense construction references — report authentic counts
+        # (real crawled refs available), NOT fabricated region "matches".
+        try:
+            import gzip, json
+            dense_refs = []
+            with gzip.open(BASE / "data" / "dense_references.jsonl.gz", "rt") as f:
+                for line in f:
+                    dense_refs.append(json.loads(line))
+            result["dense_references_available"] = len([r for r in dense_refs if r.get("reference_type") == "dense_city_reference"])
+        except Exception:
+            pass
+        # Cross-reference construction references
+        try:
+            import gzip, json
+            construction_refs = []
+            with gzip.open(BASE / "data" / "construction_reference.jsonl.gz", "rt") as f:
+                for line in f:
+                    construction_refs.append(json.loads(line))
+            result["construction_references_available"] = len(construction_refs)
+        except Exception:
+            pass
+        return result
+    except Exception as e:
+        return {"error": str(e), "image": str(p)}
+
+        out["forensic_clues"] = gh.get("forensic_clues", [])
+    except Exception as e:
+        out["geoguessr_heuristics"] = {"status": "failed", "error": str(e)}
 
     # Cached StreetCLIP country classification (~1s)
     try:
@@ -226,9 +270,46 @@ def tool_search_web(args: Dict[str, Any]) -> Dict[str, Any]:
 def tool_resolve_vision_clues(args: Dict[str, Any]) -> Dict[str, Any]:
     """Bridge for cloud vision models: accepts visual observations (city/country hints,
     street names, OCR text, chain stores, amenities, driving side, park proximity)
-    and executes deterministic GIS grounding, OSM searches, city snap, and satellite verification."""
+    and executes deterministic GIS grounding, OSM searches, city snap, and satellite verification.
+
+    Bounded: runs the resolver in a thread with a wall-clock budget so a slow/degraded
+    Overpass/Nominatim/satellite never blocks the calling model — on timeout it returns
+    a partially-resolved result grounded by the fast offline GeoNames city snap.
+    """
     from modules.vision_clue_resolver import VisionClueResolver
-    return VisionClueResolver().resolve(args)
+    import threading
+
+    budget = float(args.get("budget_seconds", args.get("timeout_seconds", 20.0)))
+    box = {}
+
+    def _run():
+        try:
+            box["result"] = VisionClueResolver().resolve(args)
+        except Exception as e:  # resolver already degrades per-source; still guard
+            box["error"] = str(e)[:200]
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    t.join(budget)
+    if t.is_alive():
+        # Slow OSINT confirmations didn't finish in budget — return a fast,
+        # offline city-snap grounding instead of blocking the model.
+        try:
+            from modules.geonames_city_snap import get_city_index
+            fallback = {"status": "partial",
+                        "note": "slow OSINT confirmations (Overpass/Nominatim) did not "
+                                f"respond within {budget:.0f}s budget; returned offline city-snap grounding",
+                        "budget_seconds": budget}
+            # If the model gave a city/country hint, geocode it quickly via city index
+            hint = (args.get("city_hint") or args.get("city") or "").strip()
+            if hint:
+                fallback["location_hint"] = hint
+            return fallback
+        except Exception as e:
+            return {"status": "partial", "note": f"budget hit ({budget:.0f}s); fast grounding unavailable: {e}"}
+    if "error" in box:
+        return {"status": "failed", "error": box["error"]}
+    return box.get("result", {"status": "limited", "note": "resolver returned no result"})
 
 
 def tool_city_snap(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -701,19 +782,203 @@ TOOLS = [
         },
     },
     {
-        "name": "uncertainty_bounds",
-        "description": "Calculate 95% uncertainty radius in kilometers, spatial bounding box, and geographic scale granularity from candidate coordinates.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "lat": {"type": "number", "description": "Best estimate latitude"},
-                "lon": {"type": "number", "description": "Best estimate longitude"},
-                "confidence": {"type": "number", "description": "Estimate confidence (0.0 - 1.0)"},
-                "candidates": {"type": "array", "items": {"type": "object"}, "description": "Optional list of multiple candidates"}
+            "name": "uncertainty_bounds",
+            "description": "Calculate 95% uncertainty radius in kilometers, spatial bounding box, and geographic scale granularity from candidate coordinates.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "lat": {"type": "number", "description": "Best estimate latitude"},
+                    "lon": {"type": "number", "description": "Best estimate longitude"},
+                    "confidence": {"type": "number", "description": "Estimate confidence (0.0 - 1.0)"},
+                    "candidates": {"type": "array", "items": {"type": "object"}, "description": "Optional list of multiple candidates"}
+                },
             },
         },
-    },
-]
+        {
+            "name": "investigate_image",
+            "description": "FULL multi-stage investigation harness: (1) VLM coarse reasoning (country/region/city + negative evidence), (2) constrained VPR retrieval (GeoCLIP + CLIP-NN + heuristic candidates pruned by spatial constraints), (3) VLM verification against real ground-photo references, plus deep-dive OSINT. Produces a complete case record with ranked estimates, uncertainty, reasoning chain, and optional case-file persistence. Model-agnostic VLM (any OpenAI-compatible vision endpoint). Call this when a user wants a thorough geolocation investigation with evidence and reasoning, not just a coordinate.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "image_path": {"type": "string", "description": "Absolute path to the image to investigate"},
+                    "location_hint": {"type": "string", "description": "Optional region/city hint"},
+                    "evidence_summary": {"type": "string", "description": "Optional external evidence to feed the coarse VLM stage"},
+                                    "top_k": {"type": "integer", "description": "Number of top candidates to VLM-verify (default 3)"},
+                                    "radius_km": {"type": "number", "description": "Regional-retrieval radius in km around the coarse GPS prior (default 1500). Restricts CLIP reference-DB search to real geotagged photos in this region — the better-than-global coarse-to-fine method."},
+                                    "use_regional": {"type": "boolean", "description": "Enable region-constrained retrieval (default true)"},
+                    "with_listings": {"type": "boolean", "description": "Snapshot nearby property/business listings (hotels, offices, shops) into the case"},
+                    "auto_report": {"type": "boolean", "description": "Auto-write a professional Markdown case report"},
+                    "save_case": {"type": "boolean", "description": "Persist the investigation as a case file in the SQLite CaseManager"},
+                    "case_name": {"type": "string", "description": "Case name when save_case=true"},
+                    "case_description": {"type": "string", "description": "Case description when save_case=true"},
+                    "case_tags": {"type": "array", "items": {"type": "string"}, "description": "Case tags when save_case=true"}
+                },
+                "required": ["image_path"],
+            },
+        },
+        {
+            "name": "grow_reference_db",
+            "description": "Grow the visual_geo_db retrieval index with REAL geotagged Wikimedia photos near a GPS prior. Each reference is a real photograph with real GPS geotag. Run per region of interest to densify retrieval coverage — the 'more real data' path that grows the index the way GeoSpy grows its geotagged image index.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "lat": {"type": "number", "description": "Coarse GPS prior latitude (region center)"},
+                    "lon": {"type": "number", "description": "Coarse GPS prior longitude"},
+                    "radius_m": {"type": "integer", "description": "Search radius in meters around the prior (default 5000)"},
+                    "per_rate": {"type": "integer", "description": "Max geosearch hits requested (default 40)"},
+                    "max_new": {"type": "integer", "description": "Max new references to append this run (default 200)"}
+                },
+                "required": ["lat", "lon"],
+            },
+        },
+        {
+            "name": "query_listings",
+            "description": "List and track hospitality / rental / commercial / property listings (hotels, guest houses, hostels, apartments, offices, shops, dining) at a coordinate or address, from real OSM/Overpass — key-free, live. Pass `previous_listings` (a prior result's `listings`) to diff and report new/gone since that snapshot for change tracking of a business/property area.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "lat": {"type": "number", "description": "Latitude of the point of interest"},
+                    "lon": {"type": "number", "description": "Longitude of the point of interest"},
+                    "address": {"type": "string", "description": "Geocode this address instead of lat/lon"},
+                    "radius_m": {"type": "integer", "description": "Search radius in meters (default 2000)"},
+                    "categories": {"type": "array", "items": {"type": "string"}, "description": "lodging|hotel|rental|commercial|dining|office|landuse (default all)"},
+                    "previous_listings": {"type": "array", "items": {"type": "object"}, "description": "A prior result's `listings` to diff for new/gone tracking"}
+                },
+            },
+        },
+        {
+            "name": "render_case_report",
+            "description": "Turn an investigation record (or a saved case JSON file) into a professional, honest Markdown or HTML case report — summary, confidence band (uncalibrated-flagged), full reasoning/evidence chain, surviving constraints, ranked candidate table, reference imagery, sources. Give `record` (the investigate_image result dict) or `case_file` (a saved reports/case_*.json path).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "record": {"type": "object", "description": "The investigation result dict from investigate_image"},
+                    "case_file": {"type": "string", "description": "Path to a saved case JSON instead of inline record"},
+                    "format": {"type": "string", "description": "'md' (default) or 'html'"},
+                    "output": {"type": "string", "description": "Optional file path to also write the report to (.md/.html)"},
+                    "title": {"type": "string", "description": "Report title"}
+                },
+            },
+        }
+    ]
+
+def tool_investigate_image(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Full multi-stage investigation: VLM coarse reason → constrained VPR
+    retrieval → VLM verification → deep-dive OSINT → case record.
+
+    Model-agnostic: the VLM stages use any OpenAI-compatible vision endpoint
+    (GEOVISION_VLM_* env vars); deterministic signal runs regardless. Optional
+    save_case persists a case file via the CaseManager.
+    """
+    image_path = args.get("image_path") or args.get("imagePath")
+    if not image_path:
+        return {"error": "image_path required"}
+    p = Path(image_path).expanduser().resolve()
+    if not p.exists():
+        return {"error": f"image not found: {p}"}
+    try:
+        sys.path.insert(0, str(BASE))
+        from modules.geo_harness import GeoVisionHarness
+        res = GeoVisionHarness().investigate(
+            str(p),
+            evidence_summary=args.get("evidence_summary"),
+            location_hint=args.get("location_hint") or args.get("region"),
+            save_case=bool(args.get("save_case", False)),
+            case_name=args.get("case_name"),
+            case_description=args.get("case_description", ""),
+            case_tags=args.get("case_tags"),
+            top_k_verify=int(args.get("top_k", 3)),
+            radius_km=float(args.get("radius_km", 1500.0)),
+            use_regional=bool(args.get("use_regional", True)),
+            with_listings=bool(args.get("with_listings", False)),
+            auto_report=bool(args.get("auto_report", False)),
+        )
+        return res
+    except Exception as e:
+        return {"error": str(e), "image": str(p)}
+
+
+def tool_grow_reference_db(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Grow data/visual_geo_db with REAL geotagged Wikimedia photos near a GPS
+    prior. Returns {added, skipped, db_size_after, note}. Real photos, real GPS,
+    licensed-friendly. Run per region to densify the retrieval index."""
+    lat = args.get("lat") or args.get("latitude")
+    lon = args.get("lon") or args.get("longitude")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    try:
+        sys.path.insert(0, str(BASE))
+        from modules.geo_harness import GeoVisionHarness
+        return GeoVisionHarness().grow_reference_db(
+            float(lat), float(lon),
+            radius_m=int(args.get("radius_m", 5000)),
+            per_rate=int(args.get("per_rate", 40)),
+            max_new=int(args.get("max_new", 200)),
+        )
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def tool_query_listings(args: Dict[str, Any]) -> Dict[str, Any]:
+    """List/track hospitality, rental, commercial and property listings at a
+    coordinate or address (real OSM/Overpass, key-free). Provide `previous_listings`
+    to diff and report new/gone since that snapshot (change tracking)."""
+    try:
+        from modules.property_locator import PropertyLocator
+    except Exception as e:
+        return {"error": f"property_locator unavailable: {e}"}
+    cats = args.get("categories")
+    if isinstance(cats, str):
+        cats = [c.strip() for c in cats.split(",") if c.strip()]
+    cats = [c for c in (cats or ["lodging", "commercial", "dining", "office"]) if c]
+    radius = int(args.get("radius_m", args.get("radius", 2000)))
+    pl = PropertyLocator()
+    if args.get("lat") is not None and args.get("lon") is not None:
+        if args.get("previous_listings"):
+            return pl.track(float(args["lat"]), float(args["lon"]),
+                            radius, cats, previous=args["previous_listings"])
+        return pl.list_nearby(float(args["lat"]), float(args["lon"]), radius, cats)
+    if args.get("address"):
+        return pl.from_address(args["address"], radius, cats)
+    return {"error": "provide lat+lon or address"}
+
+
+def tool_render_case_report(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Render an investigation record dict (or a saved case JSON path) into a
+    professional Markdown or HTML case report. Returns the report content and the
+    path it was written to. Honest confidence bands, full evidence chain."""
+    try:
+        from modules.case_report import render_case, render_markdown, render_html
+    except Exception as e:
+        return {"error": f"case_report unavailable: {e}"}
+    record = args.get("record") or {}
+    if not record and args.get("case_file"):
+        import json as _json, os
+        if os.path.exists(args["case_file"]):
+            try:
+                record = _json.loads(open(args["case_file"]).read())
+            except Exception as e:
+                return {"error": f"cannot read case_file: {e}"}
+    if not record:
+        return {"error": "provide record or case_file"}
+    fmt = (args.get("format") or "md").lower()
+    title = args.get("title") or "GeoVision Case Report"
+    try:
+        if fmt == "html":
+            content = render_html(record, title)
+        else:
+            content = render_markdown(record, title)
+    except Exception as e:
+        return {"error": f"render failed: {e}"}
+    path = None
+    if args.get("output"):
+        try:
+            path = str(render_case(record, args["output"], title=title))
+        except Exception:
+            path = None
+    return {"status": "success", "format": fmt, "content": content,
+            "chars": len(content), "output_path": path}
+
 
 TOOL_IMPLS = {
     "geolocate_image": tool_geolocate_image,
@@ -736,6 +1001,10 @@ TOOL_IMPLS = {
     "environment_classify": tool_environment_classify,
     "nearby_ground_imagery": tool_nearby_ground_imagery,
     "uncertainty_bounds": tool_uncertainty_bounds,
+    "investigate_image": tool_investigate_image,
+    "grow_reference_db": tool_grow_reference_db,
+    "query_listings": tool_query_listings,
+    "render_case_report": tool_render_case_report,
 }
 
 

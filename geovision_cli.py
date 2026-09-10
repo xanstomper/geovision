@@ -639,6 +639,184 @@ def uncertainty(
     console.print(json.dumps(res.get("bounding_box", {}), indent=2))
 
 
+@app.command(name="investigate")
+def investigate(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True,
+                                 help="Path to the image to investigate"),
+    case_name: str = typer.Option(None, "--case-name", help="Case name for case-file persistence"),
+    save_case: bool = typer.Option(False, "--save-case", help="Persist investigation to the SQLite CaseManager"),
+    hint: str = typer.Option(None, "--hint", help="Optional location hint (region/city)"),
+    top_k: int = typer.Option(3, "--top-k", help="Number of top candidates to VLM-verify"),
+    radius: float = typer.Option(1500.0, "--radius", help="Regional-retrieval radius in km around the coarse GPS prior"),
+    no_regional: bool = typer.Option(False, "--no-regional", help="Disable region-constrained retrieval (global CLIP search)"),
+    listings: bool = typer.Option(False, "--listings", help="Snapshot nearby property/business listings into the case"),
+    report: bool = typer.Option(False, "--report", help="Auto-write a professional Markdown case report"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Full multi-stage investigation harness: VLM coarse reason → REGIONAL
+    constrained VPR → VLM verification → case record. Any vision model can be the
+    VLM via GEOVISION_VLM_* env vars; deterministic signal runs regardless.
+
+    Regional retrieval (better than global GeoSpy-style search) restricts the
+    CLIP reference-DB lookup to real geotagged photos within RADIUS km of the
+    coarse GeoCLIP prior, pruning cross-hemisphere false matches before ranking.
+    """
+    from modules.geo_harness import GeoVisionHarness
+    with clean_json_context(json_only):
+        res = GeoVisionHarness().investigate(
+            str(image), location_hint=hint or None,
+            save_case=save_case, case_name=case_name,
+            case_tags=["harness"], top_k_verify=top_k,
+            radius_km=radius, use_regional=not no_regional,
+            with_listings=listings,
+            auto_report=report)
+    if json_only:
+        print(json.dumps(res, indent=2, default=str))
+        return
+    best = res.get("best_estimate") or {}
+    console.print(Panel.fit("[bold magenta]🕵️  GeoVision Investigation Harness[/bold magenta]", border_style="magenta"))
+    console.print(f"[bold]Image:[/] {res.get('image_path')}")
+    if best:
+        console.print(f"[bold green]Best Estimate:[/] {best.get('latitude')}, {best.get('longitude')} "
+                      f"(conf {best.get('confidence')})")
+    console.print("[bold]Stage statuses:[/] "
+                  + ", ".join(f"{k}={v.get('status','?') if isinstance(v,dict) else '?'}"
+                              for k, v in res.get("stages", {}).items()))
+    constr = res.get("constraints_applied") or []
+    if constr:
+        console.print("[bold]Negative-evidence constraints:[/]")
+        for c in constr:
+            console.print(f"  • {c}")
+    if res.get("reasoning_chain"):
+        console.print("[bold]Reasoning chain:[/]")
+        for r in res["reasoning_chain"]:
+            console.print(f"  → {r}")
+    console.print(f"[dim]Duration: {res.get('duration_s')}s | "
+                  f"Case ID: {res.get('case_id','(not saved)')}[/dim]")
+
+
+@app.command(name="grow-db")
+def grow_db(
+    lat: float = typer.Option(..., "--lat", help="Coarse GPS prior latitude (region center)"),
+    lon: float = typer.Option(..., "--lon", help="Coarse GPS prior longitude"),
+    radius: int = typer.Option(5000, "--radius", "--radius-m", help="Search radius in meters around the prior"),
+    per_rate: int = typer.Option(40, "--per-rate", help="Max geosearch hits to request"),
+    max_new: int = typer.Option(200, "--max-new", help="Max new real references to append"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Grow the visual_geo_db retrieval index with REAL geotagged Wikimedia photos
+    near a GPS prior. Each appended reference is a real photograph with real GPS.
+    Run iteratively per region to densify retrieval coverage (the GeoSpy-style
+    'more real data' path)."""
+    from modules.geo_harness import GeoVisionHarness
+    with clean_json_context(json_only):
+        res = GeoVisionHarness().grow_reference_db(lat, lon, radius_m=radius,
+                                                   per_rate=per_rate, max_new=max_new)
+    if json_only:
+        print(json.dumps(res, indent=2, default=str))
+        return
+    console.print(Panel.fit("[bold cyan]📈 Grow Reference DB[/bold cyan]", border_style="cyan"))
+    console.print(f"[bold]Prior:[/] ({lat}, {lon}) ±{radius}m")
+    console.print(f"[bold]status:[/] {res.get('status')} | added: {res.get('added')} | "
+                  f"db_size_after: {res.get('db_size_after')}")
+    console.print(f"[dim]{res.get('note')}[/dim]")
+
+
+@app.command(name="find-listing")
+def find_listing(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True,
+                                 help="Path to an indoor/listing screenshot"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Find the exact house/listing from an indoor (or any) photo via reverse-image
+    search. Uses Google Vision (needs GOOGLE_VISION_API_KEY) when set, else a key-free
+    Google-image scrape. Returns matched pages, listing URLs, and geocoded addresses.
+    Honest: only works if the photo (or a near-duplicate) is indexed online."""
+    from modules.listing_finder import find_listing as _fl
+    with clean_json_context(json_only):
+        res = _fl(str(image))
+    if json_only:
+        print(json.dumps(res, indent=2, default=str))
+        return
+    console.print(Panel.fit("[bold yellow]🏠 Listing Finder[/bold yellow]", border_style="yellow"))
+    console.print(f"[bold]Image:[/] {image}")
+    console.print(f"[bold]Engine:[/] {res.get('engine')} | status: {res.get('status')}")
+    if res.get("geolocated"):
+        g = res["geolocated"]
+        console.print(f"[bold green]Listing:[/] {g.get('address')} -> {g.get('latitude')}, {g.get('longitude')}")
+        console.print(f"[dim]{g.get('display_name')}[/dim]")
+    else:
+        console.print(f"[dim]{res.get('note')}[/dim]")
+    for u in res.get("listing_pages", [])[:5]:
+        console.print(f"  • listing: {u[:90]}")
+    for u in res.get("visual_matches", [])[:5]:
+        console.print(f"  · match: {u[:90]}")
+
+
+@app.command(name="track-properties")
+def track_properties(
+    lat: float = typer.Option(None, "--lat", help="Latitude of the point of interest"),
+    lon: float = typer.Option(None, "--lon", help="Longitude of the point of interest"),
+    address: str = typer.Option(None, "--address", help="Instead of lat/lon, geocode this address"),
+    radius: int = typer.Option(2000, "--radius", "--radius-m", help="Search radius in meters"),
+    cats: str = typer.Option("lodging,commercial,dining,office",
+                             "--cats", help="Comma-separated categories"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """List and track nearby hospitality/rental/commercial/property listings (hotels,
+    guest houses, apartments, offices, shops, dining) from real OSM/Overpass at a
+    coordinate or address. Key-free. Save the JSON `listings` and pass them back to
+    detect new/gone listings between runs (change monitoring)."""
+    from modules.property_locator import PropertyLocator
+    pl = PropertyLocator()
+    cats_l = [c.strip() for c in cats.split(",") if c.strip()]
+    with clean_json_context(json_only):
+        if address:
+            res = pl.from_address(address, radius_m=radius, categories=cats_l)
+        elif lat is not None and lon is not None:
+            res = pl.list_nearby(lat, lon, radius_m=radius, categories=cats_l)
+        else:
+            print("provide --lat/--lon or --address", file=sys.stderr)
+            raise typer.Exit(code=1)
+    if json_only:
+        print(json.dumps(res, indent=2, default=str))
+        return
+    console.print(Panel.fit("[bold blue]🏨 Property & Business Listings[/bold blue]", border_style="blue"))
+    console.print(f"[bold]Target:[/] {address or f'({lat},{lon})'} ±{radius}m")
+    console.print(f"[bold]Found:[/] {res.get('count')} listings (status {res.get('status')})")
+    for l in res.get("listings", []):
+        tag = l.get("tags", {})
+        extra = ", ".join(str(tag.get(k)) for k in ("phone", "website", "stars") if tag.get(k))
+        console.print(f"  • [{l.get('type')}] {l.get('name')} @ {l.get('latitude'):.5f},{l.get('longitude'):.5f}"
+                      + (f" — {extra}" if extra else ""))
+    console.print("[dim]To track changes: save the JSON `listings` and re-run with the same"
+                  " coords, passing prior listings via the track() API (change diff).[/dim]")
+
+
+@app.command(name="render-report")
+def render_report(
+    case_file: Path = typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True,
+                                     help="Path to a saved case JSON (e.g. reports/case_*.json)"),
+    output: Path = typer.Option(None, "--output", "-o", help="Output .md or .html file (default: alongside input)"),
+    title: str = typer.Option("GeoVision Case Report", "--title", "-t", help="Report title")
+):
+    """Render a saved investigation JSON into a professional, shareable Markdown or
+    HTML case report (honest confidence bands, full evidence/reasoning chain,
+    candidate table, reference imagery, sources). Output format from the extension:
+    .md or .html."""
+    import json as _json
+    from modules.case_report import render_case
+    rec = _json.loads(Path(case_file).read_text(encoding="utf-8"))
+    out = output or Path(case_file).with_suffix(".md")
+    path = render_case(rec, str(out), title=title)
+    console.print(Panel.fit("[bold green]📄 Case Report[/bold green]", border_style="green"))
+    console.print(f"[bold]Case:[/] {case_file}")
+    console.print(f"[bold]Status:[/] {rec.get('status')} | Best: "
+                  f"{rec.get('best_estimate') or 'none'}")
+    console.print(f"[bold]Rendered:[/] [cyan]{path}[/cyan] ({path.stat().st_size} bytes)")
+    return path
+
+
 if __name__ == "__main__":
     app()
 

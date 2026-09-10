@@ -1,5 +1,5 @@
 opencv-python>=4.8.0
-numpy>=1.24.0
+numpy>=1.24.0,<2   # pinned <2: scipy/easyocr/geoclip/reverse_geocoder are built for NumPy 1.x (numpy.Inf removed in 2.0)
 Pillow>=10.0.0
 torch>=2.0.0
 torchvision>=0.15.0

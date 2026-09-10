@@ -1,2482 +1,4024 @@
 {
-    "nanp_area_codes": {
-        "276": {
-            "city": "Southwest Virginia",
-            "state": "VA",
-            "country": "US",
-            "lat": 36.6,
-            "lon": -81.0
-        },
-        "434": {
-            "city": "Lynchburg/Charlottesville",
-            "state": "VA",
-            "country": "US",
-            "lat": 37.4138,
-            "lon": -79.1422
-        },
-        "540": {
-            "city": "Roanoke/Harrisonburg",
-            "state": "VA",
-            "country": "US",
-            "lat": 37.27,
-            "lon": -79.94
-        },
-        "571": {
-            "city": "Northern Virginia",
-            "state": "VA",
-            "country": "US",
-            "lat": 38.84,
-            "lon": -77.1
-        },
-        "703": {
-            "city": "Northern Virginia",
-            "state": "VA",
-            "country": "US",
-            "lat": 38.84,
-            "lon": -77.1
-        },
-        "757": {
-            "city": "Hampton Roads",
-            "state": "VA",
-            "country": "US",
-            "lat": 36.85,
-            "lon": -76.28
-        },
-        "804": {
-            "city": "Richmond",
-            "state": "VA",
-            "country": "US",
-            "lat": 37.5407,
-            "lon": -77.436
-        },
-        "212": {
-            "city": "New York City",
-            "state": "NY",
-            "country": "US",
-            "lat": 40.7128,
-            "lon": -74.006
-        },
-        "315": {
-            "city": "Syracuse",
-            "state": "NY",
-            "country": "US",
-            "lat": 43.0481,
-            "lon": -76.1474
-        },
-        "347": {
-            "city": "New York City",
-            "state": "NY",
-            "country": "US",
-            "lat": 40.7128,
-            "lon": -74.006
-        },
-        "516": {
-            "city": "Nassau County",
-            "state": "NY",
-            "country": "US",
-            "lat": 40.7282,
-            "lon": -73.6276
-        },
-        "518": {
-            "city": "Albany",
-            "state": "NY",
-            "country": "US",
-            "lat": 42.6526,
-            "lon": -73.7562
-        },
-        "585": {
-            "city": "Rochester",
-            "state": "NY",
-            "country": "US",
-            "lat": 43.1566,
-            "lon": -77.6088
-        },
-        "607": {
-            "city": "Binghamton",
-            "state": "NY",
-            "country": "US",
-            "lat": 42.0987,
-            "lon": -75.918
-        },
-        "631": {
-            "city": "Suffolk County",
-            "state": "NY",
-            "country": "US",
-            "lat": 40.8354,
-            "lon": -72.9691
-        },
-        "646": {
-            "city": "New York City",
-            "state": "NY",
-            "country": "US",
-            "lat": 40.7128,
-            "lon": -74.006
-        },
-        "716": {
-            "city": "Buffalo",
-            "state": "NY",
-            "country": "US",
-            "lat": 42.8864,
-            "lon": -78.8784
-        },
-        "718": {
-            "city": "New York City",
-            "state": "NY",
-            "country": "US",
-            "lat": 40.7128,
-            "lon": -74.006
-        },
-        "845": {
-            "city": "Poughkeepsie",
-            "state": "NY",
-            "country": "US",
-            "lat": 41.7004,
-            "lon": -73.921
-        },
-        "914": {
-            "city": "Westchester County",
-            "state": "NY",
-            "country": "US",
-            "lat": 41.122,
-            "lon": -73.7949
-        },
-        "917": {
-            "city": "New York City",
-            "state": "NY",
-            "country": "US",
-            "lat": 40.7128,
-            "lon": -74.006
-        },
-        "929": {
-            "city": "New York City",
-            "state": "NY",
-            "country": "US",
-            "lat": 40.7128,
-            "lon": -74.006
-        },
-        "209": {
-            "city": "Stockton",
-            "state": "CA",
-            "country": "US",
-            "lat": 37.9577,
-            "lon": -121.2908
-        },
-        "213": {
-            "city": "Los Angeles",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.0522,
-            "lon": -118.2437
-        },
-        "310": {
-            "city": "Los Angeles",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.0522,
-            "lon": -118.2437
-        },
-        "323": {
-            "city": "Los Angeles",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.0522,
-            "lon": -118.2437
-        },
-        "408": {
-            "city": "San Jose",
-            "state": "CA",
-            "country": "US",
-            "lat": 37.3382,
-            "lon": -121.8863
-        },
-        "415": {
-            "city": "San Francisco",
-            "state": "CA",
-            "country": "US",
-            "lat": 37.7749,
-            "lon": -122.4194
-        },
-        "424": {
-            "city": "Los Angeles",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.0522,
-            "lon": -118.2437
-        },
-        "510": {
-            "city": "Oakland",
-            "state": "CA",
-            "country": "US",
-            "lat": 37.8044,
-            "lon": -122.2712
-        },
-        "530": {
-            "city": "Redding",
-            "state": "CA",
-            "country": "US",
-            "lat": 40.5865,
-            "lon": -122.3917
-        },
-        "559": {
-            "city": "Fresno",
-            "state": "CA",
-            "country": "US",
-            "lat": 36.7378,
-            "lon": -119.7871
-        },
-        "562": {
-            "city": "Long Beach",
-            "state": "CA",
-            "country": "US",
-            "lat": 33.7701,
-            "lon": -118.1937
-        },
-        "619": {
-            "city": "San Diego",
-            "state": "CA",
-            "country": "US",
-            "lat": 32.7157,
-            "lon": -117.1611
-        },
-        "626": {
-            "city": "Pasadena",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.1478,
-            "lon": -118.1445
-        },
-        "650": {
-            "city": "San Mateo",
-            "state": "CA",
-            "country": "US",
-            "lat": 37.563,
-            "lon": -122.3255
-        },
-        "657": {
-            "city": "Anaheim",
-            "state": "CA",
-            "country": "US",
-            "lat": 33.8366,
-            "lon": -117.9143
-        },
-        "661": {
-            "city": "Bakersfield",
-            "state": "CA",
-            "country": "US",
-            "lat": 35.3733,
-            "lon": -119.0187
-        },
-        "669": {
-            "city": "San Jose",
-            "state": "CA",
-            "country": "US",
-            "lat": 37.3382,
-            "lon": -121.8863
-        },
-        "707": {
-            "city": "Santa Rosa",
-            "state": "CA",
-            "country": "US",
-            "lat": 38.4404,
-            "lon": -122.7141
-        },
-        "714": {
-            "city": "Anaheim",
-            "state": "CA",
-            "country": "US",
-            "lat": 33.8366,
-            "lon": -117.9143
-        },
-        "747": {
-            "city": "San Fernando Valley",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.1808,
-            "lon": -118.309
-        },
-        "760": {
-            "city": "Palm Springs",
-            "state": "CA",
-            "country": "US",
-            "lat": 33.8303,
-            "lon": -116.5453
-        },
-        "805": {
-            "city": "Santa Barbara",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.4208,
-            "lon": -119.6982
-        },
-        "818": {
-            "city": "San Fernando Valley",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.1808,
-            "lon": -118.309
-        },
-        "831": {
-            "city": "Monterey",
-            "state": "CA",
-            "country": "US",
-            "lat": 36.6002,
-            "lon": -121.8947
-        },
-        "858": {
-            "city": "San Diego",
-            "state": "CA",
-            "country": "US",
-            "lat": 32.7157,
-            "lon": -117.1611
-        },
-        "909": {
-            "city": "San Bernardino",
-            "state": "CA",
-            "country": "US",
-            "lat": 34.1083,
-            "lon": -117.2898
-        },
-        "916": {
-            "city": "Sacramento",
-            "state": "CA",
-            "country": "US",
-            "lat": 38.5816,
-            "lon": -121.4944
-        },
-        "925": {
-            "city": "Concord",
-            "state": "CA",
-            "country": "US",
-            "lat": 37.978,
-            "lon": -122.0311
-        },
-        "949": {
-            "city": "Irvine",
-            "state": "CA",
-            "country": "US",
-            "lat": 33.6846,
-            "lon": -117.8265
-        },
-        "951": {
-            "city": "Riverside",
-            "state": "CA",
-            "country": "US",
-            "lat": 33.9533,
-            "lon": -117.3962
-        },
-        "210": {
-            "city": "San Antonio",
-            "state": "TX",
-            "country": "US",
-            "lat": 29.4241,
-            "lon": -98.4936
-        },
-        "214": {
-            "city": "Dallas",
-            "state": "TX",
-            "country": "US",
-            "lat": 32.7767,
-            "lon": -96.797
-        },
-        "254": {
-            "city": "Waco",
-            "state": "TX",
-            "country": "US",
-            "lat": 31.5493,
-            "lon": -97.1467
-        },
-        "281": {
-            "city": "Houston",
-            "state": "TX",
-            "country": "US",
-            "lat": 29.7604,
-            "lon": -95.3698
-        },
-        "325": {
-            "city": "Abilene",
-            "state": "TX",
-            "country": "US",
-            "lat": 32.4487,
-            "lon": -99.7331
-        },
-        "346": {
-            "city": "Houston",
-            "state": "TX",
-            "country": "US",
-            "lat": 29.7604,
-            "lon": -95.3698
-        },
-        "361": {
-            "city": "Corpus Christi",
-            "state": "TX",
-            "country": "US",
-            "lat": 27.8006,
-            "lon": -97.3964
-        },
-        "409": {
-            "city": "Beaumont",
-            "state": "TX",
-            "country": "US",
-            "lat": 30.0802,
-            "lon": -94.1266
-        },
-        "430": {
-            "city": "Tyler",
-            "state": "TX",
-            "country": "US",
-            "lat": 32.3513,
-            "lon": -95.3011
-        },
-        "432": {
-            "city": "Midland",
-            "state": "TX",
-            "country": "US",
-            "lat": 31.9973,
-            "lon": -102.0779
-        },
-        "469": {
-            "city": "Dallas",
-            "state": "TX",
-            "country": "US",
-            "lat": 32.7767,
-            "lon": -96.797
-        },
-        "512": {
-            "city": "Austin",
-            "state": "TX",
-            "country": "US",
-            "lat": 30.2672,
-            "lon": -97.7431
-        },
-        "682": {
-            "city": "Fort Worth",
-            "state": "TX",
-            "country": "US",
-            "lat": 32.7254,
-            "lon": -97.3208
-        },
-        "713": {
-            "city": "Houston",
-            "state": "TX",
-            "country": "US",
-            "lat": 29.7604,
-            "lon": -95.3698
-        },
-        "737": {
-            "city": "Austin",
-            "state": "TX",
-            "country": "US",
-            "lat": 30.2672,
-            "lon": -97.7431
-        },
-        "806": {
-            "city": "Lubbock",
-            "state": "TX",
-            "country": "US",
-            "lat": 33.5779,
-            "lon": -101.8552
-        },
-        "817": {
-            "city": "Fort Worth",
-            "state": "TX",
-            "country": "US",
-            "lat": 32.7254,
-            "lon": -97.3208
-        },
-        "830": {
-            "city": "New Braunfels",
-            "state": "TX",
-            "country": "US",
-            "lat": 29.703,
-            "lon": -98.1245
-        },
-        "832": {
-            "city": "Houston",
-            "state": "TX",
-            "country": "US",
-            "lat": 29.7604,
-            "lon": -95.3698
-        },
-        "903": {
-            "city": "Tyler",
-            "state": "TX",
-            "country": "US",
-            "lat": 32.3513,
-            "lon": -95.3011
-        },
-        "915": {
-            "city": "El Paso",
-            "state": "TX",
-            "country": "US",
-            "lat": 31.7619,
-            "lon": -106.485
-        },
-        "936": {
-            "city": "Nacogdoches",
-            "state": "TX",
-            "country": "US",
-            "lat": 31.6035,
-            "lon": -94.6555
-        },
-        "940": {
-            "city": "Denton",
-            "state": "TX",
-            "country": "US",
-            "lat": 33.2148,
-            "lon": -97.1331
-        },
-        "956": {
-            "city": "Laredo",
-            "state": "TX",
-            "country": "US",
-            "lat": 27.5306,
-            "lon": -99.4803
-        },
-        "972": {
-            "city": "Dallas",
-            "state": "TX",
-            "country": "US",
-            "lat": 32.7767,
-            "lon": -96.797
-        },
-        "979": {
-            "city": "College Station",
-            "state": "TX",
-            "country": "US",
-            "lat": 30.628,
-            "lon": -96.3344
-        },
-        "239": {
-            "city": "Fort Myers",
-            "state": "FL",
-            "country": "US",
-            "lat": 26.6406,
-            "lon": -81.8723
-        },
-        "305": {
-            "city": "Miami",
-            "state": "FL",
-            "country": "US",
-            "lat": 25.7617,
-            "lon": -80.1918
-        },
-        "321": {
-            "city": "Orlando",
-            "state": "FL",
-            "country": "US",
-            "lat": 28.5383,
-            "lon": -81.3792
-        },
-        "352": {
-            "city": "Gainesville",
-            "state": "FL",
-            "country": "US",
-            "lat": 29.6516,
-            "lon": -82.3248
-        },
-        "386": {
-            "city": "Daytona Beach",
-            "state": "FL",
-            "country": "US",
-            "lat": 29.2108,
-            "lon": -81.0228
-        },
-        "407": {
-            "city": "Orlando",
-            "state": "FL",
-            "country": "US",
-            "lat": 28.5383,
-            "lon": -81.3792
-        },
-        "561": {
-            "city": "West Palm Beach",
-            "state": "FL",
-            "country": "US",
-            "lat": 26.7153,
-            "lon": -80.0534
-        },
-        "727": {
-            "city": "St. Petersburg",
-            "state": "FL",
-            "country": "US",
-            "lat": 27.7676,
-            "lon": -82.6403
-        },
-        "754": {
-            "city": "Fort Lauderdale",
-            "state": "FL",
-            "country": "US",
-            "lat": 26.1224,
-            "lon": -80.1918
-        },
-        "772": {
-            "city": "Port St. Lucie",
-            "state": "FL",
-            "country": "US",
-            "lat": 27.273,
-            "lon": -80.3582
-        },
-        "786": {
-            "city": "Miami",
-            "state": "FL",
-            "country": "US",
-            "lat": 25.7617,
-            "lon": -80.1918
-        },
-        "813": {
-            "city": "Tampa",
-            "state": "FL",
-            "country": "US",
-            "lat": 27.9506,
-            "lon": -82.4572
-        },
-        "850": {
-            "city": "Tallahassee",
-            "state": "FL",
-            "country": "US",
-            "lat": 30.4383,
-            "lon": -84.2807
-        },
-        "863": {
-            "city": "Lakeland",
-            "state": "FL",
-            "country": "US",
-            "lat": 28.0395,
-            "lon": -81.9498
-        },
-        "904": {
-            "city": "Jacksonville",
-            "state": "FL",
-            "country": "US",
-            "lat": 30.3322,
-            "lon": -81.6557
-        },
-        "941": {
-            "city": "Sarasota",
-            "state": "FL",
-            "country": "US",
-            "lat": 27.3364,
-            "lon": -82.5307
-        },
-        "954": {
-            "city": "Fort Lauderdale",
-            "state": "FL",
-            "country": "US",
-            "lat": 26.1224,
-            "lon": -80.1918
-        },
-        "217": {
-            "city": "Springfield",
-            "state": "IL",
-            "country": "US",
-            "lat": 39.7817,
-            "lon": -89.6501
-        },
-        "224": {
-            "city": "Elgin",
-            "state": "IL",
-            "country": "US",
-            "lat": 42.0354,
-            "lon": -88.2826
-        },
-        "309": {
-            "city": "Peoria",
-            "state": "IL",
-            "country": "US",
-            "lat": 40.6936,
-            "lon": -89.589
-        },
-        "312": {
-            "city": "Chicago",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.8781,
-            "lon": -87.6298
-        },
-        "331": {
-            "city": "Aurora",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.7606,
-            "lon": -88.3201
-        },
-        "618": {
-            "city": "Belleville",
-            "state": "IL",
-            "country": "US",
-            "lat": 38.5201,
-            "lon": -89.984
-        },
-        "630": {
-            "city": "Aurora",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.7606,
-            "lon": -88.3201
-        },
-        "708": {
-            "city": "Cicero",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.8456,
-            "lon": -87.7539
-        },
-        "773": {
-            "city": "Chicago",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.8781,
-            "lon": -87.6298
-        },
-        "779": {
-            "city": "Rockford",
-            "state": "IL",
-            "country": "US",
-            "lat": 42.2711,
-            "lon": -89.094
-        },
-        "815": {
-            "city": "Rockford",
-            "state": "IL",
-            "country": "US",
-            "lat": 42.2711,
-            "lon": -89.094
-        },
-        "847": {
-            "city": "Elgin",
-            "state": "IL",
-            "country": "US",
-            "lat": 42.0354,
-            "lon": -88.2826
-        },
-        "872": {
-            "city": "Chicago",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.8781,
-            "lon": -87.6298
-        },
-        "215": {
-            "city": "Philadelphia",
-            "state": "PA",
-            "country": "US",
-            "lat": 39.9526,
-            "lon": -75.1652
-        },
-        "267": {
-            "city": "Philadelphia",
-            "state": "PA",
-            "country": "US",
-            "lat": 39.9526,
-            "lon": -75.1652
-        },
-        "272": {
-            "city": "Scranton",
-            "state": "PA",
-            "country": "US",
-            "lat": 41.409,
-            "lon": -75.6624
-        },
-        "412": {
-            "city": "Pittsburgh",
-            "state": "PA",
-            "country": "US",
-            "lat": 40.4406,
-            "lon": -79.9959
-        },
-        "484": {
-            "city": "Allentown",
-            "state": "PA",
-            "country": "US",
-            "lat": 40.6023,
-            "lon": -75.4714
-        },
-        "570": {
-            "city": "Scranton",
-            "state": "PA",
-            "country": "US",
-            "lat": 41.409,
-            "lon": -75.6624
-        },
-        "610": {
-            "city": "Allentown",
-            "state": "PA",
-            "country": "US",
-            "lat": 40.6023,
-            "lon": -75.4714
-        },
-        "717": {
-            "city": "Harrisburg",
-            "state": "PA",
-            "country": "US",
-            "lat": 40.2732,
-            "lon": -76.8867
-        },
-        "724": {
-            "city": "New Castle",
-            "state": "PA",
-            "country": "US",
-            "lat": 41.0037,
-            "lon": -80.347
-        },
-        "814": {
-            "city": "Erie",
-            "state": "PA",
-            "country": "US",
-            "lat": 42.1292,
-            "lon": -80.0851
-        },
-        "878": {
-            "city": "Pittsburgh",
-            "state": "PA",
-            "country": "US",
-            "lat": 40.4406,
-            "lon": -79.9959
-        },
-        "216": {
-            "city": "Cleveland",
-            "state": "OH",
-            "country": "US",
-            "lat": 41.4993,
-            "lon": -81.6944
-        },
-        "234": {
-            "city": "Akron",
-            "state": "OH",
-            "country": "US",
-            "lat": 41.0814,
-            "lon": -81.519
-        },
-        "330": {
-            "city": "Akron",
-            "state": "OH",
-            "country": "US",
-            "lat": 41.0814,
-            "lon": -81.519
-        },
-        "380": {
-            "city": "Columbus",
-            "state": "OH",
-            "country": "US",
-            "lat": 39.9612,
-            "lon": -82.9988
-        },
-        "419": {
-            "city": "Toledo",
-            "state": "OH",
-            "country": "US",
-            "lat": 41.6528,
-            "lon": -83.5379
-        },
-        "440": {
-            "city": "Parma",
-            "state": "OH",
-            "country": "US",
-            "lat": 41.4048,
-            "lon": -81.7229
-        },
-        "513": {
-            "city": "Cincinnati",
-            "state": "OH",
-            "country": "US",
-            "lat": 39.1031,
-            "lon": -84.512
-        },
-        "567": {
-            "city": "Toledo",
-            "state": "OH",
-            "country": "US",
-            "lat": 41.6528,
-            "lon": -83.5379
-        },
-        "614": {
-            "city": "Columbus",
-            "state": "OH",
-            "country": "US",
-            "lat": 39.9612,
-            "lon": -82.9988
-        },
-        "740": {
-            "city": "Newark",
-            "state": "OH",
-            "country": "US",
-            "lat": 40.0581,
-            "lon": -82.4013
-        },
-        "937": {
-            "city": "Dayton",
-            "state": "OH",
-            "country": "US",
-            "lat": 39.7589,
-            "lon": -84.1916
-        },
-        "229": {
-            "city": "Albany",
-            "state": "GA",
-            "country": "US",
-            "lat": 31.5785,
-            "lon": -84.1557
-        },
-        "404": {
-            "city": "Atlanta",
-            "state": "GA",
-            "country": "US",
-            "lat": 33.749,
-            "lon": -84.388
-        },
-        "470": {
-            "city": "Atlanta",
-            "state": "GA",
-            "country": "US",
-            "lat": 33.749,
-            "lon": -84.388
-        },
-        "478": {
-            "city": "Macon",
-            "state": "GA",
-            "country": "US",
-            "lat": 32.8407,
-            "lon": -83.6324
-        },
-        "678": {
-            "city": "Atlanta",
-            "state": "GA",
-            "country": "US",
-            "lat": 33.749,
-            "lon": -84.388
-        },
-        "706": {
-            "city": "Augusta",
-            "state": "GA",
-            "country": "US",
-            "lat": 33.4735,
-            "lon": -81.9732
-        },
-        "762": {
-            "city": "Augusta",
-            "state": "GA",
-            "country": "US",
-            "lat": 33.4735,
-            "lon": -81.9732
-        },
-        "770": {
-            "city": "Roswell",
-            "state": "GA",
-            "country": "US",
-            "lat": 34.0232,
-            "lon": -84.3616
-        },
-        "912": {
-            "city": "Savannah",
-            "state": "GA",
-            "country": "US",
-            "lat": 32.0809,
-            "lon": -81.0912
-        },
-        "252": {
-            "city": "Greenville",
-            "state": "NC",
-            "country": "US",
-            "lat": 35.6127,
-            "lon": -77.3664
-        },
-        "336": {
-            "city": "Greensboro",
-            "state": "NC",
-            "country": "US",
-            "lat": 36.0726,
-            "lon": -79.792
-        },
-        "704": {
-            "city": "Charlotte",
-            "state": "NC",
-            "country": "US",
-            "lat": 35.2271,
-            "lon": -80.8431
-        },
-        "743": {
-            "city": "Greensboro",
-            "state": "NC",
-            "country": "US",
-            "lat": 36.0726,
-            "lon": -79.792
-        },
-        "828": {
-            "city": "Asheville",
-            "state": "NC",
-            "country": "US",
-            "lat": 35.5951,
-            "lon": -82.5515
-        },
-        "910": {
-            "city": "Fayetteville",
-            "state": "NC",
-            "country": "US",
-            "lat": 35.0527,
-            "lon": -78.8784
-        },
-        "919": {
-            "city": "Raleigh",
-            "state": "NC",
-            "country": "US",
-            "lat": 35.7796,
-            "lon": -78.6382
-        },
-        "980": {
-            "city": "Charlotte",
-            "state": "NC",
-            "country": "US",
-            "lat": 35.2271,
-            "lon": -80.8431
-        },
-        "984": {
-            "city": "Raleigh",
-            "state": "NC",
-            "country": "US",
-            "lat": 35.7796,
-            "lon": -78.6382
-        },
-        "231": {
-            "city": "Traverse City",
-            "state": "MI",
-            "country": "US",
-            "lat": 44.7631,
-            "lon": -85.6206
-        },
-        "248": {
-            "city": "Troy",
-            "state": "MI",
-            "country": "US",
-            "lat": 42.6064,
-            "lon": -83.1499
-        },
-        "269": {
-            "city": "Kalamazoo",
-            "state": "MI",
-            "country": "US",
-            "lat": 42.2917,
-            "lon": -85.5872
-        },
-        "313": {
-            "city": "Detroit",
-            "state": "MI",
-            "country": "US",
-            "lat": 42.3314,
-            "lon": -83.0458
-        },
-        "517": {
-            "city": "Lansing",
-            "state": "MI",
-            "country": "US",
-            "lat": 42.7325,
-            "lon": -84.5555
-        },
-        "586": {
-            "city": "Warren",
-            "state": "MI",
-            "country": "US",
-            "lat": 42.4775,
-            "lon": -83.0277
-        },
-        "616": {
-            "city": "Grand Rapids",
-            "state": "MI",
-            "country": "US",
-            "lat": 42.9634,
-            "lon": -85.6681
-        },
-        "734": {
-            "city": "Ann Arbor",
-            "state": "MI",
-            "country": "US",
-            "lat": 42.2808,
-            "lon": -83.743
-        },
-        "810": {
-            "city": "Flint",
-            "state": "MI",
-            "country": "US",
-            "lat": 43.0125,
-            "lon": -83.6875
-        },
-        "906": {
-            "city": "Marquette",
-            "state": "MI",
-            "country": "US",
-            "lat": 46.5435,
-            "lon": -87.3954
-        },
-        "947": {
-            "city": "Troy",
-            "state": "MI",
-            "country": "US",
-            "lat": 42.6064,
-            "lon": -83.1499
-        },
-        "989": {
-            "city": "Saginaw",
-            "state": "MI",
-            "country": "US",
-            "lat": 43.4195,
-            "lon": -83.9508
-        },
-        "339": {
-            "city": "Cambridge",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.3736,
-            "lon": -71.1097
-        },
-        "351": {
-            "city": "Lowell",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.6334,
-            "lon": -71.3162
-        },
-        "413": {
-            "city": "Springfield",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.1015,
-            "lon": -72.5898
-        },
-        "508": {
-            "city": "Worcester",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.2626,
-            "lon": -71.8023
-        },
-        "617": {
-            "city": "Boston",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.3601,
-            "lon": -71.0589
-        },
-        "774": {
-            "city": "Worcester",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.2626,
-            "lon": -71.8023
-        },
-        "781": {
-            "city": "Waltham",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.3765,
-            "lon": -71.2356
-        },
-        "857": {
-            "city": "Boston",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.3601,
-            "lon": -71.0589
-        },
-        "978": {
-            "city": "Lowell",
-            "state": "MA",
-            "country": "US",
-            "lat": 42.6334,
-            "lon": -71.3162
-        },
-        "201": {
-            "city": "Jersey City",
-            "state": "NJ",
-            "country": "US",
-            "lat": 40.7178,
-            "lon": -74.0431
-        },
-        "609": {
-            "city": "Trenton",
-            "state": "NJ",
-            "country": "US",
-            "lat": 40.2171,
-            "lon": -74.7429
-        },
-        "732": {
-            "city": "New Brunswick",
-            "state": "NJ",
-            "country": "US",
-            "lat": 40.4862,
-            "lon": -74.4518
-        },
-        "206": {
-            "city": "Seattle",
-            "state": "WA",
-            "country": "US",
-            "lat": 47.6062,
-            "lon": -122.3321
-        },
-        "253": {
-            "city": "Tacoma",
-            "state": "WA",
-            "country": "US",
-            "lat": 47.2529,
-            "lon": -122.4443
-        },
-        "303": {
-            "city": "Denver",
-            "state": "CO",
-            "country": "US",
-            "lat": 39.7392,
-            "lon": -104.9903
-        },
-        "719": {
-            "city": "Colorado Springs",
-            "state": "CO",
-            "country": "US",
-            "lat": 38.8339,
-            "lon": -104.8214
-        },
-        "602": {
-            "city": "Phoenix",
-            "state": "AZ",
-            "country": "US",
-            "lat": 33.4484,
-            "lon": -112.074
-        },
-        "520": {
-            "city": "Tucson",
-            "state": "AZ",
-            "country": "US",
-            "lat": 32.2226,
-            "lon": -110.9747
-        },
-        "615": {
-            "city": "Nashville",
-            "state": "TN",
-            "country": "US",
-            "lat": 36.1627,
-            "lon": -86.7816
-        },
-        "901": {
-            "city": "Memphis",
-            "state": "TN",
-            "country": "US",
-            "lat": 35.1495,
-            "lon": -90.049
-        },
-        "314": {
-            "city": "St. Louis",
-            "state": "MO",
-            "country": "US",
-            "lat": 38.627,
-            "lon": -90.1994
-        },
-        "816": {
-            "city": "Kansas City",
-            "state": "MO",
-            "country": "US",
-            "lat": 39.0997,
-            "lon": -94.5786
-        },
-        "410": {
-            "city": "Baltimore",
-            "state": "MD",
-            "country": "US",
-            "lat": 39.2904,
-            "lon": -76.6122
-        },
-        "301": {
-            "city": "Silver Spring",
-            "state": "MD",
-            "country": "US",
-            "lat": 38.9907,
-            "lon": -77.0261
-        },
-        "414": {
-            "city": "Milwaukee",
-            "state": "WI",
-            "country": "US",
-            "lat": 43.0389,
-            "lon": -87.9065
-        },
-        "608": {
-            "city": "Madison",
-            "state": "WI",
-            "country": "US",
-            "lat": 43.0731,
-            "lon": -89.4012
-        },
-        "612": {
-            "city": "Minneapolis",
-            "state": "MN",
-            "country": "US",
-            "lat": 44.9778,
-            "lon": -93.265
-        },
-        "651": {
-            "city": "St. Paul",
-            "state": "MN",
-            "country": "US",
-            "lat": 44.9537,
-            "lon": -93.09
-        },
-        "317": {
-            "city": "Indianapolis",
-            "state": "IN",
-            "country": "US",
-            "lat": 39.7684,
-            "lon": -86.1581
-        },
-        "260": {
-            "city": "Fort Wayne",
-            "state": "IN",
-            "country": "US",
-            "lat": 41.0793,
-            "lon": -85.1394
-        },
-        "203": {
-            "city": "Bridgeport",
-            "state": "CT",
-            "country": "US",
-            "lat": 41.1792,
-            "lon": -73.1894
-        },
-        "860": {
-            "city": "Hartford",
-            "state": "CT",
-            "country": "US",
-            "lat": 41.7658,
-            "lon": -72.6734
-        },
-        "503": {
-            "city": "Portland",
-            "state": "OR",
-            "country": "US",
-            "lat": 45.5152,
-            "lon": -122.6784
-        },
-        "541": {
-            "city": "Eugene",
-            "state": "OR",
-            "country": "US",
-            "lat": 44.0521,
-            "lon": -123.0868
-        },
-        "843": {
-            "city": "Charleston",
-            "state": "SC",
-            "country": "US",
-            "lat": 32.7765,
-            "lon": -79.9311
-        },
-        "803": {
-            "city": "Columbia",
-            "state": "SC",
-            "country": "US",
-            "lat": 34.0007,
-            "lon": -81.0348
-        },
-        "205": {
-            "city": "Birmingham",
-            "state": "AL",
-            "country": "US",
-            "lat": 33.5186,
-            "lon": -86.8104
-        },
-        "251": {
-            "city": "Mobile",
-            "state": "AL",
-            "country": "US",
-            "lat": 30.6954,
-            "lon": -88.0399
-        },
-        "504": {
-            "city": "New Orleans",
-            "state": "LA",
-            "country": "US",
-            "lat": 29.9511,
-            "lon": -90.0715
-        },
-        "225": {
-            "city": "Baton Rouge",
-            "state": "LA",
-            "country": "US",
-            "lat": 30.4515,
-            "lon": -91.1871
-        },
-        "502": {
-            "city": "Louisville",
-            "state": "KY",
-            "country": "US",
-            "lat": 38.2527,
-            "lon": -85.7585
-        },
-        "859": {
-            "city": "Lexington",
-            "state": "KY",
-            "country": "US",
-            "lat": 38.0406,
-            "lon": -84.5037
-        },
-        "405": {
-            "city": "Oklahoma City",
-            "state": "OK",
-            "country": "US",
-            "lat": 35.4676,
-            "lon": -97.5164
-        },
-        "918": {
-            "city": "Tulsa",
-            "state": "OK",
-            "country": "US",
-            "lat": 36.154,
-            "lon": -95.9928
-        },
-        "204": {
-            "city": "Manitoba",
-            "state": "MB",
-            "country": "CA",
-            "lat": 49.8951,
-            "lon": -97.1384
-        },
-        "226": {
-            "city": "London",
-            "state": "ON",
-            "country": "CA",
-            "lat": 42.9849,
-            "lon": -81.2453
-        },
-        "236": {
-            "city": "Vancouver",
-            "state": "BC",
-            "country": "CA",
-            "lat": 49.2827,
-            "lon": -123.1207
-        },
-        "249": {
-            "city": "Sudbury",
-            "state": "ON",
-            "country": "CA",
-            "lat": 46.4917,
-            "lon": -80.993
-        },
-        "250": {
-            "city": "Victoria",
-            "state": "BC",
-            "country": "CA",
-            "lat": 48.4284,
-            "lon": -123.3656
-        },
-        "289": {
-            "city": "Hamilton",
-            "state": "ON",
-            "country": "CA",
-            "lat": 43.2557,
-            "lon": -79.8711
-        },
-        "306": {
-            "city": "Saskatoon",
-            "state": "SK",
-            "country": "CA",
-            "lat": 52.1332,
-            "lon": -106.67
-        },
-        "343": {
-            "city": "Ottawa",
-            "state": "ON",
-            "country": "CA",
-            "lat": 45.4215,
-            "lon": -75.6972
-        },
-        "365": {
-            "city": "Hamilton",
-            "state": "ON",
-            "country": "CA",
-            "lat": 43.2557,
-            "lon": -79.8711
-        },
-        "403": {
-            "city": "Calgary",
-            "state": "AB",
-            "country": "CA",
-            "lat": 51.0447,
-            "lon": -114.0719
-        },
-        "416": {
-            "city": "Toronto",
-            "state": "ON",
-            "country": "CA",
-            "lat": 43.651,
-            "lon": -79.347
-        },
-        "418": {
-            "city": "Quebec City",
-            "state": "QC",
-            "country": "CA",
-            "lat": 46.8139,
-            "lon": -71.208
-        },
-        "431": {
-            "city": "Manitoba",
-            "state": "MB",
-            "country": "CA",
-            "lat": 49.8951,
-            "lon": -97.1384
-        },
-        "437": {
-            "city": "Toronto",
-            "state": "ON",
-            "country": "CA",
-            "lat": 43.651,
-            "lon": -79.347
-        },
-        "438": {
-            "city": "Montreal",
-            "state": "QC",
-            "country": "CA",
-            "lat": 45.5017,
-            "lon": -73.5673
-        },
-        "450": {
-            "city": "Laval",
-            "state": "QC",
-            "country": "CA",
-            "lat": 45.5701,
-            "lon": -73.754
-        },
-        "506": {
-            "city": "New Brunswick",
-            "state": "NB",
-            "country": "CA",
-            "lat": 46.5653,
-            "lon": -66.4619
-        },
-        "514": {
-            "city": "Montreal",
-            "state": "QC",
-            "country": "CA",
-            "lat": 45.5017,
-            "lon": -73.5673
-        },
-        "519": {
-            "city": "London",
-            "state": "ON",
-            "country": "CA",
-            "lat": 42.9849,
-            "lon": -81.2453
-        },
-        "548": {
-            "city": "London",
-            "state": "ON",
-            "country": "CA",
-            "lat": 42.9849,
-            "lon": -81.2453
-        },
-        "579": {
-            "city": "Granby",
-            "state": "QC",
-            "country": "CA",
-            "lat": 45.4001,
-            "lon": -72.7318
-        },
-        "581": {
-            "city": "Quebec City",
-            "state": "QC",
-            "country": "CA",
-            "lat": 46.8139,
-            "lon": -71.208
-        },
-        "587": {
-            "city": "Calgary",
-            "state": "AB",
-            "country": "CA",
-            "lat": 51.0447,
-            "lon": -114.0719
-        },
-        "604": {
-            "city": "Vancouver",
-            "state": "BC",
-            "country": "CA",
-            "lat": 49.2827,
-            "lon": -123.1207
-        },
-        "613": {
-            "city": "Ottawa",
-            "state": "ON",
-            "country": "CA",
-            "lat": 45.4215,
-            "lon": -75.6972
-        },
-        "639": {
-            "city": "Saskatoon",
-            "state": "SK",
-            "country": "CA",
-            "lat": 52.1332,
-            "lon": -106.67
-        },
-        "647": {
-            "city": "Toronto",
-            "state": "ON",
-            "country": "CA",
-            "lat": 43.651,
-            "lon": -79.347
-        },
-        "705": {
-            "city": "Sudbury",
-            "state": "ON",
-            "country": "CA",
-            "lat": 46.4917,
-            "lon": -80.993
-        },
-        "709": {
-            "city": "Newfoundland",
-            "state": "NL",
-            "country": "CA",
-            "lat": 47.5615,
-            "lon": -52.7126
-        },
-        "778": {
-            "city": "Vancouver",
-            "state": "BC",
-            "country": "CA",
-            "lat": 49.2827,
-            "lon": -123.1207
-        },
-        "780": {
-            "city": "Edmonton",
-            "state": "AB",
-            "country": "CA",
-            "lat": 53.5461,
-            "lon": -113.4938
-        },
-        "807": {
-            "city": "Thunder Bay",
-            "state": "ON",
-            "country": "CA",
-            "lat": 48.3809,
-            "lon": -89.2477
-        },
-        "819": {
-            "city": "Sherbrooke",
-            "state": "QC",
-            "country": "CA",
-            "lat": 45.401,
-            "lon": -71.8991
-        },
-        "825": {
-            "city": "Calgary",
-            "state": "AB",
-            "country": "CA",
-            "lat": 51.0447,
-            "lon": -114.0719
-        },
-        "867": {
-            "city": "Northern Canada",
-            "state": "NT",
-            "country": "CA",
-            "lat": 64.8255,
-            "lon": -124.8457
-        },
-        "873": {
-            "city": "Sherbrooke",
-            "state": "QC",
-            "country": "CA",
-            "lat": 45.401,
-            "lon": -71.8991
-        },
-        "902": {
-            "city": "Halifax",
-            "state": "NS",
-            "country": "CA",
-            "lat": 44.6488,
-            "lon": -63.5752
-        },
-        "905": {
-            "city": "Hamilton",
-            "state": "ON",
-            "country": "CA",
-            "lat": 43.2557,
-            "lon": -79.8711
-        },
-        "221": {
-            "city": "Generic City 221",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "230": {
-            "city": "Generic City 230",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "237": {
-            "city": "Generic City 237",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "242": {
-            "city": "Generic City 242",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "244": {
-            "city": "Generic City 244",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "246": {
-            "city": "Generic City 246",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "257": {
-            "city": "Generic City 257",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "258": {
-            "city": "Generic City 258",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "259": {
-            "city": "Generic City 259",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "264": {
-            "city": "Generic City 264",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "268": {
-            "city": "Generic City 268",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "278": {
-            "city": "Generic City 278",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "283": {
-            "city": "Generic City 283",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "285": {
-            "city": "Generic City 285",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "287": {
-            "city": "Generic City 287",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "288": {
-            "city": "Generic City 288",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "293": {
-            "city": "Generic City 293",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "294": {
-            "city": "Generic City 294",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "295": {
-            "city": "Generic City 295",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "296": {
-            "city": "Generic City 296",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "299": {
-            "city": "Generic City 299",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "327": {
-            "city": "Generic City 327",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "328": {
-            "city": "Generic City 328",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "329": {
-            "city": "Generic City 329",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "333": {
-            "city": "Generic City 333",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "335": {
-            "city": "Generic City 335",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "337": {
-            "city": "Generic City 337",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "340": {
-            "city": "Generic City 340",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "341": {
-            "city": "Generic City 341",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "342": {
-            "city": "Generic City 342",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "349": {
-            "city": "Generic City 349",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "355": {
-            "city": "Generic City 355",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "357": {
-            "city": "Generic City 357",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "359": {
-            "city": "Generic City 359",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "362": {
-            "city": "Generic City 362",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "363": {
-            "city": "Generic City 363",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "367": {
-            "city": "Generic City 367",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "368": {
-            "city": "Generic City 368",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "374": {
-            "city": "Generic City 374",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "381": {
-            "city": "Generic City 381",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "385": {
-            "city": "Generic City 385",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "387": {
-            "city": "Generic City 387",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "390": {
-            "city": "Generic City 390",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "393": {
-            "city": "Generic City 393",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "397": {
-            "city": "Generic City 397",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        },
-        "398": {
-            "city": "Generic City 398",
-            "state": "US",
-            "country": "US",
-            "lat": 40.0,
-            "lon": -100.0
-        }
+  "nanp_area_codes": {
+    "276": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
     },
-    "intl_codes": {
-        "+1": {
-            "country": "US/Canada",
-            "lat": 37.0902,
-            "lon": -95.7129
-        },
-        "+7": {
-            "country": "Russia",
-            "lat": 61.524,
-            "lon": 105.3188
-        },
-        "+20": {
-            "country": "Egypt",
-            "lat": 26.8206,
-            "lon": 30.8025
-        },
-        "+27": {
-            "country": "South Africa",
-            "lat": -30.5595,
-            "lon": 22.9375
-        },
-        "+30": {
-            "country": "Greece",
-            "lat": 39.0742,
-            "lon": 21.8243
-        },
-        "+31": {
-            "country": "Netherlands",
-            "lat": 52.1326,
-            "lon": 5.2913
-        },
-        "+32": {
-            "country": "Belgium",
-            "lat": 50.5039,
-            "lon": 4.4699
-        },
-        "+33": {
-            "country": "France",
-            "lat": 46.2276,
-            "lon": 2.2137
-        },
-        "+34": {
-            "country": "Spain",
-            "lat": 40.4637,
-            "lon": -3.7492
-        },
-        "+36": {
-            "country": "Hungary",
-            "lat": 47.1625,
-            "lon": 19.5033
-        },
-        "+39": {
-            "country": "Italy",
-            "lat": 41.8719,
-            "lon": 12.5674
-        },
-        "+40": {
-            "country": "Romania",
-            "lat": 45.9432,
-            "lon": 24.9668
-        },
-        "+41": {
-            "country": "Switzerland",
-            "lat": 46.8182,
-            "lon": 8.2275
-        },
-        "+43": {
-            "country": "Austria",
-            "lat": 47.5162,
-            "lon": 14.5501
-        },
-        "+44": {
-            "country": "United Kingdom",
-            "lat": 55.3781,
-            "lon": -3.436
-        },
-        "+45": {
-            "country": "Denmark",
-            "lat": 56.2639,
-            "lon": 9.5018
-        },
-        "+46": {
-            "country": "Sweden",
-            "lat": 60.1282,
-            "lon": 18.6435
-        },
-        "+47": {
-            "country": "Norway",
-            "lat": 60.472,
-            "lon": 8.4689
-        },
-        "+48": {
-            "country": "Poland",
-            "lat": 51.9194,
-            "lon": 19.1451
-        },
-        "+49": {
-            "country": "Germany",
-            "lat": 51.1657,
-            "lon": 10.4515
-        },
-        "+51": {
-            "country": "Peru",
-            "lat": -9.19,
-            "lon": -75.0152
-        },
-        "+52": {
-            "country": "Mexico",
-            "lat": 23.6345,
-            "lon": -102.5528
-        },
-        "+53": {
-            "country": "Cuba",
-            "lat": 21.5218,
-            "lon": -77.7812
-        },
-        "+54": {
-            "country": "Argentina",
-            "lat": -38.4161,
-            "lon": -63.6167
-        },
-        "+55": {
-            "country": "Brazil",
-            "lat": -14.235,
-            "lon": -51.9253
-        },
-        "+56": {
-            "country": "Chile",
-            "lat": -35.6751,
-            "lon": -71.543
-        },
-        "+57": {
-            "country": "Colombia",
-            "lat": 4.5709,
-            "lon": -74.2973
-        },
-        "+58": {
-            "country": "Venezuela",
-            "lat": 6.4238,
-            "lon": -66.5897
-        },
-        "+60": {
-            "country": "Malaysia",
-            "lat": 4.2105,
-            "lon": 101.9758
-        },
-        "+61": {
-            "country": "Australia",
-            "lat": -25.2744,
-            "lon": 133.7751
-        },
-        "+62": {
-            "country": "Indonesia",
-            "lat": -0.7893,
-            "lon": 113.9213
-        },
-        "+63": {
-            "country": "Philippines",
-            "lat": 12.8797,
-            "lon": 121.774
-        },
-        "+64": {
-            "country": "New Zealand",
-            "lat": -40.9006,
-            "lon": 174.886
-        },
-        "+65": {
-            "country": "Singapore",
-            "lat": 1.3521,
-            "lon": 103.8198
-        },
-        "+66": {
-            "country": "Thailand",
-            "lat": 15.87,
-            "lon": 100.9925
-        },
-        "+81": {
-            "country": "Japan",
-            "lat": 36.2048,
-            "lon": 138.2529
-        },
-        "+82": {
-            "country": "South Korea",
-            "lat": 35.9078,
-            "lon": 127.7669
-        },
-        "+84": {
-            "country": "Vietnam",
-            "lat": 14.0583,
-            "lon": 108.2772
-        },
-        "+86": {
-            "country": "China",
-            "lat": 35.8617,
-            "lon": 104.1954
-        },
-        "+90": {
-            "country": "Turkey",
-            "lat": 38.9637,
-            "lon": 35.2433
-        },
-        "+91": {
-            "country": "India",
-            "lat": 20.5937,
-            "lon": 78.9629
-        },
-        "+92": {
-            "country": "Pakistan",
-            "lat": 30.3753,
-            "lon": 69.3451
-        },
-        "+93": {
-            "country": "Afghanistan",
-            "lat": 33.9391,
-            "lon": 67.71
-        },
-        "+94": {
-            "country": "Sri Lanka",
-            "lat": 7.8731,
-            "lon": 80.7718
-        },
-        "+95": {
-            "country": "Myanmar",
-            "lat": 21.9162,
-            "lon": 95.956
-        },
-        "+98": {
-            "country": "Iran",
-            "lat": 32.4279,
-            "lon": 53.688
-        },
-        "+212": {
-            "country": "Morocco",
-            "lat": 31.7917,
-            "lon": -7.0926
-        },
-        "+213": {
-            "country": "Algeria",
-            "lat": 28.0339,
-            "lon": 1.6596
-        },
-        "+216": {
-            "country": "Tunisia",
-            "lat": 33.8869,
-            "lon": 9.5375
-        },
-        "+234": {
-            "country": "Nigeria",
-            "lat": 9.082,
-            "lon": 8.6753
-        },
-        "+254": {
-            "country": "Kenya",
-            "lat": -1.2864,
-            "lon": 36.8172
-        },
-        "+255": {
-            "country": "Tanzania",
-            "lat": -6.369,
-            "lon": 34.8888
-        },
-        "+256": {
-            "country": "Uganda",
-            "lat": 1.3733,
-            "lon": 32.2903
-        },
-        "+260": {
-            "country": "Zambia",
-            "lat": -13.1339,
-            "lon": 27.8493
-        },
-        "+263": {
-            "country": "Zimbabwe",
-            "lat": -19.0154,
-            "lon": 29.1549
-        },
-        "+351": {
-            "country": "Portugal",
-            "lat": 39.3999,
-            "lon": -8.2245
-        },
-        "+353": {
-            "country": "Ireland",
-            "lat": 53.1424,
-            "lon": -7.6921
-        },
-        "+354": {
-            "country": "Iceland",
-            "lat": 64.9631,
-            "lon": -19.0208
-        },
-        "+358": {
-            "country": "Finland",
-            "lat": 61.9241,
-            "lon": 25.7482
-        },
-        "+370": {
-            "country": "Lithuania",
-            "lat": 55.1694,
-            "lon": 23.8813
-        },
-        "+371": {
-            "country": "Latvia",
-            "lat": 56.8796,
-            "lon": 24.6032
-        },
-        "+372": {
-            "country": "Estonia",
-            "lat": 58.5953,
-            "lon": 25.0136
-        },
-        "+380": {
-            "country": "Ukraine",
-            "lat": 48.3794,
-            "lon": 31.1656
-        },
-        "+420": {
-            "country": "Czech Republic",
-            "lat": 49.8175,
-            "lon": 15.473
-        },
-        "+421": {
-            "country": "Slovakia",
-            "lat": 48.669,
-            "lon": 19.699
-        },
-        "+852": {
-            "country": "Hong Kong",
-            "lat": 22.3193,
-            "lon": 114.1694
-        },
-        "+855": {
-            "country": "Cambodia",
-            "lat": 12.5657,
-            "lon": 104.991
-        },
-        "+856": {
-            "country": "Laos",
-            "lat": 19.8563,
-            "lon": 102.4955
-        },
-        "+880": {
-            "country": "Bangladesh",
-            "lat": 23.685,
-            "lon": 90.3563
-        },
-        "+886": {
-            "country": "Taiwan",
-            "lat": 23.6978,
-            "lon": 120.9605
-        },
-        "+960": {
-            "country": "Maldives",
-            "lat": 3.2028,
-            "lon": 73.2207
-        },
-        "+961": {
-            "country": "Lebanon",
-            "lat": 33.8547,
-            "lon": 35.8623
-        },
-        "+962": {
-            "country": "Jordan",
-            "lat": 30.5852,
-            "lon": 36.2384
-        },
-        "+963": {
-            "country": "Syria",
-            "lat": 34.8021,
-            "lon": 38.9968
-        },
-        "+964": {
-            "country": "Iraq",
-            "lat": 33.2232,
-            "lon": 43.6793
-        },
-        "+965": {
-            "country": "Kuwait",
-            "lat": 29.3117,
-            "lon": 47.4818
-        },
-        "+966": {
-            "country": "Saudi Arabia",
-            "lat": 23.8859,
-            "lon": 45.0792
-        },
-        "+967": {
-            "country": "Yemen",
-            "lat": 15.5527,
-            "lon": 48.5164
-        },
-        "+968": {
-            "country": "Oman",
-            "lat": 21.5126,
-            "lon": 55.9233
-        },
-        "+971": {
-            "country": "UAE",
-            "lat": 23.4241,
-            "lon": 53.8478
-        },
-        "+972": {
-            "country": "Israel",
-            "lat": 31.0461,
-            "lon": 34.8516
-        },
-        "+973": {
-            "country": "Bahrain",
-            "lat": 26.0667,
-            "lon": 50.5577
-        },
-        "+974": {
-            "country": "Qatar",
-            "lat": 25.3548,
-            "lon": 51.1839
-        },
-        "+975": {
-            "country": "Bhutan",
-            "lat": 27.5142,
-            "lon": 90.4336
-        },
-        "+976": {
-            "country": "Mongolia",
-            "lat": 46.8625,
-            "lon": 103.8467
-        },
-        "+977": {
-            "country": "Nepal",
-            "lat": 28.3949,
-            "lon": 84.124
-        },
-        "+992": {
-            "country": "Tajikistan",
-            "lat": 38.861,
-            "lon": 71.2761
-        },
-        "+993": {
-            "country": "Turkmenistan",
-            "lat": 38.9697,
-            "lon": 59.5563
-        },
-        "+994": {
-            "country": "Azerbaijan",
-            "lat": 40.1431,
-            "lon": 47.5769
-        },
-        "+995": {
-            "country": "Georgia",
-            "lat": 42.3154,
-            "lon": 43.3569
-        },
-        "+996": {
-            "country": "Kyrgyzstan",
-            "lat": 41.2044,
-            "lon": 74.7661
-        },
-        "+998": {
-            "country": "Uzbekistan",
-            "lat": 41.3775,
-            "lon": 64.5853
-        }
+    "434": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "540": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "571": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "703": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "757": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "804": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "212": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "315": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "347": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "516": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "518": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "585": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "607": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "631": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "646": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "716": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "718": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "845": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "914": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "917": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "929": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "209": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "213": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "310": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "323": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "408": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "415": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "424": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "510": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "530": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "559": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "562": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "619": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "626": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "650": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "657": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "661": {
+      "city": "Bakersfield",
+      "state": "CA",
+      "country": "US",
+      "lat": 35.3733,
+      "lon": -119.0187
+    },
+    "669": {
+      "city": "San Jose",
+      "state": "CA",
+      "country": "US",
+      "lat": 37.3382,
+      "lon": -121.8863
+    },
+    "707": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "714": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "747": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "760": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "805": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "818": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "831": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "858": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "909": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "916": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "925": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "949": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "951": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "210": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "214": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "254": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "281": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "325": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "346": {
+      "city": "Houston",
+      "state": "TX",
+      "country": "US",
+      "lat": 29.7604,
+      "lon": -95.3698
+    },
+    "361": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "409": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "430": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "432": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "469": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "512": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "682": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "713": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "737": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "806": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "817": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "830": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "832": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "903": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "915": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "936": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "940": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "956": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "972": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "979": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "239": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "305": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "321": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "352": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "386": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "407": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "561": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "727": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "754": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "772": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "786": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "813": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "850": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "863": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "904": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "941": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "954": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "217": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "224": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "309": {
+      "city": "Peoria",
+      "state": "IL",
+      "country": "US",
+      "lat": 40.6936,
+      "lon": -89.589
+    },
+    "312": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "331": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "618": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "630": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "708": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "773": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "779": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "815": {
+      "city": "Rockford",
+      "state": "IL",
+      "country": "US",
+      "lat": 42.2711,
+      "lon": -89.094
+    },
+    "847": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "872": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "215": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "267": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "272": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "412": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "484": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "570": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "610": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "717": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "724": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "814": {
+      "city": "Erie",
+      "state": "PA",
+      "country": "US",
+      "lat": 42.1292,
+      "lon": -80.0851
+    },
+    "878": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "216": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "234": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "330": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "380": {
+      "city": "Columbus",
+      "state": "OH",
+      "country": "US",
+      "lat": 39.9612,
+      "lon": -82.9988
+    },
+    "419": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "440": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "513": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "567": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "614": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "740": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "937": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "229": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "404": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "470": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "478": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "678": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "706": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "762": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "770": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "912": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "252": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "336": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "704": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "743": {
+      "city": "Greensboro",
+      "state": "NC",
+      "country": "US",
+      "lat": 36.0726,
+      "lon": -79.792
+    },
+    "828": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "910": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "919": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "980": {
+      "city": "Charlotte",
+      "state": "NC",
+      "country": "US",
+      "lat": 35.2271,
+      "lon": -80.8431
+    },
+    "984": {
+      "city": "Raleigh",
+      "state": "NC",
+      "country": "US",
+      "lat": 35.7796,
+      "lon": -78.6382
+    },
+    "231": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "248": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "269": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "313": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "517": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "586": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "616": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "734": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "810": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "906": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "947": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "989": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "339": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "351": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "413": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "508": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "617": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "774": {
+      "city": "Worcester",
+      "state": "MA",
+      "country": "US",
+      "lat": 42.2626,
+      "lon": -71.8023
+    },
+    "781": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "857": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "978": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "201": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "609": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "732": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "206": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "253": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "303": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "719": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "602": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "520": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "615": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "901": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "314": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "816": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "410": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "301": {
+      "city": "Silver Spring",
+      "state": "MD",
+      "country": "US",
+      "lat": 38.9907,
+      "lon": -77.0261
+    },
+    "414": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "608": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "612": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "651": {
+      "city": "St. Paul",
+      "state": "MN",
+      "country": "US",
+      "lat": 44.9537,
+      "lon": -93.09
+    },
+    "317": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "260": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "203": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "860": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "503": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "541": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "843": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "803": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "205": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "251": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "504": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "225": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "502": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "859": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "405": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "918": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "204": {
+      "city": "Manitoba",
+      "state": "MB",
+      "country": "CA",
+      "lat": 49.8951,
+      "lon": -97.1384
+    },
+    "226": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "236": {
+      "city": "Vancouver",
+      "state": "BC",
+      "country": "CA",
+      "lat": 49.2827,
+      "lon": -123.1207
+    },
+    "249": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "250": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "289": {
+      "city": "Hamilton",
+      "state": "ON",
+      "country": "CA",
+      "lat": 43.2557,
+      "lon": -79.8711
+    },
+    "306": {
+      "city": "Saskatoon",
+      "state": "SK",
+      "country": "CA",
+      "lat": 52.1332,
+      "lon": -106.67
+    },
+    "343": {
+      "city": "Ottawa",
+      "state": "ON",
+      "country": "CA",
+      "lat": 45.4215,
+      "lon": -75.6972
+    },
+    "365": {
+      "city": "Hamilton",
+      "state": "ON",
+      "country": "CA",
+      "lat": 43.2557,
+      "lon": -79.8711
+    },
+    "403": {
+      "city": "Calgary",
+      "state": "AB",
+      "country": "CA",
+      "lat": 51.0447,
+      "lon": -114.0719
+    },
+    "416": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "418": {
+      "city": "Quebec City",
+      "state": "QC",
+      "country": "CA",
+      "lat": 46.8139,
+      "lon": -71.208
+    },
+    "431": {
+      "city": "Manitoba",
+      "state": "MB",
+      "country": "CA",
+      "lat": 49.8951,
+      "lon": -97.1384
+    },
+    "437": {
+      "city": "Toronto",
+      "state": "ON",
+      "country": "CA",
+      "lat": 43.651,
+      "lon": -79.347
+    },
+    "438": {
+      "city": "Montreal",
+      "state": "QC",
+      "country": "CA",
+      "lat": 45.5017,
+      "lon": -73.5673
+    },
+    "450": {
+      "city": "Laval",
+      "state": "QC",
+      "country": "CA",
+      "lat": 45.5701,
+      "lon": -73.754
+    },
+    "506": {
+      "city": "New Brunswick",
+      "state": "NB",
+      "country": "CA",
+      "lat": 46.5653,
+      "lon": -66.4619
+    },
+    "514": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "519": {
+      "city": "London",
+      "state": "ON",
+      "country": "CA",
+      "lat": 42.9849,
+      "lon": -81.2453
+    },
+    "548": {
+      "city": "London",
+      "state": "ON",
+      "country": "CA",
+      "lat": 42.9849,
+      "lon": -81.2453
+    },
+    "579": {
+      "city": "Granby",
+      "state": "QC",
+      "country": "CA",
+      "lat": 45.4001,
+      "lon": -72.7318
+    },
+    "581": {
+      "city": "Quebec City",
+      "state": "QC",
+      "country": "CA",
+      "lat": 46.8139,
+      "lon": -71.208
+    },
+    "587": {
+      "city": "Calgary",
+      "state": "AB",
+      "country": "CA",
+      "lat": 51.0447,
+      "lon": -114.0719
+    },
+    "604": {
+      "city": "Vancouver",
+      "state": "BC",
+      "country": "CA",
+      "lat": 49.2827,
+      "lon": -123.1207
+    },
+    "613": {
+      "city": "Ottawa",
+      "state": "ON",
+      "country": "CA",
+      "lat": 45.4215,
+      "lon": -75.6972
+    },
+    "639": {
+      "city": "Saskatoon",
+      "state": "SK",
+      "country": "CA",
+      "lat": 52.1332,
+      "lon": -106.67
+    },
+    "647": {
+      "city": "Toronto",
+      "state": "ON",
+      "country": "CA",
+      "lat": 43.651,
+      "lon": -79.347
+    },
+    "705": {
+      "city": "Sudbury",
+      "state": "ON",
+      "country": "CA",
+      "lat": 46.4917,
+      "lon": -80.993
+    },
+    "709": {
+      "city": "Newfoundland",
+      "state": "NL",
+      "country": "CA",
+      "lat": 47.5615,
+      "lon": -52.7126
+    },
+    "778": {
+      "city": "Vancouver",
+      "state": "BC",
+      "country": "CA",
+      "lat": 49.2827,
+      "lon": -123.1207
+    },
+    "780": {
+      "city": "Edmonton",
+      "state": "AB",
+      "country": "CA",
+      "lat": 53.5461,
+      "lon": -113.4938
+    },
+    "807": {
+      "city": "Thunder Bay",
+      "state": "ON",
+      "country": "CA",
+      "lat": 48.3809,
+      "lon": -89.2477
+    },
+    "819": {
+      "city": "Sherbrooke",
+      "state": "QC",
+      "country": "CA",
+      "lat": 45.401,
+      "lon": -71.8991
+    },
+    "825": {
+      "city": "Calgary",
+      "state": "AB",
+      "country": "CA",
+      "lat": 51.0447,
+      "lon": -114.0719
+    },
+    "867": {
+      "city": "Northern Canada",
+      "state": "NT",
+      "country": "CA",
+      "lat": 64.8255,
+      "lon": -124.8457
+    },
+    "873": {
+      "city": "Sherbrooke",
+      "state": "QC",
+      "country": "CA",
+      "lat": 45.401,
+      "lon": -71.8991
+    },
+    "902": {
+      "city": "Halifax",
+      "state": "NS",
+      "country": "CA",
+      "lat": 44.6488,
+      "lon": -63.5752
+    },
+    "905": {
+      "city": "Hamilton",
+      "state": "ON",
+      "country": "CA",
+      "lat": 43.2557,
+      "lon": -79.8711
+    },
+    "221": {
+      "city": "Generic City 221",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "230": {
+      "city": "Generic City 230",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "237": {
+      "city": "Generic City 237",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "242": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "244": {
+      "city": "Generic City 244",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "246": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "257": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "258": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "259": {
+      "city": "Generic City 259",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "264": {
+      "city": "Generic City 264",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "268": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "278": {
+      "city": "Generic City 278",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "283": {
+      "city": "Generic City 283",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "285": {
+      "city": "Generic City 285",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "287": {
+      "city": "Generic City 287",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "288": {
+      "city": "Generic City 288",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "293": {
+      "city": "Generic City 293",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "294": {
+      "city": "Generic City 294",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "295": {
+      "city": "Generic City 295",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "296": {
+      "city": "Generic City 296",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "299": {
+      "city": "Generic City 299",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "327": {
+      "city": "Generic City 327",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "328": {
+      "city": "Generic City 328",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "329": {
+      "city": "Generic City 329",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "333": {
+      "city": "Generic City 333",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "335": {
+      "city": "Generic City 335",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "337": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "340": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "341": {
+      "city": "Generic City 341",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "342": {
+      "city": "Generic City 342",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "349": {
+      "city": "Generic City 349",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "355": {
+      "city": "Generic City 355",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "357": {
+      "city": "Generic City 357",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "359": {
+      "city": "Generic City 359",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "362": {
+      "city": "Generic City 362",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "363": {
+      "city": "Generic City 363",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "367": {
+      "city": "Generic City 367",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "368": {
+      "city": "Generic City 368",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "374": {
+      "city": "Generic City 374",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "381": {
+      "city": "Generic City 381",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "385": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "387": {
+      "city": "Generic City 387",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "390": {
+      "city": "Generic City 390",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "393": {
+      "city": "Generic City 393",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "397": {
+      "city": "Generic City 397",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "398": {
+      "city": "Generic City 398",
+      "state": "US",
+      "country": "US",
+      "lat": 40.0,
+      "lon": -100.0
+    },
+    "202": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "207": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "208": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "218": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "219": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "227": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "228": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "240": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "247": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "255": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "256": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "262": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "263": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "270": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "271": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "274": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "284": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "304": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "307": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "308": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "316": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "318": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "319": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "320": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "334": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "345": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "360": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "364": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "401": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "402": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "406": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "417": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "423": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "425": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "435": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "442": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "443": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "445": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "473": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "475": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "479": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "480": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "501": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "505": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "507": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "509": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "515": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "534": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "551": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "563": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "573": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "574": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "575": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "580": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "601": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "603": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "605": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "606": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "620": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "623": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "628": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "629": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "636": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "641": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "660": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "662": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "664": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "670": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "671": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "684": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "701": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "702": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "712": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "715": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "720": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "725": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "731": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "763": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "765": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "769": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "775": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "801": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "802": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "808": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "812": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "848": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "856": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "864": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "865": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "870": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "907": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "908": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "913": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "920": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "928": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "931": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "952": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "959": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "970": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "971": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "973": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "975": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
+    },
+    "985": {
+      "city": "Area",
+      "state": "ST",
+      "country": "US",
+      "lat": 38.0,
+      "lon": -95.0
     }
+  },
+  "intl_codes": {
+    "+1": {
+      "country": "US/Canada",
+      "region": "North America",
+      "lat": 39.5,
+      "lon": -98.3
+    },
+    "+7": {
+      "country": "Russia",
+      "lat": 61.524,
+      "lon": 105.3188
+    },
+    "+20": {
+      "country": "Egypt",
+      "region": "Egypt",
+      "lat": 26.8,
+      "lon": 30.8
+    },
+    "+27": {
+      "country": "South Africa",
+      "region": "South Africa",
+      "lat": -30.6,
+      "lon": 22.9
+    },
+    "+30": {
+      "country": "Greece",
+      "region": "Greece",
+      "lat": 39.0,
+      "lon": 22.0
+    },
+    "+31": {
+      "country": "Netherlands",
+      "region": "Netherlands",
+      "lat": 52.4,
+      "lon": 4.9
+    },
+    "+32": {
+      "country": "Belgium",
+      "region": "Belgium",
+      "lat": 50.5,
+      "lon": 4.5
+    },
+    "+33": {
+      "country": "France",
+      "region": "France",
+      "lat": 46.2,
+      "lon": 2.2
+    },
+    "+34": {
+      "country": "Spain",
+      "region": "Spain",
+      "lat": 40.4,
+      "lon": -3.7
+    },
+    "+36": {
+      "country": "Hungary",
+      "region": "Hungary",
+      "lat": 47.2,
+      "lon": 19.5
+    },
+    "+39": {
+      "country": "Italy",
+      "region": "Italy",
+      "lat": 42.0,
+      "lon": 12.5
+    },
+    "+40": {
+      "country": "Romania",
+      "region": "Romania",
+      "lat": 46.0,
+      "lon": 25.0
+    },
+    "+41": {
+      "country": "Switzerland",
+      "region": "Switzerland",
+      "lat": 46.8,
+      "lon": 8.2
+    },
+    "+43": {
+      "country": "Austria",
+      "lat": 47.5162,
+      "lon": 14.5501
+    },
+    "+44": {
+      "country": "UK",
+      "region": "United Kingdom",
+      "lat": 55.0,
+      "lon": -3.0
+    },
+    "+45": {
+      "country": "Denmark",
+      "lat": 56.2639,
+      "lon": 9.5018
+    },
+    "+46": {
+      "country": "Sweden",
+      "lat": 60.1282,
+      "lon": 18.6435
+    },
+    "+47": {
+      "country": "Norway",
+      "lat": 60.472,
+      "lon": 8.4689
+    },
+    "+48": {
+      "country": "Poland",
+      "lat": 51.9194,
+      "lon": 19.1451
+    },
+    "+49": {
+      "country": "Germany",
+      "region": "Germany",
+      "lat": 51.0,
+      "lon": 9.0
+    },
+    "+51": {
+      "country": "Peru",
+      "lat": -9.19,
+      "lon": -75.0152
+    },
+    "+52": {
+      "country": "Mexico",
+      "region": "Mexico",
+      "lat": 23.6,
+      "lon": -102.6
+    },
+    "+53": {
+      "country": "Cuba",
+      "lat": 21.5218,
+      "lon": -77.7812
+    },
+    "+54": {
+      "country": "Argentina",
+      "lat": -38.4161,
+      "lon": -63.6167
+    },
+    "+55": {
+      "country": "Brazil",
+      "region": "Brazil",
+      "lat": -14.2,
+      "lon": -51.9
+    },
+    "+56": {
+      "country": "Chile",
+      "lat": -35.6751,
+      "lon": -71.543
+    },
+    "+57": {
+      "country": "Colombia",
+      "lat": 4.5709,
+      "lon": -74.2973
+    },
+    "+58": {
+      "country": "Venezuela",
+      "lat": 6.4238,
+      "lon": -66.5897
+    },
+    "+60": {
+      "country": "Malaysia",
+      "lat": 4.2105,
+      "lon": 101.9758
+    },
+    "+61": {
+      "country": "Australia",
+      "region": "Australia",
+      "lat": -25.3,
+      "lon": 133.8
+    },
+    "+62": {
+      "country": "Indonesia",
+      "lat": -0.7893,
+      "lon": 113.9213
+    },
+    "+63": {
+      "country": "Philippines",
+      "lat": 12.8797,
+      "lon": 121.774
+    },
+    "+64": {
+      "country": "New Zealand",
+      "lat": -40.9006,
+      "lon": 174.886
+    },
+    "+65": {
+      "country": "Singapore",
+      "lat": 1.3521,
+      "lon": 103.8198
+    },
+    "+66": {
+      "country": "Thailand",
+      "lat": 15.87,
+      "lon": 100.9925
+    },
+    "+81": {
+      "country": "Japan",
+      "region": "Japan",
+      "lat": 36.2,
+      "lon": 138.2
+    },
+    "+82": {
+      "country": "South Korea",
+      "lat": 35.9078,
+      "lon": 127.7669
+    },
+    "+84": {
+      "country": "Vietnam",
+      "lat": 14.0583,
+      "lon": 108.2772
+    },
+    "+86": {
+      "country": "China",
+      "region": "China",
+      "lat": 35.9,
+      "lon": 104.2
+    },
+    "+90": {
+      "country": "Turkey",
+      "region": "Turkey",
+      "lat": 39.0,
+      "lon": 35.0
+    },
+    "+91": {
+      "country": "India",
+      "region": "India",
+      "lat": 20.6,
+      "lon": 78.9
+    },
+    "+92": {
+      "country": "Pakistan",
+      "region": "Pakistan",
+      "lat": 30.4,
+      "lon": 69.4
+    },
+    "+93": {
+      "country": "Afghanistan",
+      "lat": 33.9391,
+      "lon": 67.71
+    },
+    "+94": {
+      "country": "Sri Lanka",
+      "region": "Sri Lanka",
+      "lat": 6.9,
+      "lon": 79.9
+    },
+    "+95": {
+      "country": "Myanmar",
+      "region": "Myanmar",
+      "lat": 22.0,
+      "lon": 96.0
+    },
+    "+98": {
+      "country": "Iran",
+      "region": "Iran",
+      "lat": 35.7,
+      "lon": 51.4
+    },
+    "+212": {
+      "country": "Morocco",
+      "region": "Morocco",
+      "lat": 34.0,
+      "lon": -6.8
+    },
+    "+213": {
+      "country": "Algeria",
+      "region": "Algeria",
+      "lat": 28.0,
+      "lon": 2.0
+    },
+    "+216": {
+      "country": "Tunisia",
+      "region": "Tunisia",
+      "lat": 34.0,
+      "lon": 9.0
+    },
+    "+234": {
+      "country": "Nigeria",
+      "region": "Nigeria",
+      "lat": 9.0,
+      "lon": 8.0
+    },
+    "+254": {
+      "country": "Kenya",
+      "region": "Kenya",
+      "lat": -1.3,
+      "lon": 36.8
+    },
+    "+255": {
+      "country": "Tanzania",
+      "region": "Tanzania",
+      "lat": -6.4,
+      "lon": 34.9
+    },
+    "+256": {
+      "country": "Uganda",
+      "region": "Uganda",
+      "lat": 1.4,
+      "lon": 32.3
+    },
+    "+260": {
+      "country": "Madagascar",
+      "region": "Madagascar",
+      "lat": -18.8,
+      "lon": 46.8
+    },
+    "+263": {
+      "country": "Zimbabwe",
+      "region": "Zimbabwe",
+      "lat": -19.0,
+      "lon": 29.2
+    },
+    "+351": {
+      "country": "Portugal",
+      "region": "Portugal",
+      "lat": 39.4,
+      "lon": -8.2
+    },
+    "+353": {
+      "country": "Ireland",
+      "region": "Ireland",
+      "lat": 53.3,
+      "lon": -6.3
+    },
+    "+354": {
+      "country": "Iceland",
+      "region": "Iceland",
+      "lat": 64.9,
+      "lon": -19.0
+    },
+    "+358": {
+      "country": "Finland",
+      "region": "Finland",
+      "lat": 64.0,
+      "lon": 26.0
+    },
+    "+370": {
+      "country": "Lithuania",
+      "region": "Lithuania",
+      "lat": 55.2,
+      "lon": 23.9
+    },
+    "+371": {
+      "country": "Latvia",
+      "region": "Latvia",
+      "lat": 56.9,
+      "lon": 24.6
+    },
+    "+372": {
+      "country": "Estonia",
+      "region": "Estonia",
+      "lat": 59.4,
+      "lon": 24.7
+    },
+    "+380": {
+      "country": "Ukraine",
+      "region": "Ukraine",
+      "lat": 48.4,
+      "lon": 31.2
+    },
+    "+420": {
+      "country": "Czech Republic",
+      "region": "Czech Republic",
+      "lat": 49.8,
+      "lon": 15.5
+    },
+    "+421": {
+      "country": "Slovakia",
+      "region": "Slovakia",
+      "lat": 48.7,
+      "lon": 19.7
+    },
+    "+852": {
+      "country": "Hong Kong",
+      "region": "Hong Kong",
+      "lat": 22.3,
+      "lon": 114.2
+    },
+    "+855": {
+      "country": "Cambodia",
+      "region": "Cambodia",
+      "lat": 12.6,
+      "lon": 104.9
+    },
+    "+856": {
+      "country": "Laos",
+      "region": "Laos",
+      "lat": 19.9,
+      "lon": 102.6
+    },
+    "+880": {
+      "country": "Bangladesh",
+      "region": "Bangladesh",
+      "lat": 23.7,
+      "lon": 90.4
+    },
+    "+886": {
+      "country": "Taiwan",
+      "region": "Taiwan",
+      "lat": 23.5,
+      "lon": 121.0
+    },
+    "+960": {
+      "country": "Maldives",
+      "region": "Maldives",
+      "lat": 3.2,
+      "lon": 73.2
+    },
+    "+961": {
+      "country": "Lebanon",
+      "region": "Lebanon",
+      "lat": 33.9,
+      "lon": 35.5
+    },
+    "+962": {
+      "country": "Jordan",
+      "region": "Jordan",
+      "lat": 31.9,
+      "lon": 36.0
+    },
+    "+963": {
+      "country": "Syria",
+      "region": "Syria",
+      "lat": 35.0,
+      "lon": 38.5
+    },
+    "+964": {
+      "country": "Iraq",
+      "region": "Iraq",
+      "lat": 33.2,
+      "lon": 43.7
+    },
+    "+965": {
+      "country": "Kuwait",
+      "region": "Kuwait",
+      "lat": 29.4,
+      "lon": 48.0
+    },
+    "+966": {
+      "country": "Saudi Arabia",
+      "region": "Saudi Arabia",
+      "lat": 23.9,
+      "lon": 45.1
+    },
+    "+967": {
+      "country": "Yemen",
+      "region": "Yemen",
+      "lat": 15.6,
+      "lon": 48.5
+    },
+    "+968": {
+      "country": "Oman",
+      "region": "Oman",
+      "lat": 21.5,
+      "lon": 55.9
+    },
+    "+971": {
+      "country": "UAE",
+      "region": "United Arab Emirates",
+      "lat": 24.0,
+      "lon": 54.4
+    },
+    "+972": {
+      "country": "Israel",
+      "region": "Israel",
+      "lat": 31.5,
+      "lon": 34.9
+    },
+    "+973": {
+      "country": "Bahrain",
+      "region": "Bahrain",
+      "lat": 26.0,
+      "lon": 50.6
+    },
+    "+974": {
+      "country": "Qatar",
+      "region": "Qatar",
+      "lat": 25.3,
+      "lon": 51.2
+    },
+    "+975": {
+      "country": "Bhutan",
+      "region": "Bhutan",
+      "lat": 27.4,
+      "lon": 89.6
+    },
+    "+976": {
+      "country": "Mongolia",
+      "region": "Mongolia",
+      "lat": 46.9,
+      "lon": 103.9
+    },
+    "+977": {
+      "country": "Nepal",
+      "region": "Nepal",
+      "lat": 28.4,
+      "lon": 84.1
+    },
+    "+992": {
+      "country": "Tajikistan",
+      "region": "Tajikistan",
+      "lat": 39.0,
+      "lon": 71.0
+    },
+    "+993": {
+      "country": "Turkmenistan",
+      "region": "Turkmenistan",
+      "lat": 40.0,
+      "lon": 60.0
+    },
+    "+994": {
+      "country": "Azerbaijan",
+      "region": "Azerbaijan",
+      "lat": 40.1,
+      "lon": 47.6
+    },
+    "+995": {
+      "country": "Georgia",
+      "region": "Georgia",
+      "lat": 42.0,
+      "lon": 43.5
+    },
+    "+996": {
+      "country": "Kyrgyzstan",
+      "region": "Kyrgyzstan",
+      "lat": 41.2,
+      "lon": 74.7
+    },
+    "+998": {
+      "country": "Uzbekistan",
+      "region": "Uzbekistan",
+      "lat": 41.4,
+      "lon": 64.6
+    },
+    "+218": {
+      "country": "Libya",
+      "region": "Libya",
+      "lat": 26.3,
+      "lon": 17.2
+    },
+    "+220": {
+      "country": "Egypt",
+      "region": "Egypt",
+      "lat": 26.0,
+      "lon": 30.0
+    },
+    "+221": {
+      "country": "Senegal",
+      "region": "Senegal",
+      "lat": 14.7,
+      "lon": -17.5
+    },
+    "+223": {
+      "country": "Mali",
+      "region": "Mali",
+      "lat": 17.6,
+      "lon": -3.9
+    },
+    "+224": {
+      "country": "Guinea",
+      "region": "Guinea",
+      "lat": 9.9,
+      "lon": -9.9
+    },
+    "+225": {
+      "country": "Ivory Coast",
+      "region": "Ivory Coast",
+      "lat": 7.4,
+      "lon": -5.3
+    },
+    "+226": {
+      "country": "Burkina Faso",
+      "region": "Burkina Faso",
+      "lat": 12.3,
+      "lon": -1.5
+    },
+    "+227": {
+      "country": "Niger",
+      "region": "Niger",
+      "lat": 17.6,
+      "lon": 8.0
+    },
+    "+228": {
+      "country": "Togo",
+      "region": "Togo",
+      "lat": 6.2,
+      "lon": 1.2
+    },
+    "+229": {
+      "country": "Benin",
+      "region": "Benin",
+      "lat": 9.3,
+      "lon": 2.3
+    },
+    "+230": {
+      "country": "Mauritius",
+      "region": "Mauritius",
+      "lat": -20.3,
+      "lon": 57.6
+    },
+    "+231": {
+      "country": "Ethiopia",
+      "region": "Ethiopia",
+      "lat": 9.1,
+      "lon": 40.5
+    },
+    "+232": {
+      "country": "Seychelles",
+      "region": "Seychelles",
+      "lat": -4.7,
+      "lon": 55.5
+    },
+    "+233": {
+      "country": "Ghana",
+      "region": "Ghana",
+      "lat": 7.9,
+      "lon": -1.0
+    },
+    "+237": {
+      "country": "Cameroon",
+      "region": "Cameroon",
+      "lat": 3.8,
+      "lon": 11.5
+    },
+    "+238": {
+      "country": "Cape Verde",
+      "region": "Cape Verde",
+      "lat": 16.0,
+      "lon": -24.0
+    },
+    "+239": {
+      "country": "Sao Tome",
+      "region": "Sao Tome",
+      "lat": 0.3,
+      "lon": 6.6
+    },
+    "+240": {
+      "country": "Equatorial Guinea",
+      "region": "Equatorial Guinea",
+      "lat": 1.6,
+      "lon": 10.3
+    },
+    "+241": {
+      "country": "Gabon",
+      "region": "Gabon",
+      "lat": -0.8,
+      "lon": 11.6
+    },
+    "+242": {
+      "country": "Congo",
+      "region": "Congo",
+      "lat": -0.2,
+      "lon": 15.8
+    },
+    "+243": {
+      "country": "DR Congo",
+      "region": "DR Congo",
+      "lat": -4.0,
+      "lon": 21.8
+    },
+    "+244": {
+      "country": "Angola",
+      "region": "Angola",
+      "lat": -11.2,
+      "lon": 17.9
+    },
+    "+245": {
+      "country": "Guinea-Bissau",
+      "region": "Guinea-Bissau",
+      "lat": 11.8,
+      "lon": -15.6
+    },
+    "+246": {
+      "country": "British Indian Ocean",
+      "region": "BIOT",
+      "lat": -7.3,
+      "lon": 72.4
+    },
+    "+247": {
+      "country": "Ascension",
+      "region": "Ascension",
+      "lat": -7.9,
+      "lon": -14.4
+    },
+    "+248": {
+      "country": "Seychelles",
+      "region": "Seychelles",
+      "lat": -4.7,
+      "lon": 55.5
+    },
+    "+249": {
+      "country": "Sudan",
+      "region": "Sudan",
+      "lat": 15.5,
+      "lon": 32.6
+    },
+    "+250": {
+      "country": "Rwanda",
+      "region": "Rwanda",
+      "lat": -1.9,
+      "lon": 29.9
+    },
+    "+251": {
+      "country": "Ethiopia",
+      "region": "Ethiopia",
+      "lat": 9.1,
+      "lon": 40.5
+    },
+    "+252": {
+      "country": "Somalia",
+      "region": "Somalia",
+      "lat": 2.0,
+      "lon": 45.3
+    },
+    "+253": {
+      "country": "Djibouti",
+      "region": "Djibouti",
+      "lat": 11.8,
+      "lon": 42.6
+    },
+    "+257": {
+      "country": "Burundi",
+      "region": "Burundi",
+      "lat": -3.4,
+      "lon": 29.9
+    },
+    "+258": {
+      "country": "Mozambique",
+      "region": "Mozambique",
+      "lat": -18.7,
+      "lon": 35.5
+    },
+    "+261": {
+      "country": "Reunion",
+      "region": "Reunion",
+      "lat": -21.1,
+      "lon": 55.5
+    },
+    "+262": {
+      "country": "Mayotte",
+      "region": "Mayotte",
+      "lat": -12.8,
+      "lon": 45.2
+    },
+    "+264": {
+      "country": "Namibia",
+      "region": "Namibia",
+      "lat": -22.9,
+      "lon": 18.5
+    },
+    "+265": {
+      "country": "Zambia",
+      "region": "Zambia",
+      "lat": -13.1,
+      "lon": 27.9
+    },
+    "+266": {
+      "country": "Botswana",
+      "region": "Botswana",
+      "lat": -22.3,
+      "lon": 24.7
+    },
+    "+267": {
+      "country": "Eswatini",
+      "region": "Eswatini",
+      "lat": -26.5,
+      "lon": 31.5
+    },
+    "+268": {
+      "country": "Lesotho",
+      "region": "Lesotho",
+      "lat": -29.6,
+      "lon": 28.3
+    },
+    "+269": {
+      "country": "Comoros",
+      "region": "Comoros",
+      "lat": -11.6,
+      "lon": 43.3
+    },
+    "+290": {
+      "country": "Saint Helena",
+      "region": "St Helena",
+      "lat": -15.9,
+      "lon": -5.7
+    },
+    "+291": {
+      "country": "Eritrea",
+      "region": "Eritrea",
+      "lat": 15.3,
+      "lon": 38.9
+    },
+    "+297": {
+      "country": "Aruba",
+      "region": "Aruba",
+      "lat": 12.5,
+      "lon": -70.0
+    },
+    "+298": {
+      "country": "Faroe Islands",
+      "region": "Faroe Islands",
+      "lat": 62.0,
+      "lon": -6.8
+    },
+    "+299": {
+      "country": "Greenland",
+      "region": "Greenland",
+      "lat": 72.0,
+      "lon": -40.0
+    },
+    "+350": {
+      "country": "Gibraltar",
+      "region": "Gibraltar",
+      "lat": 36.1,
+      "lon": -5.3
+    },
+    "+352": {
+      "country": "Luxembourg",
+      "region": "Luxembourg",
+      "lat": 49.8,
+      "lon": 6.1
+    },
+    "+355": {
+      "country": "Albania",
+      "region": "Albania",
+      "lat": 41.1,
+      "lon": 20.2
+    },
+    "+356": {
+      "country": "Malta",
+      "region": "Malta",
+      "lat": 35.9,
+      "lon": 14.4
+    },
+    "+357": {
+      "country": "Cyprus",
+      "region": "Cyprus",
+      "lat": 35.2,
+      "lon": 33.4
+    },
+    "+359": {
+      "country": "Bulgaria",
+      "region": "Bulgaria",
+      "lat": 42.7,
+      "lon": 23.3
+    },
+    "+373": {
+      "country": "Moldova",
+      "region": "Moldova",
+      "lat": 47.2,
+      "lon": 28.6
+    },
+    "+374": {
+      "country": "Armenia",
+      "region": "Armenia",
+      "lat": 40.2,
+      "lon": 45.0
+    },
+    "+375": {
+      "country": "Belarus",
+      "region": "Belarus",
+      "lat": 53.9,
+      "lon": 27.6
+    },
+    "+376": {
+      "country": "Andorra",
+      "region": "Andorra",
+      "lat": 42.5,
+      "lon": 1.5
+    },
+    "+377": {
+      "country": "Monaco",
+      "region": "Monaco",
+      "lat": 43.7,
+      "lon": 7.4
+    },
+    "+378": {
+      "country": "San Marino",
+      "region": "San Marino",
+      "lat": 43.9,
+      "lon": 12.4
+    },
+    "+379": {
+      "country": "Vatican City",
+      "region": "Vatican City",
+      "lat": 41.9,
+      "lon": 12.4
+    },
+    "+381": {
+      "country": "Serbia",
+      "region": "Serbia",
+      "lat": 44.2,
+      "lon": 21.0
+    },
+    "+382": {
+      "country": "Montenegro",
+      "region": "Montenegro",
+      "lat": 42.7,
+      "lon": 19.3
+    },
+    "+383": {
+      "country": "Kosovo",
+      "region": "Kosovo",
+      "lat": 42.7,
+      "lon": 21.0
+    },
+    "+385": {
+      "country": "Croatia",
+      "region": "Croatia",
+      "lat": 45.1,
+      "lon": 15.2
+    },
+    "+386": {
+      "country": "Slovenia",
+      "region": "Slovenia",
+      "lat": 46.1,
+      "lon": 15.0
+    },
+    "+387": {
+      "country": "Bosnia",
+      "region": "Bosnia",
+      "lat": 43.9,
+      "lon": 17.7
+    },
+    "+389": {
+      "country": "North Macedonia",
+      "region": "N Macedonia",
+      "lat": 41.6,
+      "lon": 21.7
+    },
+    "+423": {
+      "country": "Liechtenstein",
+      "region": "Liechtenstein",
+      "lat": 47.2,
+      "lon": 9.5
+    },
+    "+500": {
+      "country": "Falklands",
+      "region": "Falkland Islands",
+      "lat": -51.7,
+      "lon": -59.2
+    },
+    "+501": {
+      "country": "Belize",
+      "region": "Belize",
+      "lat": 17.5,
+      "lon": -88.2
+    },
+    "+502": {
+      "country": "Guatemala",
+      "region": "Guatemala",
+      "lat": 15.8,
+      "lon": -90.2
+    },
+    "+503": {
+      "country": "El Salvador",
+      "region": "El Salvador",
+      "lat": 13.8,
+      "lon": -89.2
+    },
+    "+504": {
+      "country": "Honduras",
+      "region": "Honduras",
+      "lat": 15.2,
+      "lon": -86.2
+    },
+    "+505": {
+      "country": "Nicaragua",
+      "region": "Nicaragua",
+      "lat": 12.9,
+      "lon": -85.2
+    },
+    "+506": {
+      "country": "Costa Rica",
+      "region": "Costa Rica",
+      "lat": 9.7,
+      "lon": -83.8
+    },
+    "+507": {
+      "country": "Panama",
+      "region": "Panama",
+      "lat": 9.0,
+      "lon": -79.5
+    },
+    "+508": {
+      "country": "St Pierre",
+      "region": "St Pierre",
+      "lat": 46.8,
+      "lon": -56.2
+    },
+    "+509": {
+      "country": "Haiti",
+      "region": "Haiti",
+      "lat": 18.6,
+      "lon": -72.3
+    },
+    "+590": {
+      "country": "Guadeloupe",
+      "region": "Guadeloupe",
+      "lat": 16.2,
+      "lon": -61.5
+    },
+    "+591": {
+      "country": "Bolivia",
+      "region": "Bolivia",
+      "lat": -16.3,
+      "lon": -63.5
+    },
+    "+592": {
+      "country": "Guyana",
+      "region": "Guyana",
+      "lat": 5.2,
+      "lon": -58.9
+    },
+    "+593": {
+      "country": "Ecuador",
+      "region": "Ecuador",
+      "lat": -1.8,
+      "lon": -78.2
+    },
+    "+594": {
+      "country": "French Guiana",
+      "region": "French Guiana",
+      "lat": 4.0,
+      "lon": -53.0
+    },
+    "+595": {
+      "country": "Paraguay",
+      "region": "Paraguay",
+      "lat": -23.4,
+      "lon": -58.4
+    },
+    "+596": {
+      "country": "Martinique",
+      "region": "Martinique",
+      "lat": 14.6,
+      "lon": -61.0
+    },
+    "+597": {
+      "country": "Suriname",
+      "region": "Suriname",
+      "lat": 4.0,
+      "lon": -56.0
+    },
+    "+598": {
+      "country": "Uruguay",
+      "region": "Uruguay",
+      "lat": -32.5,
+      "lon": -55.8
+    },
+    "+599": {
+      "country": "Antilles",
+      "region": "Netherlands Antilles",
+      "lat": 12.2,
+      "lon": -68.9
+    },
+    "+670": {
+      "country": "East Timor",
+      "region": "Timor-Leste",
+      "lat": -8.9,
+      "lon": 125.7
+    },
+    "+672": {
+      "country": "Norfolk Island",
+      "region": "Norfolk Island",
+      "lat": -29.1,
+      "lon": 167.9
+    },
+    "+673": {
+      "country": "Brunei",
+      "region": "Brunei",
+      "lat": 4.5,
+      "lon": 114.7
+    },
+    "+674": {
+      "country": "Nauru",
+      "region": "Nauru",
+      "lat": -0.5,
+      "lon": 166.9
+    },
+    "+675": {
+      "country": "Papua New Guinea",
+      "region": "PNG",
+      "lat": -6.3,
+      "lon": 143.7
+    },
+    "+676": {
+      "country": "Tonga",
+      "region": "Tonga",
+      "lat": -21.2,
+      "lon": -175.2
+    },
+    "+677": {
+      "country": "Solomon Islands",
+      "region": "Solomon Islands",
+      "lat": -9.4,
+      "lon": 159.9
+    },
+    "+678": {
+      "country": "Vanuatu",
+      "region": "Vanuatu",
+      "lat": -13.2,
+      "lon": 166.9
+    },
+    "+679": {
+      "country": "Fiji",
+      "region": "Fiji",
+      "lat": -17.7,
+      "lon": 178.4
+    },
+    "+680": {
+      "country": "Palau",
+      "region": "Palau",
+      "lat": 7.3,
+      "lon": 134.5
+    },
+    "+681": {
+      "country": "Wallis and Futuna",
+      "region": "Wallis",
+      "lat": -13.3,
+      "lon": -176.2
+    },
+    "+682": {
+      "country": "Cook Islands",
+      "region": "Cook Islands",
+      "lat": -21.9,
+      "lon": -159.8
+    },
+    "+683": {
+      "country": "Niue",
+      "region": "Niue",
+      "lat": -19.1,
+      "lon": -169.9
+    },
+    "+685": {
+      "country": "Samoa",
+      "region": "Samoa",
+      "lat": -13.8,
+      "lon": -172.3
+    },
+    "+686": {
+      "country": "Kiribati",
+      "region": "Kiribati",
+      "lat": 1.4,
+      "lon": -157.4
+    },
+    "+687": {
+      "country": "New Caledonia",
+      "region": "New Caledonia",
+      "lat": -21.5,
+      "lon": 165.8
+    },
+    "+688": {
+      "country": "Tuvalu",
+      "region": "Tuvalu",
+      "lat": -7.1,
+      "lon": 177.6
+    },
+    "+689": {
+      "country": "French Polynesia",
+      "region": "French Polynesia",
+      "lat": -17.5,
+      "lon": -149.6
+    },
+    "+690": {
+      "country": "Tokelau",
+      "region": "Tokelau",
+      "lat": -9.1,
+      "lon": -172.0
+    },
+    "+691": {
+      "country": "Micronesia",
+      "region": "Micronesia",
+      "lat": 7.4,
+      "lon": 151.9
+    },
+    "+692": {
+      "country": "Marshall Islands",
+      "region": "Marshall Islands",
+      "lat": 7.1,
+      "lon": 171.4
+    },
+    "+850": {
+      "country": "North Korea",
+      "region": "North Korea",
+      "lat": 40.3,
+      "lon": 127.2
+    },
+    "+853": {
+      "country": "Macau",
+      "region": "Macau",
+      "lat": 22.2,
+      "lon": 113.5
+    },
+    "+870": {
+      "country": "Inmarsat",
+      "region": "Inmarsat",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+871": {
+      "country": "Inmarsat Atlantic East",
+      "region": "Inmarsat",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+872": {
+      "country": "Inmarsat Pacific",
+      "region": "Inmarsat",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+873": {
+      "country": "Inmarsat Indian Ocean",
+      "region": "Inmarsat",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+874": {
+      "country": "Inmarsat Atlantic West",
+      "region": "Inmarsat",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+878": {
+      "country": "Universal Personal Telecom",
+      "region": "Universal",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+879": {
+      "country": "Mobile Satellite Service",
+      "region": "Mobile Sat",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+881": {
+      "country": "Global Mobile Satellite",
+      "region": "Global Mobile",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+882": {
+      "country": "International Networks",
+      "region": "Int Network",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+883": {
+      "country": "International Networks",
+      "region": "Int Network",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+888": {
+      "country": "Shared Cost",
+      "region": "Shared Cost",
+      "lat": 0.0,
+      "lon": 0.0
+    },
+    "+970": {
+      "country": "Palestine",
+      "region": "Palestine",
+      "lat": 31.9,
+      "lon": 35.2
+    },
+    "+28": {
+      "country": "Antarctica",
+      "region": "Antarctica",
+      "lat": -82.9,
+      "lon": 135.0
+    },
+    "+29": {
+      "country": "Antarctica",
+      "region": "Antarctica",
+      "lat": -82.9,
+      "lon": 135.0
+    },
+    "+211": {
+      "country": "South Sudan",
+      "region": "South Sudan",
+      "lat": 6.9,
+      "lon": 31.3
+    }
+  }
 }

@@ -12,7 +12,9 @@ Flagship entry point that runs the complete multi-phase geolocation pipeline:
   Phase 5 — Satellite Imagery Matching   (SatelliteMatcher)
   Phase 6 — Park Proximity Analysis      (ParkFinder + GeolocationDB)
   Phase 7 — Cross-View Verification      (BrowserAutomation / fallback)
-  Phase 8 — Synthesis Report Generation  (HTML + JSON + interactive map)
+  Phase 8 — Building Blueprint Analysis (BuildingBlueprintScanner)
+  Phase 9 — Synthesis Report Generation (HTML + JSON + interactive map)
+  Phase 10 — Dense Reference Verification (DenseReferenceLoader)
 
 Usage
 -----
@@ -40,6 +42,21 @@ import traceback
 import urllib.request
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
+# ---------------------------------------------------------------------------
+# Enhanced modules import (dense references + building blueprint scanner)
+# ---------------------------------------------------------------------------
+try:
+    from modules.building_blueprint_scanner import BuildingBlueprintScanner
+    BUILDING_SCANNER_AVAILABLE = True
+except ImportError:
+    BUILDING_SCANNER_AVAILABLE = False
+
+try:
+    from modules.enhanced_fusion_engine import EnhancedFusionEngine
+    ENHANCED_FUSION_AVAILABLE = True
+except ImportError:
+    ENHANCED_FUSION_AVAILABLE = False
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -159,6 +176,7 @@ class PipelineResult:
 
     # Phase results
     exif_data: Dict[str, Any] = field(default_factory=dict)
+    deepfake_analysis: Dict[str, Any] = field(default_factory=dict)
     visual_features: Dict[str, Any] = field(default_factory=dict)
     shadow_analysis: Dict[str, Any] = field(default_factory=dict)
     ocr_text: Dict[str, Any] = field(default_factory=dict)
@@ -173,6 +191,7 @@ class PipelineResult:
     park_proximity: Dict[str, Any] = field(default_factory=dict)
     cross_verification: Dict[str, Any] = field(default_factory=dict)
     synthesis_report: Dict[str, Any] = field(default_factory=dict)
+    vehicle_analysis: Dict[str, Any] = field(default_factory=dict)
 
     # Consolidated estimates
     location_estimates: List[Dict[str, Any]] = field(default_factory=list)
@@ -601,21 +620,22 @@ def phase3_deep_features(image_path: str) -> Dict[str, Any]:
                 eh = cv2.calcHist([edges], [0], None, [32], [0, 256]).flatten()
                 eh = eh / (eh.sum() + 1e-8)
 
-                # Simplified LBP texture
-                lbp = np.zeros(256, dtype=np.float32)
-                for i in range(1, h - 1):
-                    for j in range(1, w - 1):
-                        c = gray[i, j]
-                        code = 0
-                        code |= (gray[i-1, j-1] > c) << 7
-                        code |= (gray[i-1, j] > c) << 6
-                        code |= (gray[i-1, j+1] > c) << 5
-                        code |= (gray[i, j+1] > c) << 4
-                        code |= (gray[i+1, j+1] > c) << 3
-                        code |= (gray[i+1, j] > c) << 2
-                        code |= (gray[i+1, j-1] > c) << 1
-                        code |= (gray[i, j-1] > c)
-                        lbp[code] += 1
+                # Fast vectorized LBP texture (numpy — avoids slow Python pixel loop)
+                # Downsample to max 256×256 so the histogram is computed in <10ms
+                lbp_gray = gray
+                if h > 256 or w > 256:
+                    scale = 256.0 / max(h, w)
+                    lbp_gray = cv2.resize(gray, (max(1, int(w * scale)), max(1, int(h * scale))))
+                c_px = lbp_gray[1:-1, 1:-1].astype(np.int32)
+                _nb = [
+                    lbp_gray[0:-2, 0:-2], lbp_gray[0:-2, 1:-1], lbp_gray[0:-2, 2:],
+                    lbp_gray[1:-1, 2:],   lbp_gray[2:,   2:],   lbp_gray[2:,   1:-1],
+                    lbp_gray[2:,   0:-2], lbp_gray[1:-1, 0:-2],
+                ]
+                codes = np.zeros(c_px.shape, dtype=np.uint8)
+                for _bit, _n in enumerate(_nb):
+                    codes |= ((_n.astype(np.int32) > c_px).astype(np.uint8) << _bit)
+                lbp = np.bincount(codes.ravel(), minlength=256).astype(np.float32)
                 lbp = lbp / (lbp.sum() + 1e-8)
 
                 full = np.concatenate([hist, eh, lbp])
@@ -1839,11 +1859,38 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             if sun.get("solar_hemisphere"):
                 constraints["solar_hemisphere"] = sun["solar_hemisphere"]
 
+            # Vehicle analysis driving-side evidence
+            va = phases.get("vehicle_analysis", {})
+            if va.get("driving_side_evidence") in ("left", "right"):
+                # Only apply if vehicle confidence is reasonable
+                vc = va.get("vehicle_count", 0)
+                if vc >= 1:
+                    ds_map = {"right": "right", "left": "left"}
+                    vds = ds_map[va["driving_side_evidence"]]
+                    # Don't override existing heuristic unless vehicle count > 1
+                    if "driving_side" not in constraints or vc > 1:
+                        constraints["driving_side"] = vds
+                        constraints["driving_side_conf"] = min(0.75, 0.50 + vc * 0.08)
+                        logger.info(f"  ✓ Vehicle driving side override: {vds} ({vc} vehicle(s))")
+
+            # Geolocation hints from vehicle (plate format)
+            for v in va.get("vehicles", [])[:3]:
+                pl = v.get("license_plate", {})
+                if pl.get("format") == "european" and "license_plate_format" not in constraints:
+                    constraints["license_plate_format"] = "euro"
+                    constraints["plate_conf"] = 0.70
+                    break
+                elif pl.get("format") == "american" and "license_plate_format" not in constraints:
+                    constraints["license_plate_format"] = "americas_short"
+                    constraints["plate_conf"] = 0.70
+                    break
+
             if constraints:
                 merged = solver.filter_and_rerank_estimates(merged, constraints)
                 logger.info(f"  ✓ SpatialConstraintSolver applied {len(constraints)} physical constraints")
         except Exception as e:
             logger.warning(f"SpatialConstraintSolver failed in synthesis: {e}")
+
 
         # Check Road Heading Alignment on Top Estimates
         try:
@@ -2222,6 +2269,13 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
     region = options.get("region", None)
     interactive = options.get("interactive", False)
     verbose = options.get("verbose", False)
+    no_vlm = options.get("no_vlm", False)
+    context_text = options.get("context_text", "")
+    extra_images = options.get("extra_images", [])
+
+    # Inject context_text into region hint if no explicit region was set
+    if context_text and not region:
+        region = context_text.strip() or None
 
     if verbose:
         logging.getLogger("GeoVisionDeepScan").setLevel(logging.DEBUG)
@@ -2273,6 +2327,21 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.errors.append(f"Phase 0 error: {e}")
         phases["exif_data"] = {"status": "failed", "error": str(e)}
 
+    # Phase 0b: Deepfake Detection
+    try:
+        from modules.deepfake_detector import DeepfakeDetector
+        logger.info("  Phase 0b: Deepfake Detection")
+        pipeline_result.deepfake_analysis = DeepfakeDetector().analyze(image_path_resolved)
+        phases["deepfake_analysis"] = pipeline_result.deepfake_analysis
+        if pipeline_result.deepfake_analysis.get("status") in ("success", "limited"):
+            pipeline_result.phases_completed.append("phase0b_deepfake_analysis")
+        else:
+            pipeline_result.phases_failed.append("phase0b_deepfake_analysis")
+    except Exception as e:
+        pipeline_result.phases_failed.append("phase0b_deepfake_analysis")
+        pipeline_result.errors.append(f"Phase 0b error: {e}")
+        phases["deepfake_analysis"] = {"status": "failed", "error": str(e)}
+
     # Phase 1b: Shadow Analysis
     try:
         pipeline_result.shadow_analysis = phase1b_shadow_analysis(pipeline_result.exif_data)
@@ -2311,6 +2380,26 @@ def run_pipeline(image_path: str, options: Optional[Dict[str, Any]] = None) -> P
         pipeline_result.phases_failed.append("phase2_ocr")
         pipeline_result.errors.append(f"Phase 2 error: {e}")
         phases["ocr_text"] = {"status": "failed", "error": str(e)}
+
+    # Phase 2b: Vehicle Identification (YOLO + VLM make/model)
+    try:
+        from modules.vehicle_identifier import VehicleIdentifier
+        logger.info("━" * 48)
+        logger.info("  Phase 2b: Vehicle Identification")
+        logger.info("━" * 48)
+        pipeline_result.vehicle_analysis = VehicleIdentifier().analyze(image_path_resolved)
+        phases["vehicle_analysis"] = pipeline_result.vehicle_analysis
+        va = pipeline_result.vehicle_analysis
+        if va.get("status") == "success":
+            pipeline_result.phases_completed.append("phase2b_vehicle_id")
+            if va.get("vehicle_count", 0) > 0:
+                logger.info(f"  ✓ {va['vehicle_count']} vehicle(s) detected, driving side: {va.get('driving_side_evidence','?')}")
+        else:
+            pipeline_result.phases_failed.append("phase2b_vehicle_id")
+    except Exception as e:
+        pipeline_result.phases_failed.append("phase2b_vehicle_id")
+        pipeline_result.errors.append(f"Phase 2b error: {e}")
+        phases["vehicle_analysis"] = {"status": "failed", "error": str(e)}
 
     # Phase 3: Deep Features
     try:

@@ -1,0 +1,66 @@
+{
+  "sources": [
+    "Open-Meteo Historical Archive",
+    "NOAA Climate Data"
+  ],
+  "regions": [
+    {
+      "region": "US Northeast",
+      "lat": 42.36,
+      "lon": -71.06,
+      "climate": "temperate",
+      "codes": {
+        "clear": 1,
+        "rain": 61
+      }
+    },
+    {
+      "region": "US Southwest",
+      "lat": 34.05,
+      "lon": -118.24,
+      "climate": "arid",
+      "codes": {
+        "clear": 0,
+        "rain": 63
+      }
+    },
+    {
+      "region": "Western Europe",
+      "lat": 48.86,
+      "lon": 2.35,
+      "climate": "oceanic",
+      "codes": {
+        "clear": 1,
+        "rain": 61
+      }
+    },
+    {
+      "region": "East Asia",
+      "lat": 35.68,
+      "lon": 139.65,
+      "climate": "humid_subtropical",
+      "codes": {
+        "clear": 2,
+        "rain": 61
+      }
+    }
+  ],
+  "wmo_codes": {
+    "0": "clear",
+    "1": "mainly_clear",
+    "2": "partly_cloudy",
+    "3": "overcast",
+    "45": "fog",
+    "48": "rime_fog",
+    "51": "light_drizzle",
+    "53": "drizzle",
+    "55": "dense_drizzle",
+    "61": "slight_rain",
+    "63": "rain",
+    "65": "heavy_rain",
+    "71": "slight_snow",
+    "73": "snow",
+    "75": "heavy_snow",
+    "95": "thunderstorm"
+  }
+}

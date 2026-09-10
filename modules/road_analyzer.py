@@ -67,7 +67,10 @@ class RoadAnalyzer:
         right_count = 0
         if lines is not None:
             for line in lines:
-                x1, y1, x2, y2 = line[0]
+                pts = line.reshape(-1) if hasattr(line, "reshape") else list(line)
+                if len(pts) < 4:
+                    continue
+                x1, y1, x2, y2 = [float(v) for v in pts[:4]]
                 if x1 < width // 2 and x2 < width // 2:
                     left_count += 1
                 elif x1 > width // 2 and x2 > width // 2:

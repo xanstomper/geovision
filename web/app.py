@@ -23,6 +23,11 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from modules.case_manager import CaseManager
+cm = CaseManager(str(Path(__file__).parent.parent / 'data' / 'cases.db'))
+
 BASE_DIR = Path(__file__).parent
 UPLOAD_FOLDER = BASE_DIR / "static/uploads"
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -191,6 +196,94 @@ def api_status():
             "vlm_location_estimation"
         ]
     })
+
+@app.route("/cases")
+def cases_page():
+    return render_template("cases.html")
+
+@app.route("/cases/<int:case_id>")
+def case_detail_page(case_id):
+    return render_template("case_detail.html", case_id=case_id)
+
+@app.route("/api/cases", methods=["GET"])
+def api_list_cases():
+    cases = cm.list_cases()
+    return jsonify(cases)
+
+@app.route("/api/cases", methods=["POST"])
+def api_create_case():
+    data = request.json or {}
+    case = cm.create_case(
+        name=data.get("name", "Unnamed Case"),
+        description=data.get("description", ""),
+        tags=data.get("tags", [])
+    )
+    return jsonify(case), 201
+
+@app.route("/api/cases/<int:case_id>", methods=["GET"])
+def api_get_case(case_id):
+    case = cm.get_case(case_id)
+    if not case:
+        return jsonify({"error": "Case not found"}), 404
+    return jsonify(case)
+
+@app.route("/api/cases/<int:case_id>", methods=["PUT"])
+def api_update_case(case_id):
+    data = request.json or {}
+    updated = cm.update_case(
+        case_id,
+        **{k: v for k, v in data.items() if k in ("name","description","tags","status")}
+    )
+    if not updated:
+        return jsonify({"error": "Case not found"}), 404
+    return jsonify(updated)
+
+@app.route("/api/cases/<int:case_id>", methods=["DELETE"])
+def api_delete_case(case_id):
+    ok = cm.delete_case(case_id)
+    if not ok:
+        return jsonify({"error": "Case not found"}), 404
+    return jsonify({"status": "deleted"})
+
+@app.route("/api/cases/<int:case_id>/scans", methods=["POST"])
+def api_add_scan(case_id):
+    data = request.json or {}
+    scan = cm.add_scan_to_case(
+        case_id=case_id,
+        scan_id=data.get("scan_id", ""),
+        image_path=data.get("image_path", ""),
+        best_lat=data.get("best_lat"),
+        best_lon=data.get("best_lon"),
+        best_conf=data.get("best_conf"),
+        summary=data.get("summary", {}),
+        scan_json_path=data.get("scan_json_path", ""),
+        scan_html_path=data.get("scan_html_path", ""),
+    )
+    return jsonify(scan), 201
+
+@app.route("/api/cases/<int:case_id>/notes", methods=["POST"])
+def api_add_note(case_id):
+    data = request.json or {}
+    note = cm.add_note(
+        case_id=case_id,
+        note=data.get("note", ""),
+        author=data.get("author", "analyst")
+    )
+    return jsonify(note), 201
+
+
+@app.route("/api/cases/search", methods=["GET"])
+def api_search_cases():
+    q = request.args.get("q", "")
+    cases = cm.search_cases(q)
+    return jsonify(cases)
+
+@app.route("/api/cases/<int:case_id>/export", methods=["GET"])
+def api_export_case(case_id):
+    data = cm.export_case(case_id)
+    if not data:
+        return jsonify({"error": "Case not found"}), 404
+    return data, 200, {'Content-Type': 'application/json', 'Content-Disposition': f'attachment; filename="case_{case_id}.json"'}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=9999, debug=True)

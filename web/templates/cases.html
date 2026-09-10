@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoVision — Cases</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e1a;--panel:#1a1f2e;--accent:#00d4ff;--green:#00ff88;--red:#ff3366;--text:#f8fafc;--muted:#94a3b8;--border:#2d3748;--hover:#232a3d}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{display:flex;align-items:center;gap:24px;padding:16px 32px;background:var(--panel);border-bottom:1px solid var(--border)}
+.brand{font-size:1.3rem;font-weight:700;color:var(--accent);text-decoration:none}
+.nav a{color:var(--muted);text-decoration:none;font-size:.9rem;padding:6px 12px;border-radius:6px;transition:all .2s}
+.nav a:hover,.nav a.active{background:var(--hover);color:var(--text)}
+.container{max-width:1200px;margin:0 auto;padding:32px}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.page-title{font-size:1.6rem;font-weight:700}
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s}
+.btn-primary{background:var(--accent);color:#0a0e1a}
+.btn-primary:hover{opacity:.9}
+.btn-danger{background:#ff3366;color:#fff}
+.btn-sm{padding:6px 14px;font-size:.8rem}
+.search-bar{display:flex;gap:12px;margin-bottom:24px}
+.search-bar input{flex:1;padding:10px 16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem}
+.search-bar input:focus{outline:none;border-color:var(--accent)}
+.cases-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.case-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s;cursor:pointer;text-decoration:none;display:block;color:var(--text)}
+.case-card:hover{border-color:var(--accent)}
+.case-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.case-name{font-weight:700;font-size:1.05rem}
+.badge{padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
+.badge-active{background:rgba(0,255,136,.15);color:var(--green)}
+.badge-closed{background:rgba(148,163,184,.15);color:var(--muted)}
+.badge-archived{background:rgba(255,51,102,.15);color:var(--red)}
+.case-desc{color:var(--muted);font-size:.85rem;margin-bottom:12px;line-height:1.5;min-height:36px}
+.case-meta{display:flex;gap:16px;font-size:.8rem;color:var(--muted)}
+.case-meta span{display:flex;align-items:center;gap:4px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tag{background:rgba(0,212,255,.1);color:var(--accent);padding:2px 10px;border-radius:20px;font-size:.75rem}
+.empty{text-align:center;padding:80px;color:var(--muted)}
+.empty-icon{font-size:3rem;margin-bottom:16px}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;width:480px;max-width:90vw}
+.modal h2{font-size:1.3rem;margin-bottom:20px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:6px;font-weight:500}
+.form-group input,.form-group textarea{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem}
+.form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--accent)}
+.form-group textarea{resize:vertical;min-height:80px}
+.modal-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:20px}
+.btn-secondary{background:var(--hover);color:var(--muted);border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/" class="brand">⬡ GeoVision</a>
+  <nav class="nav" style="display:flex;gap:4px">
+    <a href="/">Analyze</a>
+    <a href="/cases" class="active">Cases</a>
+  </nav>
+</div>
+<div class="container">
+  <div class="page-header">
+    <div class="page-title">📁 Case Management</div>
+    <button class="btn btn-primary" onclick="openModal()">+ New Case</button>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search cases by name, description, or tags..." oninput="searchCases()">
+  </div>
+  <div id="casesGrid" class="cases-grid">
+    <div class="empty"><div class="empty-icon">📂</div><p>Loading cases...</p></div>
+  </div>
+</div>
+
+<!-- New Case Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>Create New Case</h2>
+    <div class="form-group">
+      <label>Case Name *</label>
+      <input type="text" id="caseName" placeholder="e.g. Operation Blue Sky">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="caseDesc" placeholder="Brief description of this investigation..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Tags (comma-separated)</label>
+      <input type="text" id="caseTags" placeholder="e.g. urban, europe, social-media">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createCase()">Create Case</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allCases = [];
+
+async function loadCases() {
+  try {
+    const r = await fetch('/api/cases');
+    allCases = await r.json();
+    renderCases(allCases);
+  } catch(e) {
+    document.getElementById('casesGrid').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Failed to load cases</p></div>';
+  }
+}
+
+function renderCases(cases) {
+  const grid = document.getElementById('casesGrid');
+  if (!cases.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">📂</div><p>No cases yet. Create your first investigation case.</p></div>';
+    return;
+  }
+  grid.innerHTML = cases.map(c => {
+    const badgeClass = c.status === 'active' ? 'badge-active' : c.status === 'closed' ? 'badge-closed' : 'badge-archived';
+    const tags = (c.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+    const created = new Date(c.created_at).toLocaleDateString();
+    return `
+    <a href="/cases/${c.id}" class="case-card">
+      <div class="case-card-header">
+        <div class="case-name">${escHtml(c.name)}</div>
+        <span class="badge ${badgeClass}">${c.status}</span>
+      </div>
+      <div class="case-desc">${escHtml(c.description || 'No description')}</div>
+      ${tags ? `<div class="tags">${tags}</div>` : ''}
+      <div class="case-meta">
+        <span>🗂️ ${c.scan_count || 0} scans</span>
+        <span>💬 ${c.note_count || 0} notes</span>
+        <span>📅 ${created}</span>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+async function searchCases() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) { renderCases(allCases); return; }
+  try {
+    const r = await fetch(`/api/cases/search?q=${encodeURIComponent(q)}`);
+    renderCases(await r.json());
+  } catch(e) {}
+}
+
+function openModal() { document.getElementById('modalOverlay').classList.add('open'); document.getElementById('caseName').focus(); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+async function createCase() {
+  const name = document.getElementById('caseName').value.trim();
+  if (!name) { alert('Case name is required'); return; }
+  const tags = document.getElementById('caseTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  try {
+    const r = await fetch('/api/cases', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, description: document.getElementById('caseDesc').value.trim(), tags})
+    });
+    const newCase = await r.json();
+    closeModal();
+    window.location.href = `/cases/${newCase.id}`;
+  } catch(e) { alert('Failed to create case: ' + e); }
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+loadCases();
+</script>
+</body>
+</html>

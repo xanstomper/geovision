@@ -87,7 +87,10 @@ class RoadOrientationMatcher:
         center_x = w / 2.0
 
         for line in lines:
-            x1, y1, x2, y2 = line[0]
+            pts = line.reshape(-1) if hasattr(line, "reshape") else list(line)
+            if len(pts) < 4:
+                continue
+            x1, y1, x2, y2 = [float(v) for v in pts[:4]]
             if x2 == x1:
                 continue
             slope = (y2 - y1) / float(x2 - x1)

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoVision — Case Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root{--bg:#0a0e1a;--panel:#1a1f2e;--accent:#00d4ff;--green:#00ff88;--red:#ff3366;--text:#f8fafc;--muted:#94a3b8;--border:#2d3748;--hover:#232a3d}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{display:flex;align-items:center;gap:24px;padding:16px 32px;background:var(--panel);border-bottom:1px solid var(--border)}
+.brand{font-size:1.3rem;font-weight:700;color:var(--accent);text-decoration:none}
+.nav a{color:var(--muted);text-decoration:none;font-size:.9rem;padding:6px 12px;border-radius:6px;transition:all .2s}
+.nav a:hover{background:var(--hover);color:var(--text)}
+.container{max-width:1400px;margin:0 auto;padding:32px}
+.case-header{margin-bottom:24px}
+.case-title-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.case-title{font-size:1.8rem;font-weight:700}
+.badge{padding:4px 12px;border-radius:20px;font-size:.8rem;font-weight:600}
+.badge-active{background:rgba(0,255,136,.15);color:var(--green)}
+.badge-closed{background:rgba(148,163,184,.15);color:var(--muted)}
+.badge-archived{background:rgba(255,51,102,.15);color:var(--red)}
+.case-desc{color:var(--muted);font-size:.95rem;margin-bottom:8px}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{background:rgba(0,212,255,.1);color:var(--accent);padding:3px 12px;border-radius:20px;font-size:.8rem}
+.case-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s}
+.btn-primary{background:var(--accent);color:#0a0e1a}
+.btn-secondary{background:var(--hover);color:var(--muted);border:1px solid var(--border)}
+.btn-danger{background:rgba(255,51,102,.15);color:var(--red);border:1px solid rgba(255,51,102,.3)}
+.btn-sm{padding:5px 12px;font-size:.78rem}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.panel-title{padding:16px 20px;border-bottom:1px solid var(--border);font-weight:700;font-size:1rem;display:flex;align-items:center;justify-content:space-between}
+.panel-body{padding:20px}
+#map{height:280px;width:100%}
+.scan-list{list-style:none;max-height:320px;overflow-y:auto}
+.scan-item{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.scan-item:last-child{border-bottom:none}
+.scan-info{flex:1;min-width:0}
+.scan-loc{font-size:.85rem;font-weight:600;font-family:monospace;color:var(--accent)}
+.scan-meta{font-size:.78rem;color:var(--muted);margin-top:4px}
+.conf-badge{font-size:.75rem;padding:2px 8px;border-radius:12px;font-weight:700;background:rgba(0,255,136,.12);color:var(--green)}
+.scan-actions a{color:var(--muted);font-size:.75rem;text-decoration:none;margin-left:8px}
+.scan-actions a:hover{color:var(--accent)}
+.notes-list{list-style:none;max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.note-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px}
+.note-text{font-size:.9rem;line-height:1.6;margin-bottom:8px;white-space:pre-wrap}
+.note-meta{font-size:.75rem;color:var(--muted)}
+.note-form{margin-top:16px;border-top:1px solid var(--border);padding-top:16px}
+.note-form textarea{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;min-height:80px;resize:vertical;margin-bottom:10px}
+.note-form textarea:focus{outline:none;border-color:var(--accent)}
+.full-map-panel{grid-column:1/-1}
+.stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;flex:1;min-width:120px;text-align:center}
+.stat-value{font-size:2rem;font-weight:700;color:var(--accent)}
+.stat-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-size:.9rem}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;width:440px;max-width:90vw}
+.modal h2{font-size:1.2rem;margin-bottom:20px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;font-weight:500}
+.form-group input,.form-group select{width:100%;padding:9px 13px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent)}
+.modal-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/" class="brand">⬡ GeoVision</a>
+  <nav class="nav" style="display:flex;gap:4px">
+    <a href="/">Analyze</a>
+    <a href="/cases">Cases</a>
+  </nav>
+</div>
+<div class="container">
+  <div id="caseHeader" class="case-header">
+    <div class="case-title-row">
+      <div class="case-title" id="caseTitle">Loading...</div>
+      <span class="badge" id="caseBadge"></span>
+    </div>
+    <div class="case-desc" id="caseDesc"></div>
+    <div class="tags" id="caseTags"></div>
+    <div class="case-actions">
+      <button class="btn btn-primary btn-sm" onclick="openEditModal()">✏️ Edit</button>
+      <button class="btn btn-secondary btn-sm" id="statusToggle" onclick="toggleStatus()"></button>
+      <a class="btn btn-secondary btn-sm" id="exportBtn" href="#" onclick="exportCase()">⬇️ Export JSON</a>
+      <button class="btn btn-danger btn-sm" onclick="deleteCase()">🗑️ Delete Case</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-value" id="statScans">0</div><div class="stat-label">Scans</div></div>
+    <div class="stat-card"><div class="stat-value" id="statNotes">0</div><div class="stat-label">Notes</div></div>
+    <div class="stat-card"><div class="stat-value" id="statConf">—</div><div class="stat-label">Best Confidence</div></div>
+    <div class="stat-card"><div class="stat-value" id="statCreated">—</div><div class="stat-label">Created</div></div>
+  </div>
+
+  <div style="margin-bottom:24px">
+    <div class="panel full-map-panel">
+      <div class="panel-title">📍 Scan Locations Map</div>
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-title">
+        <span>🗂️ Scans</span>
+        <button class="btn btn-primary btn-sm" onclick="openAddScanModal()">+ Add Scan</button>
+      </div>
+      <ul class="scan-list" id="scanList">
+        <li class="empty-state">No scans in this case yet.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="panel-title">💬 Investigation Notes</div>
+      <div class="panel-body" style="padding:0">
+        <ul class="notes-list" id="notesList" style="padding:16px">
+          <li class="empty-state">No notes yet.</li>
+        </ul>
+        <div class="note-form" style="padding:0 16px 16px">
+          <textarea id="noteText" placeholder="Add an investigation note..."></textarea>
+          <button class="btn btn-primary btn-sm" onclick="addNote()">Add Note</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+  <div class="modal">
+    <h2>Edit Case</h2>
+    <div class="form-group"><label>Name</label><input id="editName" type="text"></div>
+    <div class="form-group"><label>Description</label><input id="editDesc" type="text"></div>
+    <div class="form-group"><label>Tags (comma-separated)</label><input id="editTags" type="text"></div>
+    <div class="form-group"><label>Status</label>
+      <select id="editStatus">
+        <option value="active">Active</option>
+        <option value="closed">Closed</option>
+        <option value="archived">Archived</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Scan Modal -->
+<div class="modal-overlay" id="addScanModal" onclick="if(event.target===this)closeModal('addScanModal')">
+  <div class="modal">
+    <h2>Link Scan to Case</h2>
+    <div class="form-group"><label>Scan ID / Timestamp</label><input id="scanId" type="text" placeholder="e.g. 2026-09-08_10-30-00"></div>
+    <div class="form-group"><label>Image Path</label><input id="scanImage" type="text" placeholder="/path/to/image.jpg"></div>
+    <div class="form-group"><label>Best Latitude</label><input id="scanLat" type="number" step="any"></div>
+    <div class="form-group"><label>Best Longitude</label><input id="scanLon" type="number" step="any"></div>
+    <div class="form-group"><label>Confidence (0–1)</label><input id="scanConf" type="number" step="0.01" min="0" max="1"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addScanModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addScan()">Link Scan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const caseId = {{ case_id }};
+let caseData = null;
+let map = null;
+let scanMarkers = [];
+
+const COLORS = ['#00d4ff','#00ff88','#ff6b35','#a855f7','#ffd700','#ff3366','#22d3ee'];
+
+async function loadCase() {
+  try {
+    const r = await fetch(`/api/cases/${caseId}`);
+    if (!r.ok) { document.getElementById('caseTitle').textContent = 'Case Not Found'; return; }
+    caseData = await r.json();
+    render();
+  } catch(e) {
+    document.getElementById('caseTitle').textContent = 'Error loading case';
+  }
+}
+
+function render() {
+  const c = caseData;
+  document.title = `GeoVision — ${c.name}`;
+  document.getElementById('caseTitle').textContent = c.name;
+  document.getElementById('caseDesc').textContent = c.description || '';
+
+  const badgeEl = document.getElementById('caseBadge');
+  badgeEl.textContent = c.status;
+  badgeEl.className = `badge badge-${c.status}`;
+
+  const tagsEl = document.getElementById('caseTags');
+  tagsEl.innerHTML = (c.tags||[]).map(t=>`<span class="tag">${escHtml(t)}</span>`).join('');
+
+  document.getElementById('statusToggle').textContent =
+    c.status === 'active' ? '🔒 Close Case' : '🔓 Reopen Case';
+
+  document.getElementById('statScans').textContent  = c.scan_count || 0;
+  document.getElementById('statNotes').textContent  = c.note_count || 0;
+  document.getElementById('statCreated').textContent = new Date(c.created_at).toLocaleDateString();
+
+  // Best confidence
+  const confs = (c.scans||[]).map(s=>s.best_conf).filter(x=>x!=null);
+  document.getElementById('statConf').textContent = confs.length ?
+    (Math.max(...confs)*100).toFixed(0)+'%' : '—';
+
+  renderScans(c.scans || []);
+  renderNotes(c.notes || []);
+  renderMap(c.scans || []);
+}
+
+function renderScans(scans) {
+  const ul = document.getElementById('scanList');
+  if (!scans.length) {
+    ul.innerHTML = '<li class="empty-state">No scans linked to this case.</li>'; return;
+  }
+  ul.innerHTML = scans.map((s,i) => {
+    const lat = s.best_lat != null ? s.best_lat.toFixed(5) : '?';
+    const lon = s.best_lon != null ? s.best_lon.toFixed(5) : '?';
+    const conf = s.best_conf != null ? `<span class="conf-badge">${(s.best_conf*100).toFixed(0)}%</span>` : '';
+    const mapsLink = s.best_lat != null ?
+      `<a href="https://www.google.com/maps/@${s.best_lat},${s.best_lon},17z" target="_blank">Maps</a>` : '';
+    const dt = new Date(s.created_at).toLocaleString();
+    return `<li class="scan-item">
+      <div class="scan-info">
+        <div class="scan-loc">${lat}, ${lon}</div>
+        <div class="scan-meta">ID: ${escHtml(s.scan_id)} &bull; ${dt}</div>
+        ${s.image_path ? `<div class="scan-meta" title="${escHtml(s.image_path)}">📷 ${escHtml(s.image_path.split('/').pop())}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        ${conf}
+        <div class="scan-actions">${mapsLink}</div>
+      </div>
+    </li>`;
+  }).join('');
+}
+
+function renderNotes(notes) {
+  const ul = document.getElementById('notesList');
+  if (!notes.length) {
+    ul.innerHTML = '<li class="empty-state">No notes yet. Add your first observation below.</li>'; return;
+  }
+  ul.innerHTML = notes.map(n => {
+    const dt = new Date(n.created_at).toLocaleString();
+    return `<li class="note-item">
+      <div class="note-text">${escHtml(n.note)}</div>
+      <div class="note-meta">— ${escHtml(n.author)} &bull; ${dt}</div>
+    </li>`;
+  }).join('');
+  ul.scrollTop = ul.scrollHeight;
+}
+
+function renderMap(scans) {
+  if (!map) {
+    map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution:'&copy; CartoDB', maxZoom:19
+    }).addTo(map);
+  }
+  scanMarkers.forEach(m => m.remove());
+  scanMarkers = [];
+
+  const validScans = scans.filter(s=>s.best_lat!=null&&s.best_lon!=null);
+  if (!validScans.length) return;
+
+  const bounds = [];
+  validScans.forEach((s,i) => {
+    const color = COLORS[i % COLORS.length];
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="width:22px;height:22px;border-radius:50%;background:${color};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000">${i+1}</div>`,
+      iconSize:[22,22],iconAnchor:[11,11]
+    });
+    const m = L.marker([s.best_lat,s.best_lon],{icon})
+      .bindPopup(`Scan ${i+1}<br>${s.best_lat.toFixed(4)}, ${s.best_lon.toFixed(4)}<br>Conf: ${s.best_conf!=null?(s.best_conf*100).toFixed(0)+'%':'?'}`)
+      .addTo(map);
+    scanMarkers.push(m);
+    bounds.push([s.best_lat,s.best_lon]);
+  });
+  if (bounds.length===1) map.setView(bounds[0],12);
+  else map.fitBounds(bounds,{padding:[30,30]});
+}
+
+// Actions
+function openEditModal() {
+  document.getElementById('editName').value  = caseData.name;
+  document.getElementById('editDesc').value  = caseData.description || '';
+  document.getElementById('editTags').value  = (caseData.tags||[]).join(', ');
+  document.getElementById('editStatus').value = caseData.status;
+  openModal('editModal');
+}
+
+async function saveEdit() {
+  const tags = document.getElementById('editTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const r = await fetch(`/api/cases/${caseId}`, {
+    method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:document.getElementById('editName').value,
+      description:document.getElementById('editDesc').value,
+      tags, status:document.getElementById('editStatus').value
+    })
+  });
+  caseData = await r.json();
+  render();
+  closeModal('editModal');
+}
+
+async function toggleStatus() {
+  const newStatus = caseData.status === 'active' ? 'closed' : 'active';
+  const r = await fetch(`/api/cases/${caseId}`, {
+    method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status:newStatus})
+  });
+  caseData = await r.json();
+  render();
+}
+
+async function deleteCase() {
+  if (!confirm(`Delete case "${caseData.name}" and all its data? This cannot be undone.`)) return;
+  await fetch(`/api/cases/${caseId}`,{method:'DELETE'});
+  window.location.href='/cases';
+}
+
+function exportCase() {
+  window.open(`/api/cases/${caseId}/export`);
+}
+
+function openAddScanModal() { openModal('addScanModal'); }
+
+async function addScan() {
+  const data = {
+    scan_id: document.getElementById('scanId').value || new Date().toISOString(),
+    image_path: document.getElementById('scanImage').value,
+    best_lat: parseFloat(document.getElementById('scanLat').value)||null,
+    best_lon: parseFloat(document.getElementById('scanLon').value)||null,
+    best_conf: parseFloat(document.getElementById('scanConf').value)||null,
+  };
+  await fetch(`/api/cases/${caseId}/scans`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  closeModal('addScanModal');
+  await loadCase();
+}
+
+async function addNote() {
+  const text = document.getElementById('noteText').value.trim();
+  if (!text) return;
+  await fetch(`/api/cases/${caseId}/notes`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:text})});
+  document.getElementById('noteText').value='';
+  await loadCase();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+loadCase();
+</script>
+</body>
+</html>

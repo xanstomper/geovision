@@ -3,302 +3,692 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoSpy AI - Terminal Mode</title>
+    <title>GeoVision Intelligence</title>
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet for Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         :root {
-            --bg: #000000;
-            --text-main: #0f0;
-            --text-dim: #050;
-            --accent: #f00;
-            --border: #0f0;
-            --surface: rgba(0, 20, 0, 0.8);
+            --bg-color: #0a0e1a;
+            --panel-bg: #1a1f2e;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #2d3748;
+            --hover-bg: #232a3d;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
 
-        body { 
-            font-family: 'Share Tech Mono', monospace;
-            background-color: var(--bg);
-            color: var(--text-main); 
-            min-height: 100vh; 
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 380px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
-            text-shadow: 0 0 5px var(--text-main);
+            overflow-y: auto;
+            flex-shrink: 0;
         }
 
-        /* Scanlines */
-        body::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(
-                to bottom,
-                rgba(18, 16, 16, 0) 50%,
-                rgba(0, 0, 0, 0.25) 50%
-            );
-            background-size: 100% 4px;
-            z-index: 999;
-            pointer-events: none;
+        .main-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
         }
 
-        /* Nav Header */
-        header { 
-            padding: 20px 40px;
-            border-bottom: 2px solid var(--border);
+        /* Sidebar Elements */
+        .brand {
+            padding: 24px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            background: #000;
-        }
-        
-        h1 { 
-            font-size: 2em; 
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-main);
+            gap: 12px;
         }
 
-        .container { 
-            max-width: 1000px; 
-            margin: 40px auto; 
-            padding: 0 20px;
-            flex-grow: 1;
-            width: 100%;
+        .brand::before {
+            content: '';
+            display: block;
+            width: 12px;
+            height: 12px;
+            background-color: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-cyan);
         }
 
-        .panel { 
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 30px; 
-            margin-bottom: 30px;
-            box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1);
+        .sidebar-content {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
-        .upload-area { 
-            border: 1px dashed var(--border); 
-            padding: 40px 20px; 
-            text-align: center; 
-            cursor: pointer; 
-            background: rgba(0,255,0,0.05);
-            transition: all 0.3s ease; 
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.02);
         }
-        
-        .upload-area:hover, .upload-area.dragover { 
-            background: rgba(0,255,0,0.2); 
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.05);
         }
 
         .upload-text {
-            font-size: 1.2em;
+            font-weight: 600;
             margin-bottom: 8px;
-            text-transform: uppercase;
+            color: var(--accent-cyan);
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .image-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .image-preview img {
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            object-fit: cover;
+            max-height: 200px;
         }
 
         .form-group {
-            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        
-        label {
-            display: block;
-            margin-bottom: 10px;
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
             text-transform: uppercase;
-            color: var(--accent);
+            letter-spacing: 0.5px;
         }
 
         textarea {
             width: 100%;
             height: 100px;
-            background: #000;
-            border: 1px solid var(--border);
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
             color: var(--text-main);
-            font-family: 'Share Tech Mono', monospace;
-            padding: 10px;
+            padding: 12px;
             resize: vertical;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
         }
-        
+
         textarea:focus {
-            outline: 1px solid var(--accent);
+            outline: none;
+            border-color: var(--accent-cyan);
         }
 
         .btn-run {
-            background: var(--bg);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-            padding: 15px 30px;
-            font-size: 1.2em;
-            font-family: 'Share Tech Mono', monospace;
+            background: var(--accent-cyan);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 6px;
+            padding: 16px;
+            font-size: 1.05rem;
+            font-weight: 700;
             cursor: pointer;
             text-transform: uppercase;
-            margin-top: 20px;
-            width: 100%;
+            letter-spacing: 1px;
             transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
         }
 
-        .btn-run:hover {
-            background: var(--accent);
-            color: #000;
-            box-shadow: 0 0 15px var(--accent);
+        .btn-run:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
         }
-        
+
         .btn-run:disabled {
-            opacity: 0.5;
+            background: var(--border-color);
+            color: var(--text-muted);
             cursor: not-allowed;
+            box-shadow: none;
         }
 
-        /* Live Terminal */
+        /* Progress Panel */
+        .progress-panel {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: none;
+        }
+
+        .progress-panel h4 {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .phase-list {
+            list-style: none;
+            margin-bottom: 16px;
+        }
+
+        .phase-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .phase-item.active {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .phase-item.done {
+            color: var(--accent-green);
+        }
+
+        .phase-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        details {
+            font-size: 0.85rem;
+        }
+
+        summary {
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 8px;
+        }
+
+        summary:hover {
+            color: var(--text-main);
+        }
+
         .terminal {
             background: #000;
-            border: 1px solid var(--border);
-            height: 300px;
+            border-radius: 4px;
+            padding: 10px;
+            height: 150px;
             overflow-y: auto;
-            padding: 15px;
-            margin-top: 20px;
-            display: none;
-            font-size: 0.9em;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #a0aec0;
+            border: 1px solid var(--border-color);
         }
-        
-        .terminal-line {
+
+        /* Main Panel - Map & Results */
+        #map {
+            width: 100%;
+            min-height: 500px;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-color);
+            background: #000;
+        }
+
+        .results-container {
+            padding: 30px;
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+            background: var(--bg-color);
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 24px;
+        }
+
+        .card-header {
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Best Estimate Layout */
+        .best-estimate-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
             margin-bottom: 4px;
         }
 
-        /* Results Layout */
-        .results-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 30px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .result-card {
-            border: 1px solid var(--border);
-            padding: 20px;
-            background: rgba(0,20,0,0.5);
-        }
-
-        .result-card h3 {
-            color: var(--accent);
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
             text-transform: uppercase;
-            margin-bottom: 15px;
-            border-bottom: 1px dashed var(--border);
-            padding-bottom: 5px;
+            letter-spacing: 0.5px;
         }
 
-        .stat-group {
-            margin-bottom: 15px;
+        .resolved-address {
+            font-size: 1.2rem;
+            color: var(--text-main);
+            margin: 16px 0;
+            font-weight: 500;
         }
 
-        .stat-value {
-            font-size: 2em;
+        .action-links {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .action-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .action-link:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        /* Evidence Chips */
+        .evidence-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .evidence-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .evidence-chip .key {
+            color: var(--text-muted);
+        }
+
+        .evidence-chip .value {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* Candidate List */
+        .candidates-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .candidate-item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .candidate-rank {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            width: 30px;
+            text-align: center;
+        }
+
+        .candidate-info {
+            flex-grow: 1;
+        }
+
+        .candidate-coords {
+            font-family: monospace;
+            font-size: 1rem;
+            margin-bottom: 4px;
             color: var(--text-main);
         }
-        
-        .stat-label {
-            color: var(--text-dim);
-            text-transform: uppercase;
-            font-size: 0.8em;
+
+        .candidate-sources {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
         }
 
-        #map {
-            height: 300px;
-            width: 100%;
-            border: 1px solid var(--border);
-            margin-top: 10px;
+        .source-tag {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--border-color);
+            color: var(--text-muted);
         }
 
-        .file-list {
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: var(--text-dim);
+        .conf-bar-bg {
+            width: 100px;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .conf-bar-fill {
+            height: 100%;
+            background: var(--accent-cyan);
+        }
+
+        /* Nearby Photos */
+        .nearby-photos-row {
+            display: flex;
+            overflow-x: auto;
+            gap: 16px;
+            padding-bottom: 10px;
+        }
+
+        .nearby-photo {
+            flex: 0 0 150px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            text-decoration: none;
+            transition: border-color 0.2s;
+        }
+
+        .nearby-photo:hover {
+            border-color: var(--accent-cyan);
+        }
+
+        .nearby-photo img {
+            width: 150px;
+            height: 100px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .nearby-photo-title {
+            padding: 8px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: var(--panel-bg);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Leaflet Overrides */
+        .leaflet-container {
+            background: #000;
         }
         
-        pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            color: white;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            font-size: 12px;
+        }
+
+        .marker-best {
+            background-color: var(--accent-red);
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 51, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .app-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                max-height: 50vh;
+            }
+            .best-estimate-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>SYS.GEOVISION // OP-MODE</h1>
-        <div style="color: var(--accent);">[AUTHORIZED ACCESS ONLY]</div>
-    </header>
-
-    <div class="container">
-        <div class="panel" id="mainPanel">
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-text">> DRAG & DROP TARGET IMAGES</div>
-                <div style="color: var(--text-dim);">[Accepts multiple files for VLM correlation]</div>
-                <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                GeoVision
+                <a href="/cases" style="margin-left: auto; font-size: 1rem; color: var(--text-muted); text-decoration: none;">Cases</a>
             </div>
-            <div class="file-list" id="fileList"></div>
-
-            <div class="form-group">
-                <label>> TARGET CONTEXT & OSINT HINTS (OPTIONAL)</label>
-                <textarea id="contextInput" placeholder="Enter known variables, region locks, or hints for the deep scan..."></textarea>
-            </div>
-
-            <button class="btn-run" id="analyzeBtn" onclick="analyzeImages()">
-                > EXECUTE DEEP SCAN
-            </button>
             
-            <div class="terminal" id="terminal"></div>
-        </div>
+            <div class="sidebar-content">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-text">Upload Image</div>
+                    <div class="upload-hint">Drag & drop or click to browse</div>
+                    <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                </div>
+                
+                <div id="imagePreview" class="image-preview"></div>
 
-        <div class="results-grid" id="resultsGrid">
-            <div class="result-card">
-                <h3>> LOCATION_TRIANGULATED</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div>
-                        <div class="stat-group">
-                            <div class="stat-label">LAT / LNG</div>
-                            <div class="stat-value" id="resCoords">--</div>
-                        </div>
-                        <div class="stat-group">
-                            <div class="stat-label">CONFIDENCE</div>
-                            <div class="stat-value" id="resConfidence">--</div>
-                        </div>
-                        <a id="resMapsLink" href="#" target="_blank" style="color: var(--accent); text-transform: uppercase;">[ OPEN IN GOOGLE MAPS ]</a>
-                    </div>
-                    <div>
-                        <div id="map"></div>
-                    </div>
+                <div class="form-group">
+                    <label>Target Context & Hints</label>
+                    <textarea id="contextInput" placeholder="Enter known variables, region locks, or hints for the scan..."></textarea>
+                </div>
+
+                <button id="analyzeBtn" class="btn-run" onclick="analyzeImages()">Run Intelligence Scan</button>
+
+                <div id="progressPanel" class="progress-panel">
+                    <h4>Scan Progress</h4>
+                    <ul id="phaseList" class="phase-list"></ul>
+                    <details>
+                        <summary>Raw Activity Log</summary>
+                        <div id="terminal" class="terminal"></div>
+                    </details>
                 </div>
             </div>
+        </aside>
 
-            <div class="result-card" id="rawOutputCard">
-                <h3>> RAW_VLM_INTELLIGENCE</h3>
-                <pre id="rawOutput" style="font-size: 0.8em; color: var(--text-dim);"></pre>
+        <!-- Main Panel -->
+        <main class="main-panel">
+            <div id="map"></div>
+            
+            <div id="resultsContainer" class="results-container">
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Best Estimate</div>
+                    </div>
+                    <div class="best-estimate-grid">
+                        <div>
+                            <div class="metric-label">Confidence</div>
+                            <div class="metric-value" id="beConfidence">--%</div>
+                            
+                            <div class="resolved-address" id="beAddress">Processing location data...</div>
+                            
+                            <div class="metric-label" style="margin-top: 16px;">Coordinates</div>
+                            <div id="beCoords" style="font-family: monospace; font-size: 1.1rem; color: var(--text-main); margin-top: 4px;">--</div>
+                            
+                            <div class="action-links">
+                                <a id="beMapsLink" href="#" target="_blank" class="action-link">Google Maps</a>
+                                <a id="beStreetViewLink" href="#" target="_blank" class="action-link">Street View</a>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="metric-label">Evidence Matrix</div>
+                            <div id="evidenceGrid" class="evidence-grid"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="nearbyPhotosContainer" class="card" style="display: none;">
+                    <div class="card-header">
+                        <div class="card-title">Nearby Ground Photos</div>
+                    </div>
+                    <div id="nearbyPhotosRow" class="nearby-photos-row"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">All Candidates</div>
+                    </div>
+                    <ul id="candidatesList" class="candidates-list"></ul>
+                </div>
+
+                <!-- Deepfake Detection Card -->
+                <div id="deepfakeCard" class="card" style="display:none">
+                    <div class="card-header">
+                        <div class="card-title">🔍 Image Authenticity</div>
+                        <div id="deepfakeVerdict" style="font-size:.8rem;padding:3px 10px;border-radius:20px;font-weight:600"></div>
+                    </div>
+                    <div style="padding:16px">
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+                            <div style="flex:1">
+                                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px">Authenticity Score</div>
+                                <div style="background:var(--bg-color);border-radius:6px;height:10px;overflow:hidden">
+                                    <div id="deepfakeBar" style="height:100%;transition:width .6s;border-radius:6px"></div>
+                                </div>
+                            </div>
+                            <div id="deepfakePct" style="font-size:1.4rem;font-weight:700;min-width:52px;text-align:right"></div>
+                        </div>
+                        <div id="deepfakeTechs" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+                        <div id="deepfakeFlags" style="font-size:.78rem;color:var(--text-muted);line-height:1.7"></div>
+                    </div>
+                </div>
+
+                <!-- Vehicle Identification Card -->
+                <div id="vehicleCard" class="card" style="display:none">
+                    <div class="card-header">
+                        <div class="card-title">🚗 Vehicle Analysis</div>
+                        <div id="vehicleCount" style="font-size:.8rem;color:var(--text-muted)"></div>
+                    </div>
+                    <div style="padding:16px">
+                        <div id="vehicleList" style="display:flex;flex-direction:column;gap:10px"></div>
+                        <div id="vehicleHints" style="margin-top:12px;font-size:.82rem;color:var(--text-muted);line-height:1.7"></div>
+                    </div>
+                </div>
+
             </div>
-        </div>
+        </main>
+
     </div>
 
     <script>
+        // DOM Elements
         const uploadArea = document.getElementById("uploadArea");
         const imageInput = document.getElementById("imageInput");
-        const fileList = document.getElementById("fileList");
+        const imagePreview = document.getElementById("imagePreview");
         const analyzeBtn = document.getElementById("analyzeBtn");
-        const terminal = document.getElementById("terminal");
-        const resultsGrid = document.getElementById("resultsGrid");
         const contextInput = document.getElementById("contextInput");
+        
+        const progressPanel = document.getElementById("progressPanel");
+        const phaseList = document.getElementById("phaseList");
+        const terminal = document.getElementById("terminal");
+        
+        const resultsContainer = document.getElementById("resultsContainer");
         
         let uploadedFiles = [];
         let map = null;
-        let marker = null;
-        
+        let markers = [];
+        let currentPhaseEl = null;
+
+        // Colors for candidates
+        const markerColors = ['#ff3366', '#00d4ff', '#00ff88', '#ffaa00', '#aa00ff', '#ff00aa', '#00aaff'];
+
         function initMap() {
             if(!map) {
-                map = L.map('map', { zoomControl: false }).setView([0, 0], 2);
+                map = L.map('map', { zoomControl: true }).setView([20, 0], 2);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                     attribution: '&copy; OpenStreetMap &copy; CARTO',
                     subdomains: 'abcd',
@@ -306,7 +696,11 @@
                 }).addTo(map);
             }
         }
+        
+        // Initialize map immediately
+        initMap();
 
+        // File Upload Handling
         uploadArea.addEventListener("click", () => imageInput.click());
         uploadArea.addEventListener("dragover", (e) => { e.preventDefault(); uploadArea.classList.add("dragover"); });
         uploadArea.addEventListener("dragleave", () => { uploadArea.classList.remove("dragover"); });
@@ -320,32 +714,78 @@
         function handleFiles(files) {
             if (files.length > 0) {
                 uploadedFiles = Array.from(files);
-                fileList.innerHTML = uploadedFiles.map(f => `[+] ${f.name}`).join('<br>');
+                imagePreview.innerHTML = '';
+                
+                uploadedFiles.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        imagePreview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
             }
         }
 
-        function appendLog(msg, color = 'var(--text-main)') {
+        function appendLog(msg) {
             const line = document.createElement('div');
-            line.className = 'terminal-line';
-            line.style.color = color;
             line.innerText = msg;
             terminal.appendChild(line);
             terminal.scrollTop = terminal.scrollHeight;
+            
+            // Phase Extraction
+            const phaseMatch = msg.match(/Phase\s*([\w\d]+):\s*(.*)/i);
+            if (phaseMatch) {
+                const phaseId = phaseMatch[1];
+                const phaseName = phaseMatch[2];
+                updatePhase(phaseId, phaseName);
+            }
+        }
+
+        function updatePhase(id, name) {
+            if (currentPhaseEl) {
+                currentPhaseEl.classList.remove('active');
+                currentPhaseEl.classList.add('done');
+                currentPhaseEl.querySelector('.phase-icon').innerHTML = '✓';
+            }
+            
+            const li = document.createElement('li');
+            li.className = 'phase-item active';
+            li.innerHTML = `
+                <div class="phase-icon"><div class="spinner"></div></div>
+                <div class="phase-name">Phase ${id}: ${name}</div>
+            `;
+            phaseList.appendChild(li);
+            currentPhaseEl = li;
+        }
+
+        function finishPhases() {
+            if (currentPhaseEl) {
+                currentPhaseEl.classList.remove('active');
+                currentPhaseEl.classList.add('done');
+                currentPhaseEl.querySelector('.phase-icon').innerHTML = '✓';
+                currentPhaseEl = null;
+            }
         }
 
         async function analyzeImages() {
             if (uploadedFiles.length === 0) {
-                alert("Upload at least one image.");
+                alert("Please upload at least one image.");
                 return;
             }
             
             analyzeBtn.disabled = true;
-            analyzeBtn.innerText = "> INITIATING SCAN...";
-            terminal.style.display = "block";
+            analyzeBtn.innerText = "Scanning...";
+            progressPanel.style.display = "block";
             terminal.innerHTML = "";
-            resultsGrid.style.display = "none";
+            phaseList.innerHTML = "";
+            resultsContainer.style.display = "none";
+            currentPhaseEl = null;
             
-            appendLog("> ESTABLISHING CONNECTION TO GEOVISION CORE...");
+            // Clear map
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
             
             const formData = new FormData();
             uploadedFiles.forEach(f => formData.append("images", f));
@@ -361,17 +801,20 @@
                 if (data.status === "started") {
                     connectStream(data.job_id);
                 } else {
-                    appendLog(`> ERROR: ${data.error}`, 'var(--accent)');
-                    analyzeBtn.disabled = false;
-                    analyzeBtn.innerText = "> EXECUTE DEEP SCAN";
+                    alert(`Error: ${data.error}`);
+                    resetBtn();
                 }
             } catch (error) {
-                appendLog(`> FATAL: ${error.message}`, 'var(--accent)');
-                analyzeBtn.disabled = false;
-                analyzeBtn.innerText = "> EXECUTE DEEP SCAN";
+                alert(`Fatal Error: ${error.message}`);
+                resetBtn();
             }
         }
         
+        function resetBtn() {
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerText = "Run Intelligence Scan";
+        }
+
         function connectStream(jobId) {
             const evtSource = new EventSource(`/api/stream/${jobId}`);
             
@@ -383,60 +826,220 @@
                 if (msg.type === "log") {
                     appendLog(msg.data);
                 } else if (msg.type === "error") {
-                    appendLog(`> ERR: ${msg.data}`, 'var(--accent)');
+                    appendLog(`[ERROR] ${msg.data}`);
                     evtSource.close();
-                    analyzeBtn.disabled = false;
-                    analyzeBtn.innerText = "> EXECUTE DEEP SCAN";
+                    resetBtn();
                 } else if (msg.type === "result") {
-                    appendLog("> SCAN COMPLETE. PARSING DATA...", 'var(--accent)');
+                    appendLog("[SYSTEM] Scan Complete. Rendering output.");
+                    finishPhases();
                     evtSource.close();
                     displayResults(msg.data);
-                    analyzeBtn.disabled = false;
-                    analyzeBtn.innerText = "> EXECUTE DEEP SCAN";
+                    resetBtn();
                 }
             };
             
             evtSource.onerror = function() {
-                appendLog("> CONNECTION LOST TO CORE.", 'var(--accent)');
+                appendLog("[ERROR] Connection lost.");
                 evtSource.close();
-                analyzeBtn.disabled = false;
-                analyzeBtn.innerText = "> EXECUTE DEEP SCAN";
+                resetBtn();
             };
         }
 
         function displayResults(result) {
-            resultsGrid.style.display = "grid";
-            initMap();
+            resultsContainer.style.display = "flex";
             
-            document.getElementById("rawOutput").innerText = JSON.stringify(result, null, 2);
-            
-            let best = null;
-            if (result.best_estimate) {
-                best = result.best_estimate;
-            } else if (result.location_estimates && result.location_estimates.length > 0) {
-                best = result.location_estimates[0];
-            }
+            let best = result.best_estimate || (result.location_estimates && result.location_estimates[0]);
+            let candidates = result.location_estimates || [];
             
             if (best && best.latitude) {
-                document.getElementById("resCoords").innerText = `${best.latitude.toFixed(6)}, ${best.longitude.toFixed(6)}`;
-                document.getElementById("resConfidence").innerText = `${(best.confidence * 100).toFixed(1)}%`;
-                document.getElementById("resMapsLink").href = `https://www.google.com/maps/search/?api=1&query=${best.latitude},${best.longitude}`;
+                // Best Estimate Card
+                document.getElementById("beConfidence").innerText = `${(best.confidence * 100).toFixed(1)}%`;
+                document.getElementById("beCoords").innerText = `${best.latitude.toFixed(6)}, ${best.longitude.toFixed(6)}`;
                 
-                map.setView([best.latitude, best.longitude], 15);
+                document.getElementById("beMapsLink").href = `https://www.google.com/maps/search/?api=1&query=${best.latitude},${best.longitude}`;
+                document.getElementById("beStreetViewLink").href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${best.latitude},${best.longitude}`;
                 
-                const pulseIcon = L.divIcon({
-                    className: 'pulse-marker',
-                    html: `<div style="width: 15px; height: 15px; background: #f00; border-radius: 50%; box-shadow: 0 0 15px #f00;"></div>`,
-                    iconSize: [15, 15],
-                    iconAnchor: [7.5, 7.5]
+                // Address Resolution
+                let addressParts = [];
+                if (best.evidence) {
+                    if (best.evidence.city) addressParts.push(best.evidence.city);
+                    if (best.evidence.state) addressParts.push(best.evidence.state);
+                    if (best.evidence.country) addressParts.push(best.evidence.country);
+                }
+                
+                document.getElementById("beAddress").innerText = addressParts.length > 0 ? addressParts.join(", ") : "Unknown Region";
+                
+                // Evidence Grid
+                const evidenceGrid = document.getElementById("evidenceGrid");
+                evidenceGrid.innerHTML = '';
+                if (best.evidence) {
+                    for (const [key, value] of Object.entries(best.evidence)) {
+                        if (value !== null && value !== "") {
+                            const chip = document.createElement('div');
+                            chip.className = 'evidence-chip';
+                            chip.innerHTML = `<span class="key">${key.replace(/_/g, ' ')}:</span><span class="value">${value}</span>`;
+                            evidenceGrid.appendChild(chip);
+                        }
+                    }
+                }
+
+                // Candidates List
+                const candidatesList = document.getElementById("candidatesList");
+                candidatesList.innerHTML = '';
+                
+                const bounds = L.latLngBounds();
+
+                candidates.forEach((cand, idx) => {
+                    const color = markerColors[idx % markerColors.length];
+                    const isBest = (idx === 0);
+                    
+                    // Add Map Marker
+                    const iconHtml = `<div class="custom-marker ${isBest ? 'marker-best' : ''}" style="width:24px; height:24px; background:${color};">${idx + 1}</div>`;
+                    const customIcon = L.divIcon({
+                        className: 'clear-marker',
+                        html: iconHtml,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+                    
+                    const m = L.marker([cand.latitude, cand.longitude], {icon: customIcon, zIndexOffset: isBest ? 1000 : 0})
+                        .bindPopup(`Rank #${idx + 1}: ${(cand.confidence*100).toFixed(1)}%`)
+                        .addTo(map);
+                        
+                    markers.push(m);
+                    bounds.extend([cand.latitude, cand.longitude]);
+
+                    // Add to List
+                    let sourcesHtml = '';
+                    if (cand.sources) {
+                        sourcesHtml = cand.sources.map(s => `<span class="source-tag">${s}</span>`).join('');
+                    }
+
+                    const li = document.createElement('li');
+                    li.className = 'candidate-item';
+                    li.innerHTML = `
+                        <div class="candidate-rank" style="color: ${color}">#${idx + 1}</div>
+                        <div class="candidate-info">
+                            <div class="candidate-coords">${cand.latitude.toFixed(6)}, ${cand.longitude.toFixed(6)}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                Confidence: ${(cand.confidence * 100).toFixed(1)}%
+                            </div>
+                            <div class="conf-bar-bg"><div class="conf-bar-fill" style="width: ${cand.confidence * 100}%; background: ${color};"></div></div>
+                            <div class="candidate-sources">${sourcesHtml}</div>
+                        </div>
+                        <div>
+                            <a href="https://www.google.com/maps/search/?api=1&query=${cand.latitude},${cand.longitude}" target="_blank" class="action-link" style="padding: 6px 12px; font-size: 0.8rem;">Maps</a>
+                        </div>
+                    `;
+                    candidatesList.appendChild(li);
                 });
+
+                if (markers.length > 0) {
+                    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+                }
+
+                // Nearby Photos
+                const npContainer = document.getElementById("nearbyPhotosContainer");
+                const npRow = document.getElementById("nearbyPhotosRow");
+                npRow.innerHTML = '';
                 
-                if(marker) map.removeLayer(marker);
-                marker = L.marker([best.latitude, best.longitude], {icon: pulseIcon}).addTo(map);
-                
-                setTimeout(() => map.invalidateSize(), 100);
+                if (result.nearby_ground_photos && result.nearby_ground_photos.photos && result.nearby_ground_photos.photos.length > 0) {
+                    npContainer.style.display = 'block';
+                    result.nearby_ground_photos.photos.forEach(photo => {
+                        const a = document.createElement('a');
+                        a.className = 'nearby-photo';
+                        a.href = photo.url;
+                        a.target = '_blank';
+                        a.innerHTML = `
+                            <img src="${photo.url}" alt="Nearby photo">
+                            <div class="nearby-photo-title">${photo.title || 'Untitled'}</div>
+                        `;
+                        npRow.appendChild(a);
+                    });
+                } else {
+                    npContainer.style.display = 'none';
+                }
+
+                setTimeout(() => map.invalidateSize(), 300);
+
+                // --- Deepfake Detection Card ---
+                const dfData = result.deepfake_analysis;
+                if (dfData && dfData.status === 'success') {
+                    document.getElementById('deepfakeCard').style.display = 'block';
+                    const auth = dfData.authenticity_score || 0;
+                    const pct = Math.round(auth * 100);
+                    const verdictEl = document.getElementById('deepfakeVerdict');
+                    const verdictColors = {
+                        'LIKELY_GENUINE':     ['#00ff88','rgba(0,255,136,.15)'],
+                        'SUSPICIOUS':         ['#ffd700','rgba(255,215,0,.15)'],
+                        'LIKELY_MANIPULATED': ['#ff3366','rgba(255,51,102,.15)'],
+                        'LIKELY_AI_GENERATED':['#ff6b35','rgba(255,107,53,.15)'],
+                    };
+                    const [vcolor, vbg] = verdictColors[dfData.verdict] || ['#94a3b8','rgba(148,163,184,.1)'];
+                    verdictEl.textContent = (dfData.verdict || 'UNKNOWN').replace(/_/g,' ');
+                    verdictEl.style.color = vcolor;
+                    verdictEl.style.background = vbg;
+
+                    const barColor = pct >= 70 ? '#00ff88' : pct >= 45 ? '#ffd700' : '#ff3366';
+                    document.getElementById('deepfakeBar').style.width = pct + '%';
+                    document.getElementById('deepfakeBar').style.background = barColor;
+                    document.getElementById('deepfakePct').textContent = pct + '%';
+                    document.getElementById('deepfakePct').style.color = barColor;
+
+                    // Technique mini bars
+                    const techEl = document.getElementById('deepfakeTechs');
+                    techEl.innerHTML = '';
+                    const techs = dfData.techniques || {};
+                    const techNames = {ela:'ELA',frequency:'Frequency',metadata:'Metadata',noise:'Noise',face:'Face',compression_ghost:'Ghost'};
+                    Object.entries(techNames).forEach(([k, label]) => {
+                        const t = techs[k];
+                        if (!t) return;
+                        const s = Math.round((t.authenticity||0.5)*100);
+                        const c = s>=70?'#00ff88':s>=45?'#ffd700':'#ff3366';
+                        techEl.innerHTML += `<div style="background:var(--bg-color);border-radius:6px;padding:8px 10px">
+                            <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px">
+                                <span style="color:var(--text-muted)">${label}</span><span style="color:${c}">${s}%</span>
+                            </div>
+                            <div style="background:#0a0e1a;border-radius:3px;height:4px">
+                                <div style="width:${s}%;height:100%;background:${c};border-radius:3px"></div>
+                            </div></div>`;
+                    });
+
+                    // Flags
+                    const flags = dfData.flags || [];
+                    document.getElementById('deepfakeFlags').innerHTML =
+                        flags.length ? '⚠️ ' + flags.slice(0,5).join('<br>⚠️ ') : '✅ No manipulation indicators detected';
+                }
+
+                // --- Vehicle Identification Card ---
+                const vaData = result.vehicle_analysis;
+                if (vaData && vaData.status === 'success' && vaData.vehicle_count > 0) {
+                    document.getElementById('vehicleCard').style.display = 'block';
+                    document.getElementById('vehicleCount').textContent = `${vaData.vehicle_count} vehicle${vaData.vehicle_count > 1 ? 's' : ''} detected`;
+
+                    const vList = document.getElementById('vehicleList');
+                    vList.innerHTML = '';
+                    (vaData.vehicles || []).forEach((v, i) => {
+                        const colorSwatch = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${v.color === 'unknown' ? '#94a3b8' : v.color};border:1px solid rgba(255,255,255,.3);vertical-align:middle;margin-right:4px"></span>`;
+                        const make = v.make ? `<span style="color:var(--accent-cyan);font-weight:600">${v.make} ${v.model||''}</span> ${v.year_range ? `(${v.year_range})` : ''}` : '';
+                        const plate = v.license_plate && v.license_plate.detected ?
+                            `<span style="background:rgba(0,212,255,.1);color:var(--accent-cyan);padding:1px 8px;border-radius:4px;font-size:.75rem;font-family:monospace">${v.license_plate.text || v.license_plate.format + ' plate'}</span>` : '';
+                        vList.innerHTML += `<div style="background:var(--bg-color);border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                            <span style="font-size:.8rem;color:var(--text-muted)">#${v.id}</span>
+                            <span style="font-size:.82rem">${colorSwatch}${v.color}</span>
+                            <span style="background:rgba(168,85,247,.15);color:#a855f7;padding:2px 8px;border-radius:12px;font-size:.75rem">${v.type}</span>
+                            ${make ? `<span style="font-size:.82rem">${make}</span>` : ''}
+                            ${plate}
+                        </div>`;
+                    });
+
+                    const hints = vaData.geolocation_hints || [];
+                    document.getElementById('vehicleHints').innerHTML =
+                        hints.length ? hints.map(h => '📍 ' + h).join('<br>') : '';
+                }
             }
         }
     </script>
+
 </body>
 </html>

@@ -68,7 +68,12 @@ class DrivingSideClassifier:
 
         if lines is not None:
             for line in lines:
-                x1, y1, x2, y2 = line[0]
+                # OpenCV 4 returns shape (N,1,4); OpenCV 5 returns (N,4).
+                # Handle both so the unpacking never hits a scalar.
+                pts = line.reshape(-1) if hasattr(line, "reshape") else list(line)
+                if len(pts) < 4:
+                    continue
+                x1, y1, x2, y2 = [float(v) for v in pts[:4]]
                 slope = (y2 - y1) / (x2 - x1 + 1e-6)
                 if abs(slope) < 0.2 or abs(slope) > 5.0:
                     continue  # Ignore near-horizontal or purely vertical noise

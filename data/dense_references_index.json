@@ -1,0 +1,16 @@
+{
+  "count": 10,
+  "generated_at": "2026-09-09T08:42:22Z",
+  "types": {
+    "dense_city_reference": 10,
+    "dense_business_reference": 0,
+    "dense_construction_reference": 0,
+    "dense_property_reference": 0
+  },
+  "sources": [
+    "wikimedia_commons_geosearch",
+    "overpass-api.de",
+    "overpass_building_material_crawl"
+  ],
+  "honesty_note": "All records are live API responses. Failed sources emit no records."
+}

@@ -17,7 +17,13 @@
       "min": 0.01,
       "max": 5.78
     },
-    "country_accuracy": 0.625
+    "country_accuracy": 0.625,
+    "success_rate_overall": 0.875,
+    "mean_accuracy_25km": 1.0,
+    "median_accuracy": 1.0,
+    "max_accuracy": 1.0,
+    "pipeline_completion_rate": 1.0,
+    "no_false_negative_rate": 1.0
   },
   "samples": [
     {

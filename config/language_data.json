@@ -1,0 +1,55 @@
+{
+  "scripts_detected_in_ocr": {
+    "latin": {
+      "regions": [
+        "Americas",
+        "Europe",
+        "Oceania",
+        "parts of Africa/Asia"
+      ],
+      "confidence_weight": 0.7
+    },
+    "cyrillic": {
+      "regions": [
+        "Russia",
+        "Eastern Europe",
+        "Central Asia"
+      ],
+      "confidence_weight": 0.85
+    },
+    "arabic": {
+      "regions": [
+        "Middle East",
+        "North Africa"
+      ],
+      "confidence_weight": 0.85
+    },
+    "han": {
+      "regions": [
+        "China",
+        "Japan (kanji mix)",
+        "Korea (hanja)"
+      ],
+      "confidence_weight": 0.8
+    },
+    "devanagari": {
+      "regions": [
+        "India",
+        "Nepal"
+      ],
+      "confidence_weight": 0.9
+    },
+    "thai": {
+      "regions": [
+        "Thailand"
+      ],
+      "confidence_weight": 0.9
+    },
+    "japanese_kana": {
+      "regions": [
+        "Japan"
+      ],
+      "confidence_weight": 0.8
+    }
+  }
+}

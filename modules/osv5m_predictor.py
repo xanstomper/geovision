@@ -50,13 +50,27 @@ class OSV5MPredictor:
             lat, lon = float(gps_degrees[0]), float(gps_degrees[1])
             print(f"✓ Coordinates: {lat:.4f}, {lon:.4f}")
 
+            # --- Honest confidence (no fabricated scores) ---
+            # OSV-5M is a raw GPS-coordinate regressor. Its output is NOT a
+            # calibrated probability, so we MUST NOT emit a high/normal-drawn
+            # confidence the way the original stub did (that was confidence
+            # fraud). Derive the score from real sanity checks only:
+            #   1. It must land on land (not ocean) — a hard geospatial sanity gate.
+            #   2. Absent calibration we cap nominal confidence low and explicitly
+            #      flag it as uncalibrated in the returned metadata.
+            conf = 0.0
+            if -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
+                # reverse_geocoder returns an rRGC entry keyed by admin1/cc codes.
+                # A valid land hit implies the regression is at least geographically
+                # coherent (in-country), worth a low uncalibrated prior.
+                r = rg.search((lat, lon))[0]
+                if r.get("cc"):
+                    conf = 0.35  # low, honest, uncalibrated prior — not a claim of accuracy
+            print(f"✓ Confidence: {conf:.2f} (uncalibrated regression prior — not model accuracy)")
+
             # Get location info using reverse geocoder
             location = rg.search((lat, lon))[0]
             print(f"✓ Location resolved: {location['name']}, {location['admin1']}, {location['cc']}")
-
-            # Calculate confidence based on model output
-            confidence = min(0.85, np.random.normal(0.75, 0.1))
-            print(f"✓ Confidence: {confidence:.2f}")
 
             result = {
                 "name": f"{location['name']}, {location['admin1']}, {location['cc']}",
@@ -64,11 +78,15 @@ class OSV5MPredictor:
                 "lon": lon,
                 "source": "osv5m",
                 "type": "ml_prediction",
-                "metadata": {"city": location["name"], "admin": location["admin1"], "country": location["cc"]},
+                "confidence_note": "OSV5M confidence is a low uncalibrated prior. Treat coordinates as hypothesis, not confirmation.",
+                "metadata": {
+                    "city": location["name"], "admin": location["admin1"], "country": location["cc"],
+                    "confidence_calibrated": False,
+                },
             }
 
             print("=== OSV5M Prediction Complete ===\n")
-            return result, confidence
+            return result, conf
 
         except Exception as e:
             print(f"! OSV5M prediction error: {e}")

@@ -1,6 +1,6 @@
 {
   "name": "wikipedia_landmarks_v1",
-  "description": "Curated real-image landmark seed set fetched from Wikipedia/Wikimedia.",
+  "description": "Curated real-image landmark seed set fetched from Wikipedia/Wikimedia. 8 real geotagged samples (phantom extra_dense centroids removed \u2014 their image files never existed).",
   "version": "1.0",
   "samples": [
     {
