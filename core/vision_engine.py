@@ -307,7 +307,13 @@ class VisionEngine:
         if lines is not None:
             angles = []
             for line in lines:
-                x1, y1, x2, y2 = line[0]
+                # OpenCV5 HoughLinesP returns (N,4); cv2<4.4 returns (N,1,4).
+                line = line.reshape(-1)
+                if line.size < 4:
+                    continue
+                x1, y1, x2, y2 = int(line[0]), int(line[1]), int(line[2]), int(line[3])
+                if x2 == x1:
+                    continue
                 angle = np.degrees(np.arctan2(y2 - y1, x2 - x1))
                 angles.append(angle)
             if angles:

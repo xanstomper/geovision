@@ -203,8 +203,17 @@ class VehicleIdentifier:
             cache = Path(__file__).parent.parent / "data" / "yolo_cache"
             cache.mkdir(parents=True, exist_ok=True)
             os.environ.setdefault("YOLO_CONFIG_DIR", str(cache))
-            self._yolo = YOLO("yolov8n.pt")
-            logger.info("VehicleIdentifier: YOLOv8n loaded")
+            # NEVER trigger a network auto-download (YOLO("yolov8n.pt") downloads ~6MB
+            # and can hang the whole pipeline when the network is blocked, which under
+            # a signal-managing shell aborts to SystemExit). Only load a model that is
+            # already present locally; otherwise degrade gracefully.
+            model_path = cache / "yolov8n.pt"
+            if not model_path.exists():
+                logger.info("VehicleIdentifier: yolov8n.pt not in %s — skipping YOLO "
+                            "(vehicle/plate signals degraded)", cache)
+                return None
+            self._yolo = YOLO(str(model_path))
+            logger.info("VehicleIdentifier: YOLOv8n loaded from %s", model_path)
         except Exception as e:
             logger.warning("VehicleIdentifier: YOLO unavailable — %s", e)
         return self._yolo
