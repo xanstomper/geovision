@@ -26,7 +26,8 @@ EXPECTED_TOOLS = {
     "grow_reference_db", "query_listings",
 }
 
-CLI_COMMANDS = ["investigate", "grow-db", "find-listing", "track-properties"]
+CLI_COMMANDS = ["investigate", "grow-db", "find-listing", "track-properties",
+                "render-report", "signals", "canvas"]
 
 
 def test_mcp_tools_implements_are_one_to_one():
