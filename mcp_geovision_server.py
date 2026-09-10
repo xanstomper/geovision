@@ -808,6 +808,7 @@ TOOLS = [
                                     "use_regional": {"type": "boolean", "description": "Enable region-constrained retrieval (default true)"},
                     "with_listings": {"type": "boolean", "description": "Snapshot nearby property/business listings (hotels, offices, shops) into the case"},
                     "auto_report": {"type": "boolean", "description": "Auto-write a professional Markdown case report"},
+                    "canvas_session": {"type": "string", "description": "Stream the ENTIRE investigation live onto the detective canvas (from canvas_start): every step, pulled reference images, side-by-side comparisons with scores, candidates, verdict"},
                     "save_case": {"type": "boolean", "description": "Persist the investigation as a case file in the SQLite CaseManager"},
                     "case_name": {"type": "string", "description": "Case name when save_case=true"},
                     "case_description": {"type": "string", "description": "Case description when save_case=true"},
@@ -859,6 +860,72 @@ TOOLS = [
                     "title": {"type": "string", "description": "Report title"}
                 },
             },
+        },
+        {
+            "name": "query_signals",
+            "description": "Pull many independent LIVE signal sources for an anchor and bundle them for a model to cross-examine and solve: web search, ground imagery (Wikimedia+Mapillary+Flickr), OSM/Overpass business/property OSINT, real weather, GeoNames city snap, reverse-geocode, and optional reverse-image. Give lat+lon, or address, or a text query (auto-geocoded). Key-free. Returns {signals: {source: result}}.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "lat": {"type": "number", "description": "Latitude anchor"},
+                    "lon": {"type": "number", "description": "Longitude anchor"},
+                    "query": {"type": "string", "description": "Text query (geocoded if no lat/lon)"},
+                    "address": {"type": "string", "description": "Address anchor"},
+                    "image_path": {"type": "string", "description": "Optional image path for reverse-image signal"},
+                    "radius_m": {"type": "integer", "description": "OSINT/imagery radius meters (default 2500)"},
+                    "date": {"type": "string", "description": "Optional date (YYYY-MM-DD) for weather corroboration"}
+                },
+            },
+        },
+        {
+            "name": "canvas_start",
+            "description": "Open a LIVE detective canvas — a visual board the agent streams everything onto: what it's doing (steps), observations (notes), pulled images, side-by-side image comparisons with similarity scores, pinned candidate locations, eliminations with reasons, evidence, summaries, and the final verdict. The viewer auto-refreshes in the browser. Use when the user says 'use geovision canvas' or wants to SEE the investigation live. Pass canvas_session into investigate_image to auto-stream the whole multi-stage investigation.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session": {"type": "string", "description": "Optional session/case name (default: timestamped)"},
+                    "title": {"type": "string", "description": "Board title"},
+                    "image": {"type": "string", "description": "Optional query image path/URL to pin first"},
+                    "note": {"type": "string", "description": "Optional opening note"}
+                },
+            },
+        },
+        {
+            "name": "canvas_add",
+            "description": "Append one visual event to the live detective canvas. kind=step (what you're doing now), note (observation/reasoning in detail), image (pull an image onto the board — local path or URL), comparison (two images side-by-side + similarity score + match flag), candidate (pin a possible location with lat/lon + confidence), elimination (candidate ruled out + the reason), evidence (corroborating data: listings, weather, web hits), summary (detailed written summary), verdict (the final answer, highlighted), link (external URL).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session": {"type": "string", "description": "Canvas session id from canvas_start"},
+                    "kind": {"type": "string", "enum": ["step", "note", "image", "comparison", "candidate", "elimination", "evidence", "summary", "verdict", "link"]},
+                    "title": {"type": "string"}, "text": {"type": "string"},
+                    "image": {"type": "string", "description": "Image path/URL for kind=image"},
+                    "caption": {"type": "string"},
+                    "left": {"type": "string", "description": "Left image (query) for comparison"},
+                    "right": {"type": "string", "description": "Right image (reference) for comparison"},
+                    "left_caption": {"type": "string"}, "right_caption": {"type": "string"},
+                    "score": {"type": "number", "description": "Similarity score 0-1"},
+                    "match": {"type": "boolean"},
+                    "lat": {"type": "number"}, "lon": {"type": "number"},
+                    "url": {"type": "string"}, "confidence": {"type": "number"}
+                },
+                "required": ["session", "kind"],
+            },
+        },
+        {
+            "name": "canvas_finish",
+            "description": "Close the detective canvas with a final summary. Optionally pass the investigation `record` to also render a full professional case report (.md) alongside the canvas.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session": {"type": "string", "description": "Canvas session id"},
+                    "text": {"type": "string", "description": "Closing summary text"},
+                    "record": {"type": "object", "description": "Optional investigation record to render as a report"},
+                    "output": {"type": "string", "description": "Optional report output path"},
+                    "title": {"type": "string"}
+                },
+                "required": ["session"],
+            },
         }
     ]
 
@@ -879,6 +946,13 @@ def tool_investigate_image(args: Dict[str, Any]) -> Dict[str, Any]:
     try:
         sys.path.insert(0, str(BASE))
         from modules.geo_harness import GeoVisionHarness
+        canvas = None
+        if args.get("canvas_session"):
+            try:
+                from modules.canvas import DetectiveCanvas
+                canvas = DetectiveCanvas(session=str(args["canvas_session"]))
+            except Exception:
+                canvas = None
         res = GeoVisionHarness().investigate(
             str(p),
             evidence_summary=args.get("evidence_summary"),
@@ -892,7 +966,11 @@ def tool_investigate_image(args: Dict[str, Any]) -> Dict[str, Any]:
             use_regional=bool(args.get("use_regional", True)),
             with_listings=bool(args.get("with_listings", False)),
             auto_report=bool(args.get("auto_report", False)),
+            canvas=canvas,
         )
+        if canvas is not None:
+            res["canvas_viewer_url"] = canvas.viewer_url
+            res["canvas_session"] = canvas.session
         return res
     except Exception as e:
         return {"error": str(e), "image": str(p)}
@@ -980,6 +1058,108 @@ def tool_render_case_report(args: Dict[str, Any]) -> Dict[str, Any]:
             "chars": len(content), "output_path": path}
 
 
+def tool_query_signals(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Pull many independent LIVE signal sources for an anchor (coords / address /
+    text query) and bundle them for cross-examination: web search, ground imagery
+    (Wikimedia+Mapillary+Flickr), OSM/Overpass business OSINT, weather, GeoNames
+    city snap, reverse-geocode, optional reverse-image. Key-free. The calling model
+    reasons over the returned signals to solve."""
+    try:
+        from modules.live_signal_orchestrator import LiveSignalOrchestrator
+    except Exception as e:
+        return {"error": f"live_signal_orchestrator unavailable: {e}"}
+    return LiveSignalOrchestrator(timeout=int(args.get("timeout", 20))).investigate(
+        lat=args.get("lat"), lon=args.get("lon"),
+        query=args.get("query"), address=args.get("address"),
+        image_path=args.get("image_path"),
+        radius_m=int(args.get("radius_m", 2500)), date=args.get("date"))
+
+
+_ACTIVE_CANVAS: Dict[str, Any] = {}
+
+
+def tool_canvas_start(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Open a live detective canvas — a visual board the agent works on.
+    Everything the agent does can be streamed to it via canvas_add: steps,
+    notes, pulled images, side-by-side image comparisons with scores, pinned
+    candidates, eliminations, evidence, summaries, and a final verdict.
+    Returns viewer_url (open in a browser — it live-refreshes)."""
+    try:
+        from modules.canvas import DetectiveCanvas
+    except Exception as e:
+        return {"error": f"canvas unavailable: {e}"}
+    session = args.get("session") or None
+    c = DetectiveCanvas(session=session, title=args.get("title") or "GeoVision Investigation")
+    _ACTIVE_CANVAS[c.session] = c
+    if args.get("image"):
+        c.add("image", title="Query image", image=str(args["image"]),
+              caption="target of the investigation")
+    if args.get("note"):
+        c.add("note", text=str(args["note"]))
+    return {"status": "success", "session": c.session,
+            "viewer_url": c.viewer_url, "html_path": str(c.html_path),
+            "json_path": str(c.json_path),
+            "hint": ("call canvas_add with kind=step/note/image/comparison/candidate/"
+                     "elimination/evidence/summary/verdict; pass canvas_session in "
+                     "investigate_image to auto-stream the whole investigation.")}
+
+
+def tool_canvas_add(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Append one visual event to the live detective canvas. Kinds: step (what
+    you're doing), note (observation/reasoning), image (pull an image onto the
+    board), comparison (two images side-by-side + optional score/match),
+    candidate (pin a possible location lat/lon), elimination (ruled out + reason),
+    evidence (corroborating data), summary, verdict (final answer), link."""
+    try:
+        from modules.canvas import DetectiveCanvas
+    except Exception as e:
+        return {"error": f"canvas unavailable: {e}"}
+    sess = args.get("canvas_session") or args.get("session")
+    c = _ACTIVE_CANVAS.get(sess)
+    if c is None:  # re-open by session id
+        try:
+            c = DetectiveCanvas(session=sess)
+            _ACTIVE_CANVAS[sess] = c
+        except Exception:
+            return {"error": f"canvas session not found: {sess}"}
+    ev = c.add(args.get("kind") or "note",
+               title=args.get("title") or "",
+               text=args.get("text") or "",
+               image=args.get("image") or "",
+               caption=args.get("caption") or "",
+               left=args.get("left") or "", right=args.get("right") or "",
+               left_caption=args.get("left_caption") or "",
+               right_caption=args.get("right_caption") or "",
+               score=args.get("score"), match=args.get("match"),
+               lat=args.get("lat"), lon=args.get("lon"),
+               url=args.get("url") or "",
+               confidence=args.get("confidence"))
+    return {"status": "success", "session": sess, "event": ev.get("id"),
+            "events_total": len(c.events), "viewer_url": c.viewer_url}
+
+
+def tool_canvas_finish(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Close the canvas with a final summary (and optionally render a full case
+    report from an investigation record into .md/.html)."""
+    sess = args.get("canvas_session") or args.get("session")
+    c = _ACTIVE_CANVAS.get(sess)
+    if c is None:
+        return {"error": f"canvas session not found: {sess}"}
+    c.finish(args.get("text") or "Investigation closed.")
+    out = {"status": "success", "session": sess, "viewer_url": c.viewer_url,
+           "events_total": len(c.events)}
+    if args.get("record"):
+        try:
+            from modules.case_report import render_case
+            p = render_case(args["record"], args.get("output") or
+                            str(c.html_path.with_suffix(".report.md")),
+                            title=args.get("title") or "GeoVision Case Report")
+            out["report_path"] = str(p)
+        except Exception as e:
+            out["report_note"] = f"report render failed: {e}"
+    return out
+
+
 TOOL_IMPLS = {
     "geolocate_image": tool_geolocate_image,
     "geolocate_quick": tool_geolocate_quick,
@@ -1005,6 +1185,10 @@ TOOL_IMPLS = {
     "grow_reference_db": tool_grow_reference_db,
     "query_listings": tool_query_listings,
     "render_case_report": tool_render_case_report,
+    "query_signals": tool_query_signals,
+    "canvas_start": tool_canvas_start,
+    "canvas_add": tool_canvas_add,
+    "canvas_finish": tool_canvas_finish,
 }
 
 

@@ -817,6 +817,94 @@ def render_report(
     return path
 
 
+@app.command(name="signals")
+def signals(
+    lat: float = typer.Option(None, "--lat", help="Latitude anchor"),
+    lon: float = typer.Option(None, "--lon", help="Longitude anchor"),
+    query: str = typer.Option(None, "--query", "-q", help="Text query (geocoded if no lat/lon)"),
+    address: str = typer.Option(None, "--address", help="Address anchor"),
+    image: Path = typer.Option(None, "--image", help="Optional image for reverse-image signal"),
+    radius: int = typer.Option(2500, "--radius", help="OSINT/imagery radius in meters"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout")
+):
+    """Pull many independent LIVE signal sources for an anchor (coords, address, or
+    text query) and bundle them for cross-examination: web search, ground imagery,
+    OSM/Overpass business OSINT, weather, GeoNames city snap, reverse-geocode, and
+    optional reverse-image. Key-free. A CV/model agent reasons over the bundle.
+
+    Example:
+      geovision signals --query "Colosseum Rome"
+      geovision signals --lat 48.8584 --lon 2.2945 --image photo.jpg"""
+    from modules.live_signal_orchestrator import LiveSignalOrchestrator
+    with clean_json_context(json_only):
+        res = LiveSignalOrchestrator().investigate(
+            lat=lat, lon=lon, query=query, address=address,
+            image_path=str(image) if image else None, radius_m=radius)
+    if json_only:
+        print(json.dumps(res, indent=2, default=str))
+        return
+    console.print(Panel.fit("[bold cyan]🛰️  Live Signal Orchestrator[/bold cyan]", border_style="cyan"))
+    console.print(res.get("note", ""))
+    for name, sig in res.get("signals", {}).items():
+        st = sig.get("status", "?") if isinstance(sig, dict) else "?"
+        cnt = ""
+        if isinstance(sig, dict):
+            for k in ("count", "weather", "city", "place", "coords"):
+                if sig.get(k):
+                    cnt = f" | {k}={sig[k]}" if not isinstance(sig[k], (dict, list)) else ""
+                    break
+        console.print(f"  [bold]{name}[/]: {st}{cnt}")
+    img = res.get("signals", {}).get("ground_imagery", {})
+    for p in (img.get("photos") or [])[:3]:
+        console.print(f"    • {p.get('source')}: {str(p.get('thumbnail_url',''))[:60]}")
+
+
+@app.command(name="canvas")
+def canvas_cmd(
+    image: Path = typer.Argument(None, file_okay=True, dir_okay=False, readable=True,
+                                 help="Image to investigate on the canvas"),
+    session: str = typer.Option(None, "--session", "-s", help="Canvas session name (default: timestamped)"),
+    title: str = typer.Option("GeoVision Investigation", "--title", help="Board title"),
+    listings: bool = typer.Option(False, "--listings", help="Also snapshot nearby property/business listings onto the canvas"),
+    radius: float = typer.Option(1500.0, "--radius", help="Regional-retrieval radius km"),
+    no_regional: bool = typer.Option(False, "--no-regional", help="Disable regional retrieval"),
+):
+    """Open a LIVE detective canvas and (if an image is given) run the full
+    investigation streaming onto it: every step, pulled reference images,
+    side-by-side visual comparisons with scores, pinned candidates, and the
+    verdict. Prints the viewer URL — open it in a browser; it auto-refreshes.
+    Without an image, just opens an empty board (drive it via canvas_* MCP tools)."""
+    from modules.canvas import DetectiveCanvas
+    c = DetectiveCanvas(session=session, title=title)
+    console.print(Panel.fit("[bold yellow]🎨 Detective Canvas[/bold yellow]", border_style="yellow"))
+    console.print(f"[bold]Viewer:[/] [cyan]{c.viewer_url}[/cyan]  (auto-refreshes — keep it open)")
+    if image is None:
+        c.add("note", text="Empty board. Drive me via the canvas_* MCP tools.")
+        return
+    from modules.geo_harness import GeoVisionHarness
+    h = GeoVisionHarness()
+    if listings:
+        c.add("step", title="Listings snapshot", text="will pull nearby hotels/offices/shops after geolocation")
+    rec = h.investigate(str(image), canvas=c, radius_km=radius,
+                        use_regional=not no_regional, with_listings=listings)
+    if listings and (rec.get("best_estimate") or {}).get("latitude") is not None:
+        b = rec["best_estimate"]
+        for l in (rec.get("nearby_listings", {}).get("listings") or [])[:8]:
+            c.add("evidence", title=f"[{l.get('type')}] {l.get('name')}",
+                  text=f"{l.get('address','').strip()} @ {l.get('latitude'):.5f},{l.get('longitude'):.5f}",
+                  lat=l.get("latitude"), lon=l.get("longitude"))
+        c.add("summary", title="Nearby listings",
+              text=f"{rec.get('nearby_listings',{}).get('count',0)} real listings around the estimate (OSM/Overpass)")
+    best = rec.get("best_estimate") or {}
+    c.finish(f"Investigation complete — status={rec.get('status')} "
+             f"best={best.get('latitude')},{best.get('longitude')} "
+             f"(canvas holds {len(c.events)} events)")
+    console.print(f"[bold]Result:[/] {rec.get('status')} — "
+                  f"{best.get('latitude')}, {best.get('longitude')} "
+                  f"conf={best.get('confidence')}")
+    console.print(f"[bold]Board:[/] {len(c.events)} events — [cyan]{c.viewer_url}[/cyan]")
+
+
 if __name__ == "__main__":
     app()
 

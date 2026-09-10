@@ -627,6 +627,41 @@ class GeoVisionHarness:
         return res
 
     # ------------------------------------------------------------------ #
+    # Stage 0 — EXIF / metadata forensics (exifLooter methodology)       #
+    # A GPS tag in EXIF is decisive ground truth; check it BEFORE any    #
+    # expensive model work, and surface it on the canvas + case record.  #
+    # ------------------------------------------------------------------ #
+    def exif_forensics(self, image_path: str,
+                       canvas: Optional[Any] = None) -> Dict[str, Any]:
+        out: Dict[str, Any] = {"status": "skipped"}
+        try:
+            from modules.exif_extractor import extract_exif_data, get_gps_from_exif
+            exif = extract_exif_data(image_path)
+            gps = get_gps_from_exif(exif)
+            out = {"status": "success", "has_exif": bool(exif),
+                   "gps": gps,
+                   "camera": exif.get("Make") or exif.get("Model"),
+                   "datetime": exif.get("DateTimeOriginal") or exif.get("DateTime"),
+                   "fields": sorted(exif.keys())[:20]}
+            if gps:
+                out["note"] = ("EXIF GPS found — decisive ground truth. "
+                               "Use as the answer unless tampering suspected.")
+            if canvas is not None:
+                canvas.add("evidence" if gps else "note",
+                           title=f"EXIF {'GPS FOUND' if gps else 'clean'}",
+                           text=(f"camera={out.get('camera')} date={out.get('datetime')} "
+                                 f"fields={len(exif) if exif else 0}"),
+                           lat=gps.get("lat") if gps else None,
+                           lon=gps.get("lon") if gps else None)
+        except Exception as e:
+            out = {"status": "failed", "note": str(e)[:120]}
+        return out
+
+    def exif_forensics_record(self, image_path: str) -> Dict[str, Any]:
+        """exif_forensics without a canvas (public helper for CLI/MCP)."""
+        return self.exif_forensics(image_path, canvas=None)
+
+    # ------------------------------------------------------------------ #
     # Master entrypoint                                                   #
     # ------------------------------------------------------------------ #
     def investigate(self, image_path: str,
@@ -640,7 +675,8 @@ class GeoVisionHarness:
                     radius_km: float = 1500.0,
                     use_regional: bool = True,
                     with_listings: bool = False,
-                    auto_report: bool = False) -> Dict[str, Any]:
+                    auto_report: bool = False,
+                    canvas: Optional[Any] = None) -> Dict[str, Any]:
         """Run the full multi-stage investigation and produce a structured case record.
 
         Stages:
@@ -661,6 +697,16 @@ class GeoVisionHarness:
         started = time.time()
         t0 = _now()
 
+        # Live detective canvas: show everything as it happens
+        if canvas is not None:
+            try:
+                canvas.add("image", title="Query image", image=str(p),
+                           caption=f"investigating {p.name}")
+                canvas.add("step", title="Stage 0 — EXIF forensics",
+                           text="checking embedded metadata (GPS tag = ground truth)")
+            except Exception:
+                pass
+
         record: Dict[str, Any] = {
             "harness": "GeoVisionHarness",
             "status": "limited",
@@ -676,10 +722,19 @@ class GeoVisionHarness:
             "notes": [],
         }
 
+        # Stage 0 — EXIF forensics (cheap, decisive when GPS present)
+        record["stages"]["exif_forensics"] = self.exif_forensics(str(p), canvas=canvas)
+
         # Stage 1 — coarse VLM reasoning
         coarse = self.coarse_reason(str(p), evidence_summary=evidence_summary,
                                     location_hint=location_hint)
         record["stages"]["coarse_reason"] = coarse
+        if canvas is not None and (coarse.get("prediction") or {}).get("reasoning"):
+            try:
+                canvas.add("note", title="Coarse reasoning (VLM)",
+                           text=str(coarse["prediction"].get("reasoning"))[:600])
+            except Exception:
+                pass
         if (coarse.get("prediction") or {}).get("reasoning"):
             record["reasoning_chain"].append("COARSE: " + coarse["prediction"]["reasoning"])
         if (coarse.get("prediction") or {}).get("eliminated"):
@@ -692,11 +747,29 @@ class GeoVisionHarness:
         record["stages"]["deterministic_scan"] = scan
         record["constraints_applied"] = scan.get("constraints", [])
         candidates = scan.get("candidates", [])
+        if canvas is not None:
+            try:
+                canvas.add("step", title="Stage 2 — deterministic scan",
+                           text=f"{len(candidates)} raw candidates; constraints: "
+                                f"{len(record['constraints_applied'])}")
+            except Exception:
+                pass
 
         # Constraint pruning (negative evidence)
         pruned = self.prune_with_constraints(candidates, coarse)
         pruned.sort(key=lambda c: c.get("confidence", 0), reverse=True)
         record["candidates"] = pruned[:12]
+        if canvas is not None:
+            try:
+                for c in pruned[:5]:
+                    canvas.add("candidate", title=str(c.get("place_name") or
+                                                      c.get("city") or
+                                                      f"({c.get('latitude'):.3f},{c.get('longitude'):.3f})"),
+                               text=f"source={c.get('source','?')} conf={c.get('confidence',0):.2f}",
+                               lat=c.get("latitude"), lon=c.get("longitude"),
+                               confidence=c.get("confidence"))
+            except Exception:
+                pass
 
         # Regional retrieval — coarse-to-fine upgrade (better-than-GeoSpy).
         # Seed the region with the best deterministic prior (GeoCLIP top candidate
@@ -747,6 +820,22 @@ class GeoVisionHarness:
         # Runs even when no VLM is configured so Stage-3 evidence is never empty.
         vverify = self.visual_verify_candidates(str(p), pruned, top_k=top_k_verify)
         record["stages"]["visual_verify_candidates"] = vverify
+        if canvas is not None:
+            try:
+                for v in (vverify.get("verifications") or [])[:3]:
+                    cand = v.get("candidate", {})
+                    refs = v.get("reference_photos") or []
+                    ref_url = refs[0].get("thumbnail_url") if refs else None
+                    canvas.add("comparison",
+                               title=f"Visual cross-check — {cand.get('latitude',0):.3f},{cand.get('longitude',0):.3f}",
+                               left=str(p), left_caption="query",
+                               right=ref_url or "",
+                               right_caption=(refs[0].get("title") if refs else "reference"),
+                               score=v.get("visual_similarity"),
+                               match=v.get("visual_match"),
+                               text=v.get("note", ""))
+            except Exception:
+                pass
         for v in vverify.get("verifications", []):
             if v.get("visual_match"):
                 # boost that candidate's confidence — real cross-view signal
@@ -764,6 +853,17 @@ class GeoVisionHarness:
         record["uncertainty"] = uncertainty
         record["duration_s"] = round(time.time() - started, 2)
         record["status"] = "success" if best else "limited"
+        if canvas is not None and best:
+            try:
+                canvas.add("verdict", title="Best estimate",
+                           text=(f"{best.get('latitude'):.5f}, {best.get('longitude'):.5f}\n"
+                                 f"confidence={best.get('confidence'):.2f} (uncalibrated) "
+                                 f"city={best.get('city') or '?'} country={best.get('country') or '?'}\n"
+                                 + "\n".join(record.get("reasoning_chain", [])[:6])),
+                           lat=best.get("latitude"), lon=best.get("longitude"),
+                           confidence=best.get("confidence"))
+            except Exception:
+                pass
         if best and not record.get("reasoning_chain"):
             record["reasoning_chain"] = ["Prediction produced by deterministic multi-signal fusion"]
 

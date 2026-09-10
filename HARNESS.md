@@ -144,7 +144,9 @@ regions were eliminated and why.
 
 | Need | Tool |
 |---|---|
+| **LIVE detective canvas — see everything the agent does visually** | **`canvas_start` + `canvas_add` + `canvas_finish`** (MCP) — open viewer_url in a browser; auto-refreshes. Pass `canvas_session` into `investigate_image` to stream the whole investigation |
 | Full investigation + case file | `investigate_image` (harness) |
+| **Pull many live signals to cross-examine & problem-solve** | **`query_signals`** (MCP) / **CLI `signals`** — web + imagery + OSINT + weather + city + geo, live, key-free |
 | **Generate a professional case report** | **`render_case_report`** (MCP) / **CLI `render-report`** — auto-written on `--save-case` |
 | **List/track property & business listings (hotels, rentals, offices, shops)** | **`query_listings`** (MCP) / **CLI `track-properties`** |
 | **Find exact house/listing from a photo (indoor)** | **`find-listing`** (CLI; needs free GOOGLE_VISION_API_KEY for reliability) |
