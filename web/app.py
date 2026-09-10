@@ -245,6 +245,7 @@ def oceanir_analyze():
                 "country": best.get("country"),
             },
             "unsure": (best.get("confidence") or 0) < 0.3,
+            "evidence_verdict": res.get("evidence_verdict", {}),
             "candidates": [
                 {"latitude": c.get("latitude"), "longitude": c.get("longitude"),
                  "confidence": c.get("confidence"),

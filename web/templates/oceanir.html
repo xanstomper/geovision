@@ -89,7 +89,10 @@
       <div id="refs"></div>
     </div>
     <div class="card">
-      <h3>Evidence chain</h3>
+      <h3>Supports &amp; contradictions (why this answer)</h3>
+      <div id="supports"></div>
+      <div id="contradictions"></div>
+      <h3 style="margin-top:16px">Evidence chain</h3>
       <div id="chain"></div>
       <div id="canv"></div>
     </div>
@@ -129,12 +132,17 @@ $('go').addEventListener('click',async()=>{
 
 function render(j){
   const b=j.best||{};
+  const ev=j.evidence_verdict||{};
   const unsure=j.unsure;
   const cls=unsure?'unsure':((b.confidence||0)>=0.6?'high':'low');
   $('best').innerHTML=`
     <div class="coord">${(b.latitude??'—').toFixed?b.latitude.toFixed(5):b.latitude}, ${(b.longitude??'—').toFixed?b.longitude.toFixed(5):b.longitude}</div>
     <div>${b.place||''} ${b.country||''}</div>
-    <span class="badge ${cls}">${unsure?'UNSURE — low confidence':(Math.round((b.confidence||0)*100)+'% confidence')}${b.uncalibrated?'<small> (uncalibrated)</small>':''}</span>`;
+    <span class="badge ${cls}">${unsure?'UNSURE — low confidence':(Math.round((b.confidence||0)*100)+'% confidence')}${b.uncalibrated?'<small> (uncalibrated)</small>':''}</span>
+    ${ev.precision_tier?`<span class="badge high" style="background:rgba(90,167,214,.15);color:var(--blue)">${ev.precision_tier.replace('_',' ')}</span>`:''}
+    ${ev.verification_status?`<span class="badge ${cls}">${ev.verification_status.replace('_',' ')}</span>`:''}`;
+  $('supports').innerHTML=(ev.supports||[]).map(s=>`<div class="ev"><div class="n" style="color:var(--good)">supports</div><div>${s}</div></div>`).join('')||'';
+  $('contradictions').innerHTML=(ev.contradictions||[]).map(s=>`<div class="ev"><div class="n" style="color:var(--bad)">against</div><div>${s}</div></div>`).join('')||'';
   (j.candidates||[]).forEach((c,i)=>{
     const pct=Math.round((c.confidence||0)*100);
     $('cands').innerHTML+=`<div class="cand"><span class="rank">${i+1}</span>

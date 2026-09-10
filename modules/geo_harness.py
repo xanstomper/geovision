@@ -853,15 +853,27 @@ class GeoVisionHarness:
         record["uncertainty"] = uncertainty
         record["duration_s"] = round(time.time() - started, 2)
         record["status"] = "success" if best else "limited"
+        # OceanIR-style evidence verdict (research-derived): structured supports /
+        # contradictions / precision_tier / verification_status / scope_consistent.
+        record["evidence_verdict"] = self.build_evidence_verdict(record)
         if canvas is not None and best:
             try:
+                ev = record.get("evidence_verdict") or {}
+                verdict_text = (f"{best.get('latitude'):.5f}, {best.get('longitude'):.5f}\n"
+                                f"confidence={best.get('confidence'):.2f} (uncalibrated) "
+                                f"city={best.get('city') or '?'} country={best.get('country') or '?'}\n"
+                                + f"precision={ev.get('precision_tier')} verification={ev.get('verification_status')}\n"
+                                + "\n".join(record.get("reasoning_chain", [])[:6]))
                 canvas.add("verdict", title="Best estimate",
-                           text=(f"{best.get('latitude'):.5f}, {best.get('longitude'):.5f}\n"
-                                 f"confidence={best.get('confidence'):.2f} (uncalibrated) "
-                                 f"city={best.get('city') or '?'} country={best.get('country') or '?'}\n"
-                                 + "\n".join(record.get("reasoning_chain", [])[:6])),
+                           text=verdict_text,
                            lat=best.get("latitude"), lon=best.get("longitude"),
                            confidence=best.get("confidence"))
+                if ev.get("supports"):
+                    canvas.add("evidence", title="Supports",
+                               text="\n".join(str(s) for s in ev["supports"][:6]))
+                if ev.get("contradictions"):
+                    canvas.add("elimination", title="Contradictions / flags",
+                               text="\n".join(str(s) for s in ev["contradictions"][:6]))
             except Exception:
                 pass
         if best and not record.get("reasoning_chain"):
@@ -970,6 +982,92 @@ class GeoVisionHarness:
         except Exception:
             pass
         return best, uncertainty
+
+    # ------------------------------------------------------------------ #
+    # OceanIR-style evidence verdict (research-derived).                  #
+    # Structured supports[]/contradictions[]/precision_tier/              #
+    # verification_status/scope_consistent, mirroring OceanIR's           #
+    # "evidence workspace" result shape — a documented chain, not a pin.  #
+    # ------------------------------------------------------------------ #
+    def build_evidence_verdict(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        best = record.get("best_estimate") or {}
+        conf = float(best.get("confidence", 0.0)) or 0.0
+        chain = record.get("reasoning_chain") or []
+
+        # Precision tier from confidence (OceanIR: exact/site/neighborhood/...).
+        if conf >= 0.9:
+            tier = "exact"
+        elif conf >= 0.75:
+            tier = "site_level"
+        elif conf >= 0.55:
+            tier = "neighborhood_level"
+        elif conf >= 0.35:
+            tier = "city_level"
+        else:
+            tier = "region_level"
+
+        # Supports: human-readable evidence FOR the top answer, drawn from the
+        # surviving constraints and reasoning chain (the evidence that narrowed it).
+        supports: List[str] = []
+        for c in (record.get("constraints_applied") or [])[:6]:
+            if isinstance(c, dict) and c.get("value"):
+                supports.append(f"{str(c.get('value')).title()} ({str(c.get('name','constraint')).title()})")
+        for s in chain[:4]:
+            if s and s not in supports:
+                supports.append(s)
+
+        # Contradictions: evidence AGAINST the top answer — the eliminated
+        # candidates + reasons and negative constraints that argued elsewhere.
+        contradictions: List[str] = []
+        elim = record.get("notes") or []
+        for n in elim[:4]:
+            if n and n not in contradictions:
+                contradictions.append(n)
+        # constraints under 0.3 confidence are weak -> flag as reviewer-flag
+        if conf <= 0.3 and best:
+            contradictions.append(
+                f"confidence {conf:.2f} is low — treat the top answer as a hypothesis, "
+                "not a confirmation (OceanIR: a low score with candidates tells you it's weak)")
+        for c in (record.get("candidates") or [])[:3]:
+            if c is best or (c.get("latitude") == best.get("latitude")
+                             and c.get("longitude") == best.get("longitude")):
+                continue
+            contradictions.append(f"rejected alternate at {c.get('latitude'):.4f},{c.get('longitude'):.4f}")
+
+        # Verification status: corroborated only when multiple independent stages
+        # support the top answer (deterministic scan + regional + visual verify).
+        stage_ok = 0
+        for s in ("deterministic_scan", "regional_retrieval", "visual_verify_candidates"):
+            st = (record.get("stages") or {}).get(s, {})
+            if st.get("status") == "success" or st.get("estimates"):
+                stage_ok += 1
+        if best and stage_ok >= 2:
+            vstatus = "corroborated"
+        elif best and stage_ok >= 1:
+            vstatus = "partially_corroborated"
+        else:
+            vstatus = "unverified"
+
+        # scope_consistent: OceanIR rules a user-supplied hint is NEVER treated as
+        # evidence and never raises confidence — if the scene contradicts it, flag
+        # it. Here the deterministic answer is authoritative, so a hint is at best a
+        # nudge; we expose it but keep the honest rule that it doesn't override.
+        hint_str = str(record.get("location_hint") or "").lower()
+        best_place = " ".join(str(best.get(k) or "") for k in ("place_name", "city", "country")).lower()
+        scope_consistent = True
+        if hint_str and best and hint_str not in best_place:
+            scope_consistent = False  # scene/answer doesn't contain the hint
+
+        return {
+            "confidence": conf,
+            "uncalibrated": not best.get("confidence_calibrated"),
+            "precision_tier": tier,
+            "verification_status": vstatus,
+            "scope_consistent": scope_consistent,
+            "location_hint": record.get("location_hint"),
+            "supports": supports[:8],
+            "contradictions": contradictions[:8],
+        }
 
     def _persist_case(self, record, image_path, case_name, description, tags):
         """Save the investigation to the SQLite CaseManager + write JSON report."""
