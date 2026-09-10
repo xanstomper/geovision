@@ -20,7 +20,9 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__,
+            template_folder=str(Path(__file__).parent / "templates"),
+            static_folder=str(Path(__file__).parent / "static"))
 CORS(app)
 
 import sys
@@ -196,6 +198,12 @@ def api_status():
             "vlm_location_estimation"
         ]
     })
+
+@app.route("/ocean")
+def oceanir_page():
+    """OceanIR-style 'analyze an image' evidence workspace UI."""
+    return render_template("oceanir.html")
+
 
 @app.route("/api/oceanir", methods=["POST"])
 def oceanir_analyze():

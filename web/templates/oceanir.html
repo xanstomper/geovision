@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OceanIR-style — GeoVision Image Geolocation Evidence Workspace</title>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+ :root{--bg:#0e1013;--panel:#161a20;--panel2:#1c212a;--line:#2a303c;--ink:#e9e7e2;
+   --dim:#9aa0ab;--acc:#e0b04a;--good:#69c07d;--bad:#e06c5a;--blue:#5aa7d6}
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,'Segoe UI',Roboto,Arial,sans-serif}
+ .wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+ header{padding:22px 0;border-bottom:1px solid var(--line);margin-bottom:26px}
+ h1{font-size:21px;margin:0;letter-spacing:.3px}
+ h1 small{color:var(--dim);font-weight:400;font-size:13px;display:block;margin-top:3px}
+ .tag{display:inline-block;background:rgba(224,176,74,.12);color:var(--acc);border:1px solid rgba(224,176,74,.35);
+   padding:3px 10px;border-radius:20px;font-size:12px;margin-top:10px}
+ .drop{background:var(--panel);border:2px dashed var(--line);border-radius:14px;padding:40px 20px;
+   text-align:center;cursor:pointer;transition:border-color .2s}
+ .drop:hover,.drop.over{border-color:var(--acc)}
+ .drop img{max-width:360px;max-height:260px;border-radius:8px;margin:14px auto;display:block}
+ .row{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;margin-top:18px}
+ @media(max-width:900px){.row{grid-template-columns:1fr}}
+ .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+ .card h3{margin:0 0 10px;font-size:14px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+ .best{font-size:15px;line-height:1.6}
+ .best .coord{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:17px;color:var(--good)}
+ .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;margin-left:6px}
+ .badge.high{background:rgba(105,192,125,.15);color:var(--good)}
+ .badge.low{background:rgba(224,108,90,.15);color:var(--bad)}
+ .badge.unsure{background:rgba(224,176,74,.15);color:var(--acc)}
+ .cand{display:flex;gap:12px;padding:10px;border-bottom:1px solid var(--line);align-items:center}
+ .cand:last-child{border-bottom:0}
+ .rank{font-weight:800;color:var(--dim);min-width:26px}
+ .cand .nm{flex:1}
+ .cand .cc{font-family:ui-monospace,monospace;color:var(--dim);font-size:12px}
+ .bar{height:6px;background:var(--line);border-radius:4px;margin-top:6px;overflow:hidden}
+ .bar>i{display:block;height:100%;background:var(--acc)}
+ .cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+ .cmp img{width:100%;border-radius:8px;border:1px solid var(--line);aspect-ratio:1/1;object-fit:cover;background:#000}
+ .cmp .sc{text-align:center;font-weight:700;color:var(--acc);font-size:12px;margin-top:4px}
+ .cmp .cap{color:var(--dim);font-size:11px;text-align:center}
+ .ev{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(42,48,60,.5);font-size:13px}
+ .ev .n{color:var(--acc);font-weight:700;min-width:110px;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+ .btn{background:var(--acc);border:0;color:#191000;font-weight:700;padding:12px 26px;border-radius:10px;
+   cursor:pointer;font-size:15px;margin-top:16px}
+ .btn:disabled{opacity:.5;cursor:wait}
+ .err{color:var(--bad);margin-top:12px;font-size:13px}
+ .link{color:var(--blue);font-size:13px;margin-top:10px;display:inline-block}
+ #map{height:260px;border-radius:10px;border:1px solid var(--line);margin-top:12px}
+ .foot{color:var(--dim);font-size:12px;margin-top:30px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>GeoVision <small>Image Geolocation Evidence Workspace — from the pixels, not the metadata</small></h1>
+  <span class="tag">A pin is not a verification · ranked alternatives · visual evidence · honest when unsure</span>
+</header>
+
+<div id="up">
+  <div class="drop" id="drop">
+    <b>Drop an image, or click to choose</b> — no account needed
+    <input type="file" id="file" accept="image/*" hidden>
+    <div id="prev"></div>
+  </div>
+  <button class="btn" id="go">Analyze image →</button>
+  <div class="err" id="err"></div>
+</div>
+
+<div id="results" style="display:none">
+  <div class="row">
+    <div class="card">
+      <h3>Best estimate</h3>
+      <div class="best" id="best"></div>
+      <div id="map"></div>
+    </div>
+    <div class="card">
+      <h3>Ranked alternatives</h3>
+      <div id="cands"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h3>Visual evidence — query vs reference</h3>
+      <div id="refs"></div>
+    </div>
+    <div class="card">
+      <h3>Evidence chain</h3>
+      <div id="chain"></div>
+      <div id="canv"></div>
+    </div>
+  </div>
+</div>
+
+<div class="foot">GeoVision · replicate-OceanIR evidence workspace · model-agnostic, key-free core</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let map=null, marker=null, queryDataUrl=null;
+
+const drop=$('drop'), file= $('file'), prev=$('prev');
+drop.addEventListener('click',()=>file.click());
+file.addEventListener('change',e=>{const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{prev.innerHTML=`<img src="${r.result}">`; queryDataUrl=r.result;};
+  r.readAsDataURL(f);
+});
+['dragover','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();
+  drop.classList.toggle('over',ev==='dragover');
+  if(ev==='drop'){const f=e.dataTransfer.files[0]; if(f){file.files=e.dataTransfer.files;
+    const r=new FileReader(); r.onload=()=>{prev.innerHTML=`<img src="${r.result}">`; queryDataUrl=r.result;}; r.readAsDataURL(f);} }}));
+
+$('go').addEventListener('click',async()=>{
+  const f=file.files[0]; if(!f){$('err').textContent='Upload an image first.'; return;}
+  $('go').disabled=true; $('err').textContent='Analyzing — this runs deterministic geolocation + visual verify (CPU, ~minutes)...';
+  const fd=new FormData(); fd.append('images',f);
+  try{
+    const res=await fetch('/api/oceanir',{method:'POST',body:fd});
+    const j=await res.json();
+    if(!res.ok){$('err').textContent=j.error||'analysis failed'; return;}
+    render(j); $('results').style.display='block'; $('up').style.display='none';
+  }catch(e){$('err').textContent=''+e;}
+  $('go').disabled=false;
+});
+
+function render(j){
+  const b=j.best||{};
+  const unsure=j.unsure;
+  const cls=unsure?'unsure':((b.confidence||0)>=0.6?'high':'low');
+  $('best').innerHTML=`
+    <div class="coord">${(b.latitude??'—').toFixed?b.latitude.toFixed(5):b.latitude}, ${(b.longitude??'—').toFixed?b.longitude.toFixed(5):b.longitude}</div>
+    <div>${b.place||''} ${b.country||''}</div>
+    <span class="badge ${cls}">${unsure?'UNSURE — low confidence':(Math.round((b.confidence||0)*100)+'% confidence')}${b.uncalibrated?'<small> (uncalibrated)</small>':''}</span>`;
+  (j.candidates||[]).forEach((c,i)=>{
+    const pct=Math.round((c.confidence||0)*100);
+    $('cands').innerHTML+=`<div class="cand"><span class="rank">${i+1}</span>
+      <div class="nm">${c.place||'candidate'}</div>
+      <div class="cc">${c.source||''}</div><div class="nm" style="flex:0 0 64px;text-align:right">${pct}%</div></div>
+      <div class="bar" style="grid-column:2/4"><i style="width:${pct}%"></i></div>`;
+  });
+  const refs=j.reference_urls||{};
+  let cmp='';
+  for(const k in refs){
+    const items=refs[k]||[];
+    items.slice(0,3).forEach(it=>{
+      const u=typeof it==='string'?it:(it.url||it.thumbnail_url||'');
+      cmp+=`<div class="cmp"><div><img src="${queryDataUrl}" loading="lazy"><div class="cap">query</div></div>
+        <div><img src="${u}" loading="lazy" onerror="this.style.opacity=.15"><div class="cap">${k}</div></div>
+        </div>`;
+    });
+  }
+  $('refs').innerHTML=cmp||'<div class="ev"><div class="n">none</div>No reference imagery returned.</div>';
+  $('chain').innerHTML=(j.reasoning||[]).map((s,i)=>`<div class="ev"><div class="n">step ${i+1}</div><div>${s}</div></div>`).join('')
+    ||'<div class="ev"><div class="n">note</div>No reasoning chain.</div>';
+  if(j.canvas_viewer_url){$('canv').innerHTML=`<a class="link" href="${j.canvas_viewer_url}" target="_blank">Open live detective canvas ↗</a>`;}
+  initMap(b.latitude,b.longitude);
+}
+function initMap(lat,lon){
+  if(lat==null||lon==null) return;
+  if(map){map.setView([lat,lon],14); if(marker)marker.setLatLng([lat,lon]); return;}
+  map=L.map('map').setView([lat,lon],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+  marker=L.marker([lat,lon]).addTo(map).bindPopup('best estimate').openPopup();
+}
+</script>
+</body>
+</html>

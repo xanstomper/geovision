@@ -76,3 +76,10 @@ def test_oceanir_unsure_flag_for_low_confidence(client, monkeypatch):
                     content_type="multipart/form-data")
     assert r.status_code == 200
     assert r.get_json()["unsure"] is True           # 'tells you when it is not sure'
+
+
+def test_oceanir_page_serves(client):
+    """The OceanIR-style evidence workspace page renders."""
+    r = client.get("/ocean")
+    assert r.status_code == 200
+    assert "Evidence Workspace" in r.get_data(as_text=True)
