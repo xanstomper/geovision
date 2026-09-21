@@ -1,21 +1,33 @@
 """
 GeoVision Web Interface
-Flask-based web UI for uploading images and viewing results
+Flask-based web UI with WebSocket real-time pipeline progress streaming.
+
+Also supports SSE (Server-Sent Events) as fallback for browsers that don't
+support WebSocket. Both endpoints are available:
+  - WebSocket: ws://localhost:9999 (auto-detect in JS client)
+  - SSE:       GET /api/stream/<job_id> (existing endpoint)
+
+Endpoints:
+  GET  /                  - Main upload UI
+  GET  /ocean             - OceanIR evidence workspace
+  POST /api/analyze       - Start scan (HTTP, returns job_id)
+  GET  /api/stream/<id>   - SSE stream for a job (fallback)
+  GET  /api/status        - Service status
+  GET  /cases             - Case list
+  ... case CRUD endpoints ...
 """
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
 import logging
 from pathlib import Path
 import json
-import urllib.request
-import base64
 import random
-import subprocess
 import threading
 import queue
 import time
 import os
+import sys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,19 +37,97 @@ app = Flask(__name__,
             static_folder=str(Path(__file__).parent / "static"))
 CORS(app)
 
-import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from modules.case_manager import CaseManager
 cm = CaseManager(str(Path(__file__).parent.parent / 'data' / 'cases.db'))
 
 BASE_DIR = Path(__file__).parent
-UPLOAD_FOLDER = BASE_DIR / "static/uploads"
+UPLOAD_FOLDER = BASE_DIR / "static" / "uploads"
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
-REPORTS_FOLDER = BASE_DIR / "static/reports"
+REPORTS_FOLDER = BASE_DIR / "static" / "reports"
 REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 
-# Store active jobs for streaming
+# Shared job registry — threads and WS write here
 active_jobs = {}
+
+# ---------------------------------------------------------------------------
+# WebSocket support (best-effort: Flask-SocketIO if available, else SSE-only)
+# ---------------------------------------------------------------------------
+socketio = None
+
+def _try_setup_socketio():
+    """Try to enable Flask-SocketIO if installed. No-op otherwise."""
+    global socketio
+    try:
+        from flask_socketio import SocketIO
+        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', ping_timeout=60)
+        logger.info("Flask-SocketIO enabled")
+
+        @socketio.on('connect')
+        def on_connect():
+            logger.info("WS client connected: %s", request.sid)
+
+        @socketio.on('scan:start')
+        def on_scan_start(data):
+            emit('job:ack', {'status': 'ready'})
+
+    except ImportError:
+        logger.info("Flask-SocketIO not installed — SSE-only mode")
+
+
+_try_setup_socketio()
+
+
+def broadcast_ws(job_id, msg):
+    """Broadcast a JSON message to all WS clients + SSE queue for this job."""
+    if socketio:
+        try:
+            socketio.emit(job_id, msg)
+        except Exception:
+            pass
+    q = active_jobs.get(job_id)
+    if q:
+        try:
+            q.put(msg)
+        except Exception:
+            pass
+
+
+def _run_pipeline_job(job_id, image_paths, options):
+    """Run the GeoVision pipeline in a background thread."""
+    try:
+        from geovision_deep_scan import run_pipeline
+
+        orig_logger = logging.getLogger("GeoVisionDeepScan")
+
+        class ProgressHandler(logging.Handler):
+            def emit(self, record):
+                msg = self.format(record).strip()
+                if not msg:
+                    return
+                broadcast_ws(job_id, {"type": "log", "data": msg})
+
+        handler = ProgressHandler()
+        handler.setLevel(logging.INFO)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        orig_logger.addHandler(handler)
+
+        res = run_pipeline(str(image_paths[0]), options)
+
+        orig_logger.removeHandler(handler)
+
+        broadcast_ws(job_id, {"type": "result", "data": res.to_dict()})
+        broadcast_ws(job_id, {"type": "job:done"})
+
+    except Exception as e:
+        import traceback
+        logger.error("Pipeline job %s failed: %s", job_id, e, exc_info=True)
+        broadcast_ws(job_id, {"type": "error", "data": f"{e}\n{traceback.format_exc()}"})
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
 
 @app.route("/")
 def index():
@@ -46,172 +136,100 @@ def index():
 
 @app.route("/api/analyze", methods=["POST"])
 def analyze_image():
+    """Start a geolocation scan. Returns job_id immediately."""
     if "images" not in request.files:
         return jsonify({"error": "No images uploaded"}), 400
-    
+
     files = request.files.getlist("images")
     if not files or files[0].filename == "":
         return jsonify({"error": "Empty filename"}), 400
-        
+
     context_text = request.form.get("context_text", "")
-    
+    region = request.form.get("region", None)
+
     job_id = str(random.randint(10000, 99999))
     job_dir = UPLOAD_FOLDER / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
-    
+
     saved_paths = []
     for f in files:
         filepath = job_dir / f.filename
         f.save(str(filepath))
         saved_paths.append(str(filepath))
-        
-    # Launch background thread to run pipeline and capture output
+
     q = queue.Queue()
     active_jobs[job_id] = q
-    
-    def run_job():
-        try:
-            main_image = saved_paths[0]
-            extra_images = saved_paths[1:] if len(saved_paths) > 1 else []
-            
-            # Create a small runner script so we can capture stdout/stderr easily in a subprocess
-            runner_script = f"""
-import sys
-import json
-sys.path.insert(0, '{BASE_DIR.parent}')
-from geovision_deep_scan import run_pipeline
 
-options = {{
-    "output_dir": '{str(REPORTS_FOLDER)}',
-    "near_park": False,
-    "region": None,
-    "no_vlm": False,
-    "interactive": False,
-    "verbose": False,
-    "extra_images": {json.dumps(extra_images)},
-    "context_text": {json.dumps(context_text)}
-}}
+    options = {
+        "output_dir": str(REPORTS_FOLDER),
+        "near_park": False,
+        "region": region,
+        "no_vlm": False,
+        "interactive": False,
+        "verbose": False,
+        "extra_images": saved_paths[1:] if len(saved_paths) > 1 else [],
+        "context_text": context_text,
+    }
 
-res = run_pipeline('{main_image}', options)
-print("===GEOVISION_JSON_START===")
-print(res.to_json())
-print("===GEOVISION_JSON_END===")
-"""
-            # Using PYTHONUNBUFFERED=1 to ensure live streaming
-            env = os.environ.copy()
-            env["PYTHONUNBUFFERED"] = "1"
-            
-            process = subprocess.Popen(
-                ["python3", "-c", runner_script],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                env=env,
-                bufsize=1
-            )
-            
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    q.put({"type": "log", "data": line.strip()})
-                    
-            process.stdout.close()
-            process.wait()
-            q.put({"type": "done"})
-        except Exception as e:
-            q.put({"type": "error", "data": str(e)})
+    broadcast_ws(job_id, {"type": "job:started", "job_id": job_id})
 
-    threading.Thread(target=run_job, daemon=True).start()
-    
+    threading.Thread(
+        target=_run_pipeline_job,
+        args=(job_id, saved_paths, options),
+        daemon=True,
+    ).start()
+
     return jsonify({"status": "started", "job_id": job_id})
 
 
 @app.route("/api/stream/<job_id>")
 def stream_job(job_id):
+    """SSE endpoint for browsers without WebSocket support."""
     def event_stream():
         q = active_jobs.get(job_id)
         if not q:
             yield f"data: {json.dumps({'error': 'Job not found'})}\n\n"
             return
-            
-        json_buffer = []
-        capturing_json = False
-        
         while True:
             try:
                 msg = q.get(timeout=30)
-                if msg["type"] == "done":
-                    # Emit final result
-                    try:
-                        final_json = json.loads("".join(json_buffer))
-                        
-                        # Add location_estimates for the frontend fallback loop
-                        if "location_estimates" not in final_json:
-                            final_json["location_estimates"] = []
-                            
-                        if "best_estimate" in final_json and final_json["best_estimate"]:
-                            final_json["location_estimates"].insert(0, {
-                                "latitude": final_json["best_estimate"].get("latitude"),
-                                "longitude": final_json["best_estimate"].get("longitude"),
-                                "confidence": final_json["best_estimate"].get("confidence"),
-                                "sources": final_json["best_estimate"].get("sources", []),
-                                "evidence": final_json["best_estimate"].get("evidence", {})
-                            })
-                            
-                        yield f"data: {json.dumps({'type': 'result', 'data': final_json})}\n\n"
-                    except Exception as e:
-                        logger.error(f"Error parsing final JSON: {e}")
-                        pass
-                    break
-                elif msg["type"] == "error":
-                    yield f"data: {json.dumps({'type': 'error', 'data': msg['data']})}\n\n"
-                    break
-                elif msg["type"] == "log":
-                    line = msg["data"]
-                    if line == "===GEOVISION_JSON_START===":
-                        capturing_json = True
-                        continue
-                    elif line == "===GEOVISION_JSON_END===":
-                        capturing_json = False
-                        continue
-                        
-                    if capturing_json:
-                        json_buffer.append(line)
-                    else:
-                        # Send log line to frontend
-                        yield f"data: {json.dumps({'type': 'log', 'data': line})}\n\n"
+                yield f"data: {json.dumps(msg)}\n\n"
             except queue.Empty:
                 yield ": keepalive\n\n"
-                
-    return app.response_class(event_stream(), mimetype="text/event-stream")
+
+    return Response(event_stream(), mimetype="text/event-stream")
 
 
 @app.route("/api/status")
 def api_status():
     return jsonify({
         "service": "GeoVision",
-        "version": "2.0.0",
+        "version": "2.1.0",
+        "ws_available": socketio is not None,
+        "sse_available": True,
         "capabilities": [
             "computer_vision_analysis",
             "deep_learning_feature_extraction",
             "satellite_imagery_matching",
             "park_proximity_analysis",
-            "vlm_location_estimation"
-        ]
+            "vlm_location_estimation",
+            "vehicle_identification",
+            "deepfake_detection",
+            "chain_store_locator",
+            "weather_corroboration",
+            "realtime_progress_streaming",
+        ],
     })
+
 
 @app.route("/ocean")
 def oceanir_page():
-    """OceanIR-style 'analyze an image' evidence workspace UI."""
     return render_template("oceanir.html")
 
 
 @app.route("/api/oceanir", methods=["POST"])
 def oceanir_analyze():
-    """OceanIR-style modern-harness analysis: runs the GeoVisionHarness directly
-    (not the heavy legacy run_pipeline) and returns ranked alternatives, reference
-    imagery, evidence chain, honest confidence, and optionally a live canvas viewer.
-    This is the 'evidence workspace' backend: pixels-not-metadata, tells-you-when-
-    unsure, review-and-compare.""" 
+    """OceanIR-style evidence workspace analysis."""
     if "images" not in request.files:
         return jsonify({"error": "No images uploaded"}), 400
     files = request.files.getlist("images")
@@ -231,7 +249,7 @@ def oceanir_analyze():
         if use_canvas:
             from modules.canvas import DetectiveCanvas
             canvas = DetectiveCanvas(session=f"oceanir_{path.stem[:20]}",
-                                     title=f"OceanIR-style — {path.name}")
+                                     title=f"OceanIR — {path.name}")
         res = GeoVisionHarness().investigate(str(path), location_hint=hint,
                                              canvas=canvas, with_listings=with_canvas_flag)
         best = res.get("best_estimate") or {}
@@ -249,7 +267,7 @@ def oceanir_analyze():
             "candidates": [
                 {"latitude": c.get("latitude"), "longitude": c.get("longitude"),
                  "confidence": c.get("confidence"),
-                 "place": c.get("city") or c.get("place_name"), 
+                 "place": c.get("city") or c.get("place_name"),
                  "source": c.get("source")}
                 for c in res.get("candidates", [])[:10]
             ],
@@ -336,7 +354,6 @@ def api_add_note(case_id):
     )
     return jsonify(note), 201
 
-
 @app.route("/api/cases/search", methods=["GET"])
 def api_search_cases():
     q = request.args.get("q", "")
@@ -350,5 +367,9 @@ def api_export_case(case_id):
         return jsonify({"error": "Case not found"}), 404
     return data, 200, {'Content-Type': 'application/json', 'Content-Disposition': f'attachment; filename="case_{case_id}.json"'}
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=9999, debug=True)
+    if socketio:
+        socketio.run(app, host="0.0.0.0", port=9999, debug=True, allow_unsafe_werkzeug=True)
+    else:
+        app.run(host="0.0.0.0", port=9999, debug=True)

@@ -4,1042 +4,264 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GeoVision Intelligence</title>
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Leaflet for Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <style>
-        :root {
-            --bg-color: #0a0e1a;
-            --panel-bg: #1a1f2e;
-            --accent-cyan: #00d4ff;
-            --accent-green: #00ff88;
-            --accent-red: #ff3366;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border-color: #2d3748;
-            --hover-bg: #232a3d;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            overflow: hidden;
-        }
-
-        /* Layout */
-        .app-container {
-            display: flex;
-            width: 100%;
-            height: 100%;
-        }
-
-        .sidebar {
-            width: 380px;
-            background-color: var(--panel-bg);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            flex-shrink: 0;
-        }
-
-        .main-panel {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        /* Sidebar Elements */
-        .brand {
-            padding: 24px;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-main);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .brand::before {
-            content: '';
-            display: block;
-            width: 12px;
-            height: 12px;
-            background-color: var(--accent-cyan);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--accent-cyan);
-        }
-
-        .sidebar-content {
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .upload-area {
-            border: 2px dashed var(--border-color);
-            border-radius: 8px;
-            padding: 30px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .upload-area:hover, .upload-area.dragover {
-            border-color: var(--accent-cyan);
-            background: rgba(0, 212, 255, 0.05);
-        }
-
-        .upload-text {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--accent-cyan);
-        }
-
-        .upload-hint {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .image-preview {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .image-preview img {
-            width: 100%;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            object-fit: cover;
-            max-height: 200px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .form-group label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 100px;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-main);
-            padding: 12px;
-            resize: vertical;
-            font-size: 0.95rem;
-            transition: border-color 0.2s;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: var(--accent-cyan);
-        }
-
-        .btn-run {
-            background: var(--accent-cyan);
-            color: var(--bg-color);
-            border: none;
-            border-radius: 6px;
-            padding: 16px;
-            font-size: 1.05rem;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
-        }
-
-        .btn-run:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
-        }
-
-        .btn-run:disabled {
-            background: var(--border-color);
-            color: var(--text-muted);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        /* Progress Panel */
-        .progress-panel {
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            display: none;
-        }
-
-        .progress-panel h4 {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-bottom: 12px;
-            letter-spacing: 0.5px;
-        }
-
-        .phase-list {
-            list-style: none;
-            margin-bottom: 16px;
-        }
-
-        .phase-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .phase-item.active {
-            color: var(--accent-cyan);
-            font-weight: 600;
-        }
-
-        .phase-item.done {
-            color: var(--accent-green);
-        }
-
-        .phase-icon {
-            width: 16px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .spinner {
-            width: 12px;
-            height: 12px;
-            border: 2px solid rgba(0, 212, 255, 0.3);
-            border-top-color: var(--accent-cyan);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        details {
-            font-size: 0.85rem;
-        }
-
-        summary {
-            color: var(--text-muted);
-            cursor: pointer;
-            user-select: none;
-            margin-bottom: 8px;
-        }
-
-        summary:hover {
-            color: var(--text-main);
-        }
-
-        .terminal {
-            background: #000;
-            border-radius: 4px;
-            padding: 10px;
-            height: 150px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 0.8rem;
-            color: #a0aec0;
-            border: 1px solid var(--border-color);
-        }
-
-        /* Main Panel - Map & Results */
-        #map {
-            width: 100%;
-            min-height: 500px;
-            flex-shrink: 0;
-            border-bottom: 1px solid var(--border-color);
-            background: #000;
-        }
-
-        .results-container {
-            padding: 30px;
-            display: none;
-            flex-direction: column;
-            gap: 24px;
-            background: var(--bg-color);
-        }
-
-        .card {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 24px;
-        }
-
-        .card-header {
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .card-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        /* Best Estimate Layout */
-        .best-estimate-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-
-        .metric-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--accent-cyan);
-            margin-bottom: 4px;
-        }
-
-        .metric-label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .resolved-address {
-            font-size: 1.2rem;
-            color: var(--text-main);
-            margin: 16px 0;
-            font-weight: 500;
-        }
-
-        .action-links {
-            display: flex;
-            gap: 16px;
-            margin-top: 16px;
-        }
-
-        .action-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent-cyan);
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-
-        .action-link:hover {
-            background: rgba(0, 212, 255, 0.2);
-        }
-
-        /* Evidence Chips */
-        .evidence-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .evidence-chip {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .evidence-chip .key {
-            color: var(--text-muted);
-        }
-
-        .evidence-chip .value {
-            color: var(--accent-green);
-            font-weight: 600;
-        }
-
-        /* Candidate List */
-        .candidates-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        .candidate-item {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .candidate-rank {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            width: 30px;
-            text-align: center;
-        }
-
-        .candidate-info {
-            flex-grow: 1;
-        }
-
-        .candidate-coords {
-            font-family: monospace;
-            font-size: 1rem;
-            margin-bottom: 4px;
-            color: var(--text-main);
-        }
-
-        .candidate-sources {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .source-tag {
-            font-size: 0.75rem;
-            padding: 2px 8px;
-            border-radius: 4px;
-            background: var(--border-color);
-            color: var(--text-muted);
-        }
-
-        .conf-bar-bg {
-            width: 100px;
-            height: 6px;
-            background: var(--border-color);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 6px;
-        }
-
-        .conf-bar-fill {
-            height: 100%;
-            background: var(--accent-cyan);
-        }
-
-        /* Nearby Photos */
-        .nearby-photos-row {
-            display: flex;
-            overflow-x: auto;
-            gap: 16px;
-            padding-bottom: 10px;
-        }
-
-        .nearby-photo {
-            flex: 0 0 150px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            text-decoration: none;
-            transition: border-color 0.2s;
-        }
-
-        .nearby-photo:hover {
-            border-color: var(--accent-cyan);
-        }
-
-        .nearby-photo img {
-            width: 150px;
-            height: 100px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .nearby-photo-title {
-            padding: 8px;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            background: var(--panel-bg);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Leaflet Overrides */
-        .leaflet-container {
-            background: #000;
-        }
-        
-        .custom-marker {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            font-weight: bold;
-            color: white;
-            border: 2px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            font-size: 12px;
-        }
-
-        .marker-best {
-            background-color: var(--accent-red);
-            animation: pulse-red 2s infinite;
-        }
-
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(255, 51, 102, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0); }
-        }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-            .app-container {
-                flex-direction: column;
-            }
-            .sidebar {
-                width: 100%;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                max-height: 50vh;
-            }
-            .best-estimate-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="/static/css/geovision.css">
 </head>
 <body>
+<div class="container">
+    <header>
+        <h1>&#128308; GeoVision Intelligence</h1>
+        <p class="tagline">Multi-phase OSINT geolocation pipeline &mdash; drop in an image, get a pinned coordinate</p>
+    </header>
 
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="brand">
-                GeoVision
-                <a href="/cases" style="margin-left: auto; font-size: 1rem; color: var(--text-muted); text-decoration: none;">Cases</a>
-            </div>
-            
-            <div class="sidebar-content">
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-text">Upload Image</div>
-                    <div class="upload-hint">Drag & drop or click to browse</div>
-                    <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
-                </div>
-                
-                <div id="imagePreview" class="image-preview"></div>
-
-                <div class="form-group">
-                    <label>Target Context & Hints</label>
-                    <textarea id="contextInput" placeholder="Enter known variables, region locks, or hints for the scan..."></textarea>
-                </div>
-
-                <button id="analyzeBtn" class="btn-run" onclick="analyzeImages()">Run Intelligence Scan</button>
-
-                <div id="progressPanel" class="progress-panel">
-                    <h4>Scan Progress</h4>
-                    <ul id="phaseList" class="phase-list"></ul>
-                    <details>
-                        <summary>Raw Activity Log</summary>
-                        <div id="terminal" class="terminal"></div>
-                    </details>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Panel -->
-        <main class="main-panel">
-            <div id="map"></div>
-            
-            <div id="resultsContainer" class="results-container">
-                
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Best Estimate</div>
-                    </div>
-                    <div class="best-estimate-grid">
-                        <div>
-                            <div class="metric-label">Confidence</div>
-                            <div class="metric-value" id="beConfidence">--%</div>
-                            
-                            <div class="resolved-address" id="beAddress">Processing location data...</div>
-                            
-                            <div class="metric-label" style="margin-top: 16px;">Coordinates</div>
-                            <div id="beCoords" style="font-family: monospace; font-size: 1.1rem; color: var(--text-main); margin-top: 4px;">--</div>
-                            
-                            <div class="action-links">
-                                <a id="beMapsLink" href="#" target="_blank" class="action-link">Google Maps</a>
-                                <a id="beStreetViewLink" href="#" target="_blank" class="action-link">Street View</a>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="metric-label">Evidence Matrix</div>
-                            <div id="evidenceGrid" class="evidence-grid"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="nearbyPhotosContainer" class="card" style="display: none;">
-                    <div class="card-header">
-                        <div class="card-title">Nearby Ground Photos</div>
-                    </div>
-                    <div id="nearbyPhotosRow" class="nearby-photos-row"></div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">All Candidates</div>
-                    </div>
-                    <ul id="candidatesList" class="candidates-list"></ul>
-                </div>
-
-                <!-- Deepfake Detection Card -->
-                <div id="deepfakeCard" class="card" style="display:none">
-                    <div class="card-header">
-                        <div class="card-title">🔍 Image Authenticity</div>
-                        <div id="deepfakeVerdict" style="font-size:.8rem;padding:3px 10px;border-radius:20px;font-weight:600"></div>
-                    </div>
-                    <div style="padding:16px">
-                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
-                            <div style="flex:1">
-                                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px">Authenticity Score</div>
-                                <div style="background:var(--bg-color);border-radius:6px;height:10px;overflow:hidden">
-                                    <div id="deepfakeBar" style="height:100%;transition:width .6s;border-radius:6px"></div>
-                                </div>
-                            </div>
-                            <div id="deepfakePct" style="font-size:1.4rem;font-weight:700;min-width:52px;text-align:right"></div>
-                        </div>
-                        <div id="deepfakeTechs" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
-                        <div id="deepfakeFlags" style="font-size:.78rem;color:var(--text-muted);line-height:1.7"></div>
-                    </div>
-                </div>
-
-                <!-- Vehicle Identification Card -->
-                <div id="vehicleCard" class="card" style="display:none">
-                    <div class="card-header">
-                        <div class="card-title">🚗 Vehicle Analysis</div>
-                        <div id="vehicleCount" style="font-size:.8rem;color:var(--text-muted)"></div>
-                    </div>
-                    <div style="padding:16px">
-                        <div id="vehicleList" style="display:flex;flex-direction:column;gap:10px"></div>
-                        <div id="vehicleHints" style="margin-top:12px;font-size:.82rem;color:var(--text-muted);line-height:1.7"></div>
-                    </div>
-                </div>
-
-            </div>
-        </main>
-
+    <!-- Upload Section -->
+    <div id="uploadSection">
+        <div class="upload-area" id="dropZone">
+            <div class="icon">&#128247;</div>
+            <p><strong>Drag &amp; drop images here</strong></p>
+            <p class="tagline">or click to browse &mdash; supports JPG, PNG, WebP</p>
+            <input type="file" id="fileInput" multiple accept="image/*">
+        </div>
+        <div id="fileList" style="margin:12px 0;"></div>
+        <div style="margin:12px 0;">
+            <label style="font-size:14px;color:var(--text-dim);">
+                Region hint (optional):
+                <input type="text" id="regionHint" placeholder="e.g. Tokyo, Paris, downtown Berlin"
+                       style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius);margin-left:8px;width:300px;">
+            </label>
+        </div>
+        <div style="margin:12px 0;">
+            <button class="btn btn-primary" id="startScan" disabled>&#9654; Start Scan</button>
+            <button class="btn btn-secondary" id="clearFiles" style="margin-left:8px;">Clear</button>
+        </div>
     </div>
 
-    <script>
-        // DOM Elements
-        const uploadArea = document.getElementById("uploadArea");
-        const imageInput = document.getElementById("imageInput");
-        const imagePreview = document.getElementById("imagePreview");
-        const analyzeBtn = document.getElementById("analyzeBtn");
-        const contextInput = document.getElementById("contextInput");
-        
-        const progressPanel = document.getElementById("progressPanel");
-        const phaseList = document.getElementById("phaseList");
-        const terminal = document.getElementById("terminal");
-        
-        const resultsContainer = document.getElementById("resultsContainer");
-        
-        let uploadedFiles = [];
-        let map = null;
-        let markers = [];
-        let currentPhaseEl = null;
+    <!-- Progress Section -->
+    <div id="progressSection" style="display:none;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <span class="spinner"></span>
+            <strong>Running pipeline...</strong>
+            <span id="progressPercent" style="color:var(--accent);"></span>
+        </div>
+        <div class="phase-tracker" id="phaseTracker"></div>
+        <div class="log-area" id="logArea"></div>
+    </div>
 
-        // Colors for candidates
-        const markerColors = ['#ff3366', '#00d4ff', '#00ff88', '#ffaa00', '#aa00ff', '#ff00aa', '#00aaff'];
+    <!-- Results Section -->
+    <div id="resultsSection" style="display:none;">
+        <div id="resultsArea"></div>
+        <div class="map-container" id="mapContainer" style="display:none;">
+            <div id="map" style="height:400px;"></div>
+        </div>
+        <div style="margin:16px 0;">
+            <button class="btn btn-primary" id="newScan">&#128303; New Scan</button>
+            <button class="btn btn-secondary" id="toggleMap" style="margin-left:8px;">&#127760; Toggle Map</button>
+        </div>
+    </div>
+</div>
 
-        function initMap() {
-            if(!map) {
-                map = L.map('map', { zoomControl: true }).setView([20, 0], 2);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; OpenStreetMap &copy; CARTO',
-                    subdomains: 'abcd',
-                    maxZoom: 20
-                }).addTo(map);
-            }
+<script src="/static/js/geovision_ws.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const startBtn = document.getElementById('startScan');
+    const clearBtn = document.getElementById('clearFiles');
+    const uploadSection = document.getElementById('uploadSection');
+    const progressSection = document.getElementById('progressSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const logArea = document.getElementById('logArea');
+    let selectedFiles = [];
+    let map = null;
+
+    // --- File handling ---
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+    function handleFiles(files) {
+        for (const f of files) {
+            if (f.type.startsWith('image/')) selectedFiles.push(f);
         }
-        
-        // Initialize map immediately
-        initMap();
+        renderFileList();
+    }
 
-        // File Upload Handling
-        uploadArea.addEventListener("click", () => imageInput.click());
-        uploadArea.addEventListener("dragover", (e) => { e.preventDefault(); uploadArea.classList.add("dragover"); });
-        uploadArea.addEventListener("dragleave", () => { uploadArea.classList.remove("dragover"); });
-        uploadArea.addEventListener("drop", (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove("dragover");
-            handleFiles(e.dataTransfer.files);
-        });
-        imageInput.addEventListener("change", (e) => handleFiles(e.target.files));
-        
-        function handleFiles(files) {
-            if (files.length > 0) {
-                uploadedFiles = Array.from(files);
-                imagePreview.innerHTML = '';
-                
-                uploadedFiles.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        imagePreview.appendChild(img);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
+    function renderFileList() {
+        fileList.innerHTML = selectedFiles.map(f =>
+            `<span style="display:inline-block;background:var(--bg-card);border:1px solid var(--border);padding:6px 12px;border-radius:var(--radius);margin:4px;font-size:13px;">${f.name} (${(f.size/1024).toFixed(0)}KB)</span>`
+        ).join('');
+        startBtn.disabled = selectedFiles.length === 0;
+    }
+
+    clearBtn.addEventListener('click', () => {
+        selectedFiles = [];
+        renderFileList();
+    });
+
+    document.getElementById('newScan').addEventListener('click', () => {
+        resultsSection.style.display = 'none';
+        uploadSection.style.display = '';
+    });
+
+    document.getElementById('toggleMap').addEventListener('click', () => {
+        const mc = document.getElementById('mapContainer');
+        mc.style.display = mc.style.display === 'none' ? '' : 'none';
+    });
+
+    // --- Scan flow ---
+    startBtn.addEventListener('click', startScan);
+
+    async function startScan() {
+        const fd = new FormData();
+        selectedFiles.forEach(f => fd.append('images', f));
+        fd.append('context_text', document.getElementById('regionHint').value);
+
+        uploadSection.style.display = 'none';
+        progressSection.style.display = '';
+        logArea.innerHTML = '';
+
+        try {
+            // Connect WebSocket
+            await GeoVisionClient.connect();
+
+            // Listen for events
+            GeoVisionClient.on('log', (data) => {
+                const line = document.createElement('div');
+                line.textContent = data.data;
+                logArea.appendChild(line);
+                logArea.scrollTop = logArea.scrollHeight;
+            });
+
+            GeoVisionClient.on('phase:start', (data) => {
+                const p = document.getElementById('progressPercent');
+                p.textContent = `Running ${data.data.phase.replace('phase', 'Phase ')}...`;
+            });
+
+            GeoVisionClient.on('phase:progress', (data) => {
+                const p = document.getElementById('progressPercent');
+                if (data.data.progress) {
+                    p.textContent = `Phase ${data.phase.replace('phase', 'Phase ')}: ${Math.round(data.data.progress)}%`;
+                }
+            });
+
+            GeoVisionClient.on('progress:overall', (data) => {
+                const p = document.getElementById('progressPercent');
+                p.textContent = `Overall: ${Math.round(data.progress)}% — ${data.phase}`;
+            });
+
+            GeoVisionClient.on('result', (data) => {
+                GeoVisionClient.renderResults(data.data);
+                progressSection.style.display = 'none';
+                resultsSection.style.display = '';
+                renderMap(data.data);
+            });
+
+            GeoVisionClient.on('error', (data) => {
+                const err = document.createElement('div');
+                err.style.color = 'var(--danger)';
+                err.textContent = `Error: ${data.data}`;
+                logArea.appendChild(err);
+            });
+
+            // Send start signal
+            GeoVisionClient.send({ type: 'scan:start', files: selectedFiles.map(f => f.name) });
+
+        } catch (err) {
+            logArea.innerHTML += `<div style="color:var(--danger)">WebSocket connection failed: ${err}</div>`;
+            // Fallback: use HTTP-based streaming
+            startScanHTTP();
         }
+    }
 
-        function appendLog(msg) {
-            const line = document.createElement('div');
-            line.innerText = msg;
-            terminal.appendChild(line);
-            terminal.scrollTop = terminal.scrollHeight;
-            
-            // Phase Extraction
-            const phaseMatch = msg.match(/Phase\s*([\w\d]+):\s*(.*)/i);
-            if (phaseMatch) {
-                const phaseId = phaseMatch[1];
-                const phaseName = phaseMatch[2];
-                updatePhase(phaseId, phaseName);
+    // HTTP fallback (using the existing SSE endpoint)
+    async function startScanHTTP() {
+        const fd = new FormData();
+        selectedFiles.forEach(f => fd.append('images', f));
+        fd.append('context_text', document.getElementById('regionHint').value);
+
+        try {
+            const resp = await fetch('/api/analyze', { method: 'POST', body: fd });
+            const data = await resp.json();
+            if (data.job_id) {
+                connectSSE(data.job_id);
             }
+        } catch (err) {
+            logArea.innerHTML += `<div style="color:var(--danger)">Failed to start scan: ${err}</div>`;
         }
+    }
 
-        function updatePhase(id, name) {
-            if (currentPhaseEl) {
-                currentPhaseEl.classList.remove('active');
-                currentPhaseEl.classList.add('done');
-                currentPhaseEl.querySelector('.phase-icon').innerHTML = '✓';
-            }
-            
-            const li = document.createElement('li');
-            li.className = 'phase-item active';
-            li.innerHTML = `
-                <div class="phase-icon"><div class="spinner"></div></div>
-                <div class="phase-name">Phase ${id}: ${name}</div>
-            `;
-            phaseList.appendChild(li);
-            currentPhaseEl = li;
-        }
+    function connectSSE(jobId) {
+        const evtSource = new EventSource(`/api/stream/${jobId}`);
 
-        function finishPhases() {
-            if (currentPhaseEl) {
-                currentPhaseEl.classList.remove('active');
-                currentPhaseEl.classList.add('done');
-                currentPhaseEl.querySelector('.phase-icon').innerHTML = '✓';
-                currentPhaseEl = null;
-            }
-        }
-
-        async function analyzeImages() {
-            if (uploadedFiles.length === 0) {
-                alert("Please upload at least one image.");
-                return;
-            }
-            
-            analyzeBtn.disabled = true;
-            analyzeBtn.innerText = "Scanning...";
-            progressPanel.style.display = "block";
-            terminal.innerHTML = "";
-            phaseList.innerHTML = "";
-            resultsContainer.style.display = "none";
-            currentPhaseEl = null;
-            
-            // Clear map
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
-            
-            const formData = new FormData();
-            uploadedFiles.forEach(f => formData.append("images", f));
-            formData.append("context_text", contextInput.value);
-            
+        evtSource.onmessage = function(e) {
             try {
-                const response = await fetch("/api/analyze", {
-                    method: "POST",
-                    body: formData
-                });
-                
-                const data = await response.json();
-                if (data.status === "started") {
-                    connectStream(data.job_id);
-                } else {
-                    alert(`Error: ${data.error}`);
-                    resetBtn();
-                }
-            } catch (error) {
-                alert(`Fatal Error: ${error.message}`);
-                resetBtn();
-            }
-        }
-        
-        function resetBtn() {
-            analyzeBtn.disabled = false;
-            analyzeBtn.innerText = "Run Intelligence Scan";
-        }
-
-        function connectStream(jobId) {
-            const evtSource = new EventSource(`/api/stream/${jobId}`);
-            
-            evtSource.onmessage = function(event) {
-                if (event.data === ": keepalive") return;
-                
-                const msg = JSON.parse(event.data);
-                
-                if (msg.type === "log") {
-                    appendLog(msg.data);
-                } else if (msg.type === "error") {
-                    appendLog(`[ERROR] ${msg.data}`);
+                const msg = JSON.parse(e.data);
+                if (msg.type === 'log') {
+                    const line = document.createElement('div');
+                    line.textContent = msg.data;
+                    logArea.appendChild(line);
+                    logArea.scrollTop = logArea.scrollHeight;
+                } else if (msg.type === 'result') {
                     evtSource.close();
-                    resetBtn();
-                } else if (msg.type === "result") {
-                    appendLog("[SYSTEM] Scan Complete. Rendering output.");
-                    finishPhases();
-                    evtSource.close();
-                    displayResults(msg.data);
-                    resetBtn();
+                    GeoVisionClient.renderResults(msg.data);
+                    progressSection.style.display = 'none';
+                    resultsSection.style.display = '';
+                    renderMap(msg.data);
+                } else if (msg.type === 'error') {
+                    logArea.innerHTML += `<div style="color:var(--danger)">${msg.data}</div>`;
                 }
-            };
-            
-            evtSource.onerror = function() {
-                appendLog("[ERROR] Connection lost.");
-                evtSource.close();
-                resetBtn();
-            };
+            } catch (err) {}
+        };
+    }
+
+    // --- Map rendering ---
+    function renderMap(data) {
+        const estimates = data.location_estimates || [];
+        const best = data.best_estimate || {};
+
+        if (estimates.length === 0 && (!best.latitude || !best.longitude)) return;
+
+        const mapContainer = document.getElementById('mapContainer');
+        mapContainer.style.display = '';
+
+        if (map) { map.remove(); map = null; }
+
+        const center = best.latitude && best.longitude ? [best.latitude, best.longitude] :
+                       (estimates.length > 0 ? [estimates[0].latitude, estimates[0].longitude] : [0, 0]);
+
+        map = L.map('map').setView(center, 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Best estimate (red)
+        if (best.latitude && best.longitude) {
+            L.circleMarker([best.latitude, best.longitude], {
+                radius: 10, color: '#f85149', fillColor: '#f85149', fillOpacity: 0.7
+            }).addTo(map).bindPopup(`<b>Best Estimate</b><br>Conf: ${(best.confidence*100).toFixed(1)}%`);
         }
 
-        function displayResults(result) {
-            resultsContainer.style.display = "flex";
-            
-            let best = result.best_estimate || (result.location_estimates && result.location_estimates[0]);
-            let candidates = result.location_estimates || [];
-            
-            if (best && best.latitude) {
-                // Best Estimate Card
-                document.getElementById("beConfidence").innerText = `${(best.confidence * 100).toFixed(1)}%`;
-                document.getElementById("beCoords").innerText = `${best.latitude.toFixed(6)}, ${best.longitude.toFixed(6)}`;
-                
-                document.getElementById("beMapsLink").href = `https://www.google.com/maps/search/?api=1&query=${best.latitude},${best.longitude}`;
-                document.getElementById("beStreetViewLink").href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${best.latitude},${best.longitude}`;
-                
-                // Address Resolution
-                let addressParts = [];
-                if (best.evidence) {
-                    if (best.evidence.city) addressParts.push(best.evidence.city);
-                    if (best.evidence.state) addressParts.push(best.evidence.state);
-                    if (best.evidence.country) addressParts.push(best.evidence.country);
-                }
-                
-                document.getElementById("beAddress").innerText = addressParts.length > 0 ? addressParts.join(", ") : "Unknown Region";
-                
-                // Evidence Grid
-                const evidenceGrid = document.getElementById("evidenceGrid");
-                evidenceGrid.innerHTML = '';
-                if (best.evidence) {
-                    for (const [key, value] of Object.entries(best.evidence)) {
-                        if (value !== null && value !== "") {
-                            const chip = document.createElement('div');
-                            chip.className = 'evidence-chip';
-                            chip.innerHTML = `<span class="key">${key.replace(/_/g, ' ')}:</span><span class="value">${value}</span>`;
-                            evidenceGrid.appendChild(chip);
-                        }
-                    }
-                }
+        // Candidates
+        const colors = ['#58a6ff', '#3fb950', '#a371f7', '#d29922', '#f778ba', '#79c0ff'];
+        estimates.slice(1).forEach((e, i) => {
+            L.circleMarker([e.latitude, e.longitude], {
+                radius: 8, color: colors[i % colors.length], fillColor: colors[i % colors.length], fillOpacity: 0.6
+            }).addTo(map).bindPopup(`#${i+2}<br>Conf: ${(e.confidence*100).toFixed(1)}%<br>${(e.sources||[]).join(', ')}`);
+        });
+    }
 
-                // Candidates List
-                const candidatesList = document.getElementById("candidatesList");
-                candidatesList.innerHTML = '';
-                
-                const bounds = L.latLngBounds();
-
-                candidates.forEach((cand, idx) => {
-                    const color = markerColors[idx % markerColors.length];
-                    const isBest = (idx === 0);
-                    
-                    // Add Map Marker
-                    const iconHtml = `<div class="custom-marker ${isBest ? 'marker-best' : ''}" style="width:24px; height:24px; background:${color};">${idx + 1}</div>`;
-                    const customIcon = L.divIcon({
-                        className: 'clear-marker',
-                        html: iconHtml,
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    });
-                    
-                    const m = L.marker([cand.latitude, cand.longitude], {icon: customIcon, zIndexOffset: isBest ? 1000 : 0})
-                        .bindPopup(`Rank #${idx + 1}: ${(cand.confidence*100).toFixed(1)}%`)
-                        .addTo(map);
-                        
-                    markers.push(m);
-                    bounds.extend([cand.latitude, cand.longitude]);
-
-                    // Add to List
-                    let sourcesHtml = '';
-                    if (cand.sources) {
-                        sourcesHtml = cand.sources.map(s => `<span class="source-tag">${s}</span>`).join('');
-                    }
-
-                    const li = document.createElement('li');
-                    li.className = 'candidate-item';
-                    li.innerHTML = `
-                        <div class="candidate-rank" style="color: ${color}">#${idx + 1}</div>
-                        <div class="candidate-info">
-                            <div class="candidate-coords">${cand.latitude.toFixed(6)}, ${cand.longitude.toFixed(6)}</div>
-                            <div style="font-size: 0.85rem; color: var(--text-muted);">
-                                Confidence: ${(cand.confidence * 100).toFixed(1)}%
-                            </div>
-                            <div class="conf-bar-bg"><div class="conf-bar-fill" style="width: ${cand.confidence * 100}%; background: ${color};"></div></div>
-                            <div class="candidate-sources">${sourcesHtml}</div>
-                        </div>
-                        <div>
-                            <a href="https://www.google.com/maps/search/?api=1&query=${cand.latitude},${cand.longitude}" target="_blank" class="action-link" style="padding: 6px 12px; font-size: 0.8rem;">Maps</a>
-                        </div>
-                    `;
-                    candidatesList.appendChild(li);
-                });
-
-                if (markers.length > 0) {
-                    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-                }
-
-                // Nearby Photos
-                const npContainer = document.getElementById("nearbyPhotosContainer");
-                const npRow = document.getElementById("nearbyPhotosRow");
-                npRow.innerHTML = '';
-                
-                if (result.nearby_ground_photos && result.nearby_ground_photos.photos && result.nearby_ground_photos.photos.length > 0) {
-                    npContainer.style.display = 'block';
-                    result.nearby_ground_photos.photos.forEach(photo => {
-                        const a = document.createElement('a');
-                        a.className = 'nearby-photo';
-                        a.href = photo.url;
-                        a.target = '_blank';
-                        a.innerHTML = `
-                            <img src="${photo.url}" alt="Nearby photo">
-                            <div class="nearby-photo-title">${photo.title || 'Untitled'}</div>
-                        `;
-                        npRow.appendChild(a);
-                    });
-                } else {
-                    npContainer.style.display = 'none';
-                }
-
-                setTimeout(() => map.invalidateSize(), 300);
-
-                // --- Deepfake Detection Card ---
-                const dfData = result.deepfake_analysis;
-                if (dfData && dfData.status === 'success') {
-                    document.getElementById('deepfakeCard').style.display = 'block';
-                    const auth = dfData.authenticity_score || 0;
-                    const pct = Math.round(auth * 100);
-                    const verdictEl = document.getElementById('deepfakeVerdict');
-                    const verdictColors = {
-                        'LIKELY_GENUINE':     ['#00ff88','rgba(0,255,136,.15)'],
-                        'SUSPICIOUS':         ['#ffd700','rgba(255,215,0,.15)'],
-                        'LIKELY_MANIPULATED': ['#ff3366','rgba(255,51,102,.15)'],
-                        'LIKELY_AI_GENERATED':['#ff6b35','rgba(255,107,53,.15)'],
-                    };
-                    const [vcolor, vbg] = verdictColors[dfData.verdict] || ['#94a3b8','rgba(148,163,184,.1)'];
-                    verdictEl.textContent = (dfData.verdict || 'UNKNOWN').replace(/_/g,' ');
-                    verdictEl.style.color = vcolor;
-                    verdictEl.style.background = vbg;
-
-                    const barColor = pct >= 70 ? '#00ff88' : pct >= 45 ? '#ffd700' : '#ff3366';
-                    document.getElementById('deepfakeBar').style.width = pct + '%';
-                    document.getElementById('deepfakeBar').style.background = barColor;
-                    document.getElementById('deepfakePct').textContent = pct + '%';
-                    document.getElementById('deepfakePct').style.color = barColor;
-
-                    // Technique mini bars
-                    const techEl = document.getElementById('deepfakeTechs');
-                    techEl.innerHTML = '';
-                    const techs = dfData.techniques || {};
-                    const techNames = {ela:'ELA',frequency:'Frequency',metadata:'Metadata',noise:'Noise',face:'Face',compression_ghost:'Ghost'};
-                    Object.entries(techNames).forEach(([k, label]) => {
-                        const t = techs[k];
-                        if (!t) return;
-                        const s = Math.round((t.authenticity||0.5)*100);
-                        const c = s>=70?'#00ff88':s>=45?'#ffd700':'#ff3366';
-                        techEl.innerHTML += `<div style="background:var(--bg-color);border-radius:6px;padding:8px 10px">
-                            <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px">
-                                <span style="color:var(--text-muted)">${label}</span><span style="color:${c}">${s}%</span>
-                            </div>
-                            <div style="background:#0a0e1a;border-radius:3px;height:4px">
-                                <div style="width:${s}%;height:100%;background:${c};border-radius:3px"></div>
-                            </div></div>`;
-                    });
-
-                    // Flags
-                    const flags = dfData.flags || [];
-                    document.getElementById('deepfakeFlags').innerHTML =
-                        flags.length ? '⚠️ ' + flags.slice(0,5).join('<br>⚠️ ') : '✅ No manipulation indicators detected';
-                }
-
-                // --- Vehicle Identification Card ---
-                const vaData = result.vehicle_analysis;
-                if (vaData && vaData.status === 'success' && vaData.vehicle_count > 0) {
-                    document.getElementById('vehicleCard').style.display = 'block';
-                    document.getElementById('vehicleCount').textContent = `${vaData.vehicle_count} vehicle${vaData.vehicle_count > 1 ? 's' : ''} detected`;
-
-                    const vList = document.getElementById('vehicleList');
-                    vList.innerHTML = '';
-                    (vaData.vehicles || []).forEach((v, i) => {
-                        const colorSwatch = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${v.color === 'unknown' ? '#94a3b8' : v.color};border:1px solid rgba(255,255,255,.3);vertical-align:middle;margin-right:4px"></span>`;
-                        const make = v.make ? `<span style="color:var(--accent-cyan);font-weight:600">${v.make} ${v.model||''}</span> ${v.year_range ? `(${v.year_range})` : ''}` : '';
-                        const plate = v.license_plate && v.license_plate.detected ?
-                            `<span style="background:rgba(0,212,255,.1);color:var(--accent-cyan);padding:1px 8px;border-radius:4px;font-size:.75rem;font-family:monospace">${v.license_plate.text || v.license_plate.format + ' plate'}</span>` : '';
-                        vList.innerHTML += `<div style="background:var(--bg-color);border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-                            <span style="font-size:.8rem;color:var(--text-muted)">#${v.id}</span>
-                            <span style="font-size:.82rem">${colorSwatch}${v.color}</span>
-                            <span style="background:rgba(168,85,247,.15);color:#a855f7;padding:2px 8px;border-radius:12px;font-size:.75rem">${v.type}</span>
-                            ${make ? `<span style="font-size:.82rem">${make}</span>` : ''}
-                            ${plate}
-                        </div>`;
-                    });
-
-                    const hints = vaData.geolocation_hints || [];
-                    document.getElementById('vehicleHints').innerHTML =
-                        hints.length ? hints.map(h => '📍 ' + h).join('<br>') : '';
-                }
-            }
-        }
-    </script>
-
+})();
+</script>
 </body>
 </html>
