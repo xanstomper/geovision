@@ -737,6 +737,7 @@ def phase3d_trained_models(image_path: str) -> Dict[str, Any]:
         "phase": phase_name, "status": "failed",
         "geoclip": {"status": "skipped", "estimates": []},
         "streetclip": {"status": "skipped", "countries": []},
+        "osv5m": {"status": "skipped"},
         "estimates": [],
     }
 
@@ -779,10 +780,36 @@ def phase3d_trained_models(image_path: str) -> Dict[str, Any]:
         logger.warning(f"  StreetCLIP failed: {e}")
         result["streetclip"] = {"status": "failed", "error": str(e)}
 
+    # --- OSV-5M: independent 4th engine (65M-image-trained deep geolocation).
+    # Loads the pretrained model via scripts/setup_osv5m.sh — never the image
+    # corpus. Adds a genuinely independent GPS estimate to the fusion.
+    try:
+        from modules.osv5m_predictor import OSV5MPredictor
+        from PIL import Image as _PIL
+        _ov = OSV5MPredictor()
+        if _ov.model is not None:
+            _img = _PIL.open(image_path).convert("RGB")
+            _ov_res, _ov_conf = _ov.predict(_img)
+            if _ov_res and _ov_res.get("lat") is not None:
+                result["osv5m"] = {"status": "success", "confidence": _ov_conf,
+                                   "latitude": _ov_res["lat"], "longitude": _ov_res["lon"]}
+                result["estimates"].append({
+                    "latitude": _ov_res["lat"], "longitude": _ov_res["lon"],
+                    "confidence": _ov_conf, "rank": 1, "source": "osv5m",
+                })
+                logger.info(f"  ✓ OSV-5M: ({_ov_res['lat']:.3f}, {_ov_res['lon']:.3f}) p={_ov_conf:.3f}")
+            else:
+                result["osv5m"] = {"status": "no_estimate"}
+        else:
+            result["osv5m"] = {"status": "skipped", "note": "model not loaded (run scripts/setup_osv5m.sh)"}
+    except Exception as e:
+        result["osv5m"] = {"status": "skipped", "note": str(e)[:120]}
+
     # Overall status: success if any model produced signal
     geo_ok = result["geoclip"].get("status") == "success"
     sc_ok = result["streetclip"].get("status") == "success"
-    result["status"] = "success" if (geo_ok or sc_ok) else "limited"
+    ov_ok = result["osv5m"].get("status") == "success"
+    result["status"] = "success" if (geo_ok or sc_ok or ov_ok) else "limited"
 
     return result
 
@@ -1359,38 +1386,62 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
         # (landmark-grade); scattered predictions mean genuine uncertainty.
         tm = phases.get("trained_models", {})
         if tm.get("estimates"):
-            gc_ests = tm["estimates"]
+            gc_ests = [e for e in tm["estimates"] if e.get("source") == "geoclip"]
+            osv_ests = [e for e in tm["estimates"] if e.get("source") == "osv5m"]
             from modules.geo_math import haversine_distance as _hav
-            if len(gc_ests) >= 3:
-                spread_km = max(
-                    _hav(gc_ests[0]["latitude"], gc_ests[0]["longitude"],
-                         gc_ests[i]["latitude"], gc_ests[i]["longitude"])
-                    for i in (1, 2)
-                )
-            else:
-                spread_km = 250.0  # unknown — treat as scattered
-            if spread_km <= 25:
-                calib = 0.90          # tight cluster: model locked on
-            elif spread_km <= 100:
-                calib = 0.70          # regional agreement
-            elif spread_km <= 500:
-                calib = 0.45          # country-scale hint
-            else:
-                calib = 0.25          # scattered — weak signal
-            for est in gc_ests[:3]:
+
+            # --- OSV-5M: preserve its OWN honest confidence (never a fabricated
+            # calib). OSV-5M is a raw GPS regressor; its .predict returns an
+            # explicit low uncalibrated prior per sample. Emit it as-is.
+            for est in osv_ests:
                 all_estimates.append({
                     "latitude": est["latitude"],
                     "longitude": est["longitude"],
-                    "confidence": calib if est.get("rank", 1) == 1 else calib * 0.5,
-                    "sources": [f"geoclip:rank{est.get('rank', 1)}"],
+                    "confidence": float(est["confidence"]),
+                    "sources": ["osv5m"],
                     "evidence": {
-                        "model": "GeoCLIP (NeurIPS '23)",
-                        "gallery_softmax_prob": est["confidence"],
-                        "top3_spread_km": round(spread_km, 1),
-                        "calibration": "spatial-tightness of top-k",
+                        "model": "OSV-5M (65M-image-trained)",
+                        "confidence_note": "low uncalibrated regression prior (not model accuracy)",
                     },
                     "phase": "TrainedModels",
                 })
+
+            # --- GeoCLIP: HONEST calibration. GeoCLIP's gallery softmax is a
+            # ranking over 100k cells (~0.01), not an absolute probability.
+            # Map top-k spatial tightness to a conservative, clearly-labeled
+            # confidence rather than emitting a fabricated near-certain 0.90.
+            if gc_ests:
+                if len(gc_ests) >= 3:
+                    spread_km = max(
+                        _hav(gc_ests[0]["latitude"], gc_ests[0]["longitude"],
+                             gc_ests[i]["latitude"], gc_ests[i]["longitude"])
+                        for i in (1, 2)
+                    )
+                else:
+                    spread_km = 250.0  # unknown — treat as scattered
+                # Conservative calibration (labeled heuristic, not probability).
+                if spread_km <= 25:
+                    calib = 0.55          # tight cluster: corroborated by other crops
+                elif spread_km <= 100:
+                    calib = 0.45          # regional agreement
+                elif spread_km <= 500:
+                    calib = 0.30          # country-scale hint
+                else:
+                    calib = 0.15          # scattered — weak signal
+                for est in gc_ests[:3]:
+                    all_estimates.append({
+                        "latitude": est["latitude"],
+                        "longitude": est["longitude"],
+                        "confidence": calib if est.get("rank", 1) == 1 else calib * 0.5,
+                        "sources": [f"geoclip:rank{est.get('rank', 1)}"],
+                        "evidence": {
+                            "model": "GeoCLIP (NeurIPS '23)",
+                            "gallery_softmax_prob": est["confidence"],
+                            "top3_spread_km": round(spread_km, 1),
+                            "calibration": "spatial-tightness of top-k (conservative heuristic)",
+                        },
+                        "phase": "TrainedModels",
+                    })
         # StreetCLIP country agreement: boost estimates whose reverse-geocoded
         # country matches the top StreetCLIP country prediction.
         sc_top = (tm.get("streetclip", {}).get("countries") or [{}])[0]
