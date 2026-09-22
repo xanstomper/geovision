@@ -30,6 +30,46 @@ class OSV5MPredictor:
             if osv5m_path not in sys.path:
                 sys.path.append(osv5m_path)
 
+            # Runtime hardening for OSV-5M submodule:
+            # 1. Resolve quadtree_path relative to osv5m_path
+            # 2. Use local pytorch_model.bin without forcing redownload of safetensors
+            try:
+                import models.networks.heads.hybrid as _hybrid
+                _orig_h_init = _hybrid.HybridHead.__init__
+                def _patched_h_init(self, final_dim, quadtree_path, use_tanh, scale_tanh):
+                    if quadtree_path and not os.path.exists(quadtree_path):
+                        cand = os.path.join(osv5m_path, quadtree_path)
+                        if os.path.exists(cand):
+                            quadtree_path = cand
+                    return _orig_h_init(self, final_dim, quadtree_path, use_tanh, scale_tanh)
+                _hybrid.HybridHead.__init__ = _patched_h_init
+
+                if hasattr(_hybrid, "HybridHeadCentroid"):
+                    _orig_c_init = _hybrid.HybridHeadCentroid.__init__
+                    def _patched_c_init(self, final_dim, quadtree_path, use_tanh, scale_tanh):
+                        if quadtree_path and not os.path.exists(quadtree_path):
+                            cand = os.path.join(osv5m_path, quadtree_path)
+                            if os.path.exists(cand):
+                                quadtree_path = cand
+                        return _orig_c_init(self, final_dim, quadtree_path, use_tanh, scale_tanh)
+                    _hybrid.HybridHeadCentroid.__init__ = _patched_c_init
+
+                import models.networks.backbones as _backbones
+                from transformers import CLIPVisionModel as _CVM
+                _orig_b_init = _backbones.CLIP.__init__
+                def _patched_b_init(self, path):
+                    super(_backbones.CLIP, self).__init__()
+                    if path == "":
+                        self.clip = _backbones.CLIPVisionModel(_backbones.CLIPVisionConfig())
+                    else:
+                        try:
+                            self.clip = _CVM.from_pretrained(path, use_safetensors=False)
+                        except Exception:
+                            self.clip = _CVM.from_pretrained(path)
+                _backbones.CLIP.__init__ = _patched_b_init
+            except Exception as _e:
+                pass
+
             from models.huggingface import Geolocalizer
 
             self.model = Geolocalizer.from_pretrained(model_name)
