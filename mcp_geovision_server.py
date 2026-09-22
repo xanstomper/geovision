@@ -507,6 +507,51 @@ def _vlm_configured() -> bool:
 
 TOOLS = [
     {
+        "name": "geovision_grandmaster_locate",
+        "description": "GeoSpy Raven-class zero-storage geolocation investigation. Multi-scale crop "
+                       "spatial consensus, negative-evidence elimination lattice (driving side, road marks, "
+                       "utility poles, license plates, soil, solar angle), and JIT OpenStreetMap triangulation "
+                       "WITHOUT requiring a large reference photo database.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to the image file"},
+                "evidence_summary": {"type": "string", "description": "Optional clues or OCR text"},
+                "location_hint": {"type": "string", "description": "Optional country or city hint"},
+                "top_k": {"type": "integer", "description": "Number of top candidates to return (default 5)"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
+        "name": "geovision_forensic_breakdown",
+        "description": "Exhaustive computer vision visual forensics extraction (OpenCV, <100ms offline): "
+                       "driving side, road markings, utility poles, license plate formats, bollards, "
+                       "soil and canopy biome, and solar shadow vector.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to the image file"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
+        "name": "geovision_osm_triangulate",
+        "description": "Just-In-Time (JIT) micro-GIS topological triangulation: queries OpenStreetMap "
+                       "Overpass and ESRI Satellite landcover around candidate coordinates to verify road network "
+                       "heading and local POIs without storing reference photos.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Latitude coordinate"},
+                "lon": {"type": "number", "description": "Longitude coordinate"},
+                "radius_m": {"type": "integer", "description": "Search radius in meters (default 1500)"},
+            },
+            "required": ["lat", "lon"],
+        },
+    },
+    {
         "name": "geolocate_image",
         "description": "FULL geolocation deep-scan of an image: EXIF, OCR, CLIP/GeoCLIP/StreetCLIP models, "
                        "OSINT databases, satellite matching, evidence fusion. Returns ranked coordinates with "
@@ -1160,7 +1205,60 @@ def tool_canvas_finish(args: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def tool_geovision_grandmaster_locate(args: Dict[str, Any]) -> Dict[str, Any]:
+    """GeoSpy Raven-class zero-storage geolocation investigation."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.grandmaster_forensics import GrandmasterForensicsEngine
+        engine = GrandmasterForensicsEngine()
+        return engine.investigate(
+            image_path,
+            evidence_summary=args.get("evidence_summary"),
+            location_hint=args.get("location_hint"),
+            top_k=int(args.get("top_k", 5)),
+        )
+    except Exception as e:
+        logger.error("grandmaster locate failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_forensic_breakdown(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Exhaustive visual forensics extraction (OpenCV, <100ms offline)."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.grandmaster_forensics import GrandmasterForensicsEngine
+        engine = GrandmasterForensicsEngine()
+        return engine.extract_visual_forensics(image_path)
+    except Exception as e:
+        logger.error("forensic breakdown failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_osm_triangulate(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Just-In-Time micro-GIS topological triangulation."""
+    lat = args.get("lat") or args.get("latitude")
+    lon = args.get("lon") or args.get("longitude")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    try:
+        from modules.grandmaster_forensics import GrandmasterForensicsEngine
+        engine = GrandmasterForensicsEngine()
+        return engine.jit_micro_gis_verification(
+            float(lat), float(lon), radius_m=int(args.get("radius_m", 1500))
+        )
+    except Exception as e:
+        logger.error("osm triangulate failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
 TOOL_IMPLS = {
+    "geovision_grandmaster_locate": tool_geovision_grandmaster_locate,
+    "geovision_forensic_breakdown": tool_geovision_forensic_breakdown,
+    "geovision_osm_triangulate": tool_geovision_osm_triangulate,
     "geolocate_image": tool_geolocate_image,
     "geolocate_quick": tool_geolocate_quick,
     "ocr_extract": tool_ocr_extract,

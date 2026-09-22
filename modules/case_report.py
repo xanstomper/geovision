@@ -114,6 +114,42 @@ def render_markdown(rec: Dict[str, Any], title: str = "GeoVision Case Report") -
         a("_No reasoning chain recorded (deterministic-only path)._")
     a("")
 
+    fb = rec.get("forensic_breakdown")
+    if fb and isinstance(fb, dict):
+        a("## Physical Visual Forensics (Zero-Storage Features)")
+        a("")
+        a("| Indicator | Detection | Confidence | Physical Implication |")
+        a("|---|---|---|---|")
+        ds = fb.get("driving_side", "unknown")
+        ds_conf = fb.get("driving_side_confidence", 0.0)
+        ds_imp = "Rules out 65% of left-drive countries" if ds == "right" else ("Rules out 75% of right-drive countries" if ds == "left" else "Ambiguous")
+        a(f"| Driving Side | **{ds.upper()}** | {ds_conf:.2f} | {ds_imp} |")
+
+        rm = fb.get("road_markings", "unknown")
+        rm_conf = fb.get("road_markings_confidence", 0.0)
+        rm_imp = "Common in Americas/Japan/Norway" if "yellow" in rm else ("Common in EU/UK/Commonwealth" if "white" in rm else "Standard")
+        a(f"| Road Markings | `{rm}` | {rm_conf:.2f} | {rm_imp} |")
+
+        lp = fb.get("license_plate_style", "unknown")
+        lp_conf = fb.get("license_plate_confidence", 0.0)
+        lp_imp = "EU / EEA member state" if "blue" in lp else ("UK/NL rear, FR/IL front" if "yellow" in lp else "Standard")
+        a(f"| License Plate | `{lp}` | {lp_conf:.2f} | {lp_imp} |")
+
+        up = fb.get("utility_pole_type", "unknown")
+        up_conf = fb.get("utility_pole_confidence", 0.0)
+        a(f"| Utility Pole | `{up}` | {up_conf:.2f} | Characteristic regional grid design |")
+
+        soil = fb.get("soil_color", "unknown")
+        soil_conf = fb.get("soil_confidence", 0.0)
+        soil_imp = "Laterite / tropical (Australia, Brazil, Africa, SE Asia)" if soil == "red" else "Temperate / Humus rich"
+        a(f"| Soil Color | `{soil}` | {soil_conf:.2f} | {soil_imp} |")
+
+        sun = fb.get("sun_hemisphere", "unknown")
+        sun_conf = fb.get("sun_confidence", 0.0)
+        sun_imp = "Northern Hemisphere (sun in south)" if sun == "north" else ("Southern Hemisphere (sun in north)" if sun == "south" else "Near Equator or zenith")
+        a(f"| Solar Hemisphere | **{sun.upper()}** | {sun_conf:.2f} | {sun_imp} |")
+        a("")
+
     cons = rec.get("constraints_applied") or rec.get("constraints") or []
     if cons:
         a("## Constraints that survived elimination")
@@ -124,6 +160,22 @@ def render_markdown(rec: Dict[str, Any], title: str = "GeoVision Case Report") -
                   f"{c.get('value', '')} — {c.get('note', '')}")
             else:
                 a(f"- {c}")
+        a("")
+
+    elim = rec.get("elimination_matrix") or rec.get("elimination_lattice") or []
+    if elim:
+        a("## Negative-Evidence Falsification Lattice (Eliminated Candidates)")
+        a("")
+        a("| Candidate | Coordinate | Ruled Out By | Conflict Reason |")
+        a("|---|---|---|---|")
+        for item in elim[:10]:
+            cand = item.get("candidate", {})
+            c_label = cand.get("city") or cand.get("country") or cand.get("source") or "Candidate"
+            lat = _fmt_coord(cand.get("latitude") or cand.get("lat"))
+            lon = _fmt_coord(cand.get("longitude") or cand.get("lon"))
+            rule = item.get("rule_violated", "falsified")
+            reason = item.get("reason", "")
+            a(f"| {c_label} | `{lat}, {lon}` | **{rule}** | {reason} |")
         a("")
 
     cands = rec.get("candidates") or []

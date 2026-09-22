@@ -128,6 +128,33 @@ def get_city_index() -> CityIndex:
     return _INDEX
 
 
+def snap_to_city(lat: float, lon: float, max_km: float = 100.0) -> Dict:
+    """Convenience helper to snap coordinates to the nearest real city."""
+    idx = get_city_index()
+    hit = idx.snap(lat, lon, max_km=max_km)
+    if hit:
+        return {
+            "city": hit.get("name", ""),
+            "country": hit.get("country_code", ""),
+            "latitude": hit.get("latitude", lat),
+            "longitude": hit.get("longitude", lon),
+            "distance_km": hit.get("distance_km", 0.0),
+            "population": hit.get("population", 0),
+        }
+    hits = idx.nearest(lat, lon, k=1)
+    if hits:
+        h = hits[0]
+        return {
+            "city": h.get("name", ""),
+            "country": h.get("country_code", ""),
+            "latitude": h.get("latitude", lat),
+            "longitude": h.get("longitude", lon),
+            "distance_km": h.get("distance_km", 0.0),
+            "population": h.get("population", 0),
+        }
+    return {"city": "", "country": "", "latitude": lat, "longitude": lon, "distance_km": 0.0}
+
+
 if __name__ == "__main__":
     idx = get_city_index()
     # Self-test: Eiffel Tower -> Paris (GeoNames uses arrondissement names like

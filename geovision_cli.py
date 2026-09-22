@@ -905,6 +905,167 @@ def canvas_cmd(
     console.print(f"[bold]Board:[/] {len(c.events)} events — [cyan]{c.viewer_url}[/cyan]")
 
 
+@app.command(name="grandmaster")
+def grandmaster_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True,
+                                 help="Path to image for zero-storage Grandmaster geolocation"),
+    evidence: Optional[str] = typer.Option(None, "--evidence", "-e", help="Optional observed evidence summary"),
+    hint: Optional[str] = typer.Option(None, "--hint", "-h", help="Optional location hint"),
+    top_k: int = typer.Option(5, "--top-k", "-k", help="Number of candidate coordinates to return"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Zero-storage Grandmaster Geolocation (GeoSpy Raven-class).
+    Combines multi-scale patch spatial consensus, negative-evidence falsification lattice
+    (driving side, road lines, poles, plates, soil, sun), and JIT OpenStreetMap micro-GIS
+    grounding without requiring a large reference photo database."""
+    from modules.grandmaster_forensics import GrandmasterForensicsEngine
+    engine = GrandmasterForensicsEngine()
+    with clean_json_context(json_only):
+        if not json_only:
+            console.print(Panel.fit("[bold magenta]🎯 GeoVision Grandmaster Forensics Engine[/bold magenta]\n"
+                                    "[dim]Zero-Storage Raven-Class Spatial Consensus & Falsification Lattice[/dim]",
+                                    border_style="magenta"))
+        dossier = engine.investigate(str(image), evidence_summary=evidence, location_hint=hint, top_k=top_k)
+
+    if json_only:
+        sys.stdout.write(json.dumps(dossier, indent=2) + "\n")
+        return
+
+    best = dossier.get("best_estimate", {})
+    console.print(f"\n[bold green]📍 Pinned Location:[/] [bold]{best.get('city')}, {best.get('country')}[/bold]")
+    console.print(f"   [cyan]GPS:[/] {best.get('latitude'):.6f}, {best.get('longitude'):.6f} "
+                  f"(±{best.get('uncertainty_radius_km')} km radius, tier: [bold]{best.get('precision_tier')}[/bold])")
+    console.print(f"   [yellow]Confidence:[/] {best.get('confidence', 0.0):.1%}")
+    console.print(f"   [blue]Maps:[/] {best.get('google_maps_url')}")
+
+    # Forensic Breakdown Table
+    fb = dossier.get("forensic_breakdown", {})
+    t = Table(title="🔬 Physical Visual Forensics", show_header=True, header_style="bold cyan")
+    t.add_column("Signal Category")
+    t.add_column("Detected Signature")
+    t.add_column("Confidence / Value")
+
+    ds = fb.get("driving_side", {})
+    t.add_row("Driving Side", str(ds.get("driving_side", "unknown")).upper(), f"{ds.get('confidence',0):.1%}")
+
+    rm = fb.get("road_markings", {})
+    t.add_row("Road Markings", str(rm.get("line_color", "none")).title(), f"{rm.get('confidence',0):.1%}")
+
+    lp = fb.get("license_plate", {})
+    euro = " [blue](Euroband)[/blue]" if lp.get("has_euroband") else ""
+    t.add_row("License Plate", f"{lp.get('format', 'none')}{euro}", f"{lp.get('confidence',0):.1%}")
+
+    up = fb.get("utility_pole", {})
+    t.add_row("Utility Pole", str(up.get("dominant_type", "none")), f"{up.get('confidence',0):.1%}")
+
+    sb = fb.get("soil_and_biome", {})
+    t.add_row("Soil / Biome", f"{sb.get('soil_type','temperate')} / {sb.get('vegetation_biome','temperate')}", f"{sb.get('soil_confidence',0):.1%}")
+
+    ss = fb.get("solar_shadow", {})
+    t.add_row("Solar Hemisphere", str(ss.get("inferred_hemisphere", "unknown")).title(), f"{ss.get('confidence',0):.1%}")
+    console.print(t)
+
+    # Elimination Matrix
+    elim = dossier.get("elimination_matrix", [])
+    if elim:
+        et = Table(title=f"🚫 Falsification Lattice ({len(elim)} Regions Disproven)", show_header=True, header_style="bold red")
+        et.add_column("Falsified Candidate")
+        et.add_column("Physical Contradiction")
+        for e in elim[:5]:
+            et.add_row(f"{e.get('city')}, {e.get('country')}", "; ".join(e.get("reasons", [])[:2]))
+        console.print(et)
+
+    # Reasoning Chain
+    console.print("\n[bold]🧠 Grandmaster Deduction Chain:[/]")
+    for step in dossier.get("reasoning_chain", []):
+        console.print(f"  [dim]•[/dim] {step}")
+
+
+@app.command(name="forensics")
+def forensics_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True,
+                                 help="Path to image for visual forensics analysis"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Run local OpenCV visual forensics (<100ms, offline):
+    Driving side, road line colors, utility pole architecture, license plate morphology,
+    bollards, soil ecology, and solar shadow vector."""
+    from modules.grandmaster_forensics import GrandmasterForensicsEngine
+    engine = GrandmasterForensicsEngine()
+    fb = engine.extract_visual_forensics(str(image))
+
+    if json_only:
+        sys.stdout.write(json.dumps(fb, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold cyan]🔬 OpenCV Visual Forensics Engine[/bold cyan]", border_style="cyan"))
+    t = Table(show_header=True, header_style="bold cyan")
+    t.add_column("Signal")
+    t.add_column("Classification")
+    t.add_column("Confidence")
+    t.add_column("Geographic Implication")
+
+    ds = fb.get("driving_side", {})
+    t.add_row("Driving Side", str(ds.get("driving_side", "unknown")), f"{ds.get('confidence',0):.1%}",
+              ", ".join(ds.get("candidate_countries", [])[:4]) or "—")
+
+    rm = fb.get("road_markings", {})
+    t.add_row("Road Markings", str(rm.get("line_color", "none")), f"{rm.get('confidence',0):.1%}",
+              ", ".join(rm.get("suggested_regions", [])[:2]) or "—")
+
+    up = fb.get("utility_pole", {})
+    t.add_row("Utility Pole", str(up.get("dominant_type", "none")), f"{up.get('confidence',0):.1%}",
+              ", ".join(up.get("regions", [])[:3]) or "—")
+
+    lp = fb.get("license_plate", {})
+    t.add_row("License Plate", str(lp.get("format", "none")), f"{lp.get('confidence',0):.1%}",
+              ", ".join(lp.get("candidate_regions", [])[:3]) or "—")
+
+    sb = fb.get("soil_and_biome", {})
+    t.add_row("Soil", str(sb.get("soil_type", "temperate")), f"{sb.get('soil_confidence',0):.1%}",
+              ", ".join(sb.get("soil_candidate_regions", [])[:3]) or "—")
+
+    ss = fb.get("solar_shadow", {})
+    t.add_row("Solar Hemisphere", str(ss.get("inferred_hemisphere", "unknown")), f"{ss.get('confidence',0):.1%}",
+              f"Shadow Angle: {ss.get('shadow_angle_deg', 0)}°")
+
+    console.print(t)
+
+
+@app.command(name="hermes")
+def hermes_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True,
+                                 help="Path to image for Hermes autonomous investigation"),
+    goal: Optional[str] = typer.Option(None, "--goal", "-g", help="Specific investigation goal"),
+):
+    """Run an autonomous geolocation investigation with Hermes Agent.
+    Drives Hermes using the integrated geovision MCP tools and the geovision-geolocate skill."""
+    import subprocess
+    hermes_bin = Path.home() / "hermes-env" / "bin" / "hermes"
+    if not hermes_bin.exists():
+        console.print("[bold red]Hermes binary not found at ~/hermes-env/bin/hermes[/bold red]")
+        raise typer.Exit(1)
+
+    abs_image = str(image.resolve())
+    prompt = (
+        f"Perform an exhaustive geolocation investigation of the image at '{abs_image}' using "
+        f"the geovision MCP tools (geovision_grandmaster_locate, geovision_forensic_breakdown, "
+        f"or investigate_image). Falsify impossible regions, cite physical evidence (driving side, "
+        f"road marks, poles, plates, soil), and report the final pinned coordinates with confidence."
+    )
+    if goal:
+        prompt += f" Goal: {goal}"
+
+    console.print(Panel.fit(f"[bold cyan]🤖 Invoking Hermes Autonomous Geolocation Agent...[/bold cyan]\n"
+                            f"[dim]Target: {abs_image}[/dim]", border_style="cyan"))
+    cmd = [str(hermes_bin), "-z", prompt]
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        console.print(f"[bold red]Hermes execution exited with code {e.returncode}[/bold red]")
+        raise typer.Exit(e.returncode)
+
+
 if __name__ == "__main__":
     app()
 

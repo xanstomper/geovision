@@ -1,7 +1,7 @@
 import requests
 import json
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,19 +10,20 @@ class OverpassClient:
     A client to interact with OpenStreetMap's Overpass API.
     Provides access to global public infrastructure, buildings, parks, and amenities.
     """
-    def __init__(self):
+    def __init__(self, timeout: int = 30):
         self.endpoints = [
             "https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
             "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
         ]
         self.headers = {'User-Agent': 'GeoVision OSINT Tool/2.0 (contact: admin@geovision.local)'}
+        self.timeout = timeout
 
     def _query_overpass(self, query: str) -> Optional[dict]:
         import time
         for endpoint in self.endpoints:
             try:
-                resp = requests.post(endpoint, data={'data': query}, headers=self.headers, timeout=30)
+                resp = requests.post(endpoint, data={'data': query}, headers=self.headers, timeout=self.timeout)
                 if resp.status_code == 200:
                     return resp.json()
                 elif resp.status_code == 429:
@@ -117,3 +118,45 @@ class OverpassClient:
         except Exception as e:
             logger.error(f"Overpass request failed: {e}")
         return []
+
+    def query_nearby(self, lat: float, lon: float, radius: int = 1500) -> Dict[str, Any]:
+        """Query diverse nearby infrastructure features: amenities, tourism, historic, and public transit."""
+        query = f"""
+        [out:json][timeout:{self.timeout}];
+        (
+          node["amenity"](around:{radius},{lat},{lon});
+          node["tourism"](around:{radius},{lat},{lon});
+          node["historic"](around:{radius},{lat},{lon});
+          node["highway"="bus_stop"](around:{radius},{lat},{lon});
+          way["building"](around:{radius},{lat},{lon});
+        );
+        out center 60;
+        """
+        features = []
+        try:
+            data = self._query_overpass(query)
+            if data and "elements" in data:
+                for el in data.get("elements", []):
+                    tags = el.get("tags", {})
+                    name = tags.get("name") or tags.get("description")
+                    category = (
+                        tags.get("amenity")
+                        or tags.get("tourism")
+                        or tags.get("historic")
+                        or tags.get("building")
+                        or tags.get("highway")
+                        or "feature"
+                    )
+                    plat = el.get("lat") or el.get("center", {}).get("lat")
+                    plon = el.get("lon") or el.get("center", {}).get("lon")
+                    if plat is not None and plon is not None:
+                        features.append({
+                            "name": name,
+                            "type": category,
+                            "lat": plat,
+                            "lon": plon,
+                            "tags": tags,
+                        })
+        except Exception as e:
+            logger.error(f"Overpass query_nearby failed: {e}")
+        return {"features": features, "count": len(features)}

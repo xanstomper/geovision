@@ -280,6 +280,62 @@ def oceanir_analyze():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/forensics", methods=["POST"])
+def api_forensics():
+    """Fast visual forensics (<100ms OpenCV) on uploaded image."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+    try:
+        import tempfile
+        from modules.grandmaster_forensics import OpenCVVisualForensics
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        analyzer = OpenCVVisualForensics()
+        breakdown = analyzer.analyze(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify({
+            "status": "success",
+            "forensics": breakdown.to_dict(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/grandmaster", methods=["POST"])
+def api_grandmaster():
+    """Zero-storage Raven-class Grandmaster Forensics investigation."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+    hint = request.form.get("hint") or request.form.get("location_hint") or None
+    try:
+        import tempfile
+        from modules.grandmaster_forensics import GrandmasterForensicsEngine
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        engine = GrandmasterForensicsEngine()
+        rec = engine.investigate(tmp_path, location_hint=hint)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(rec)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/cases")
 def cases_page():
     return render_template("cases.html")

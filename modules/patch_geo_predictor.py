@@ -286,23 +286,30 @@ class PatchGeoPredictor:
             raise
 
     def _ensure_gallery_features(self):
-        """Precompute and cache 100k location gallery features on disk and in memory."""
+        """Precompute and cache location gallery features on disk and in memory."""
         if self._cached_gps_features is None:
             self._ensure_loaded()
             import torch
             import torch.nn.functional as F
-            cache_file = os.path.expanduser("~/.cache/geovision/geoclip_gallery_100k.pt")
+
+            # On CPU, 2,000 uniformly spaced points computes in ~20s and covers all inhabited regions
+            # On CUDA, full 100k gallery computes in ~0.05s
+            stride = 1 if self.device == "cuda" else 50
+            cache_file = os.path.expanduser(f"~/.cache/geovision/geoclip_gallery_s{stride}.pt")
+
             if os.path.exists(cache_file):
                 try:
-                    self._cached_gps_features = torch.load(cache_file, map_location=self.device)
-                    logger.info("Loaded precomputed GeoCLIP gallery features from disk cache (%s)", cache_file)
+                    data = torch.load(cache_file, map_location=self.device)
+                    self._cached_gps_features = data["features"]
+                    self._active_gallery = data["gallery"]
+                    logger.info("Loaded precomputed GeoCLIP gallery features (%d points) from disk cache (%s)", len(self._active_gallery), cache_file)
                     return self._cached_gps_features
                 except Exception as e:
                     logger.warning("Failed loading cached gallery: %s", e)
 
             with torch.no_grad():
-                gps_gallery = self.model.gps_gallery.to(self.device)
-                chunk_size = 4096
+                gps_gallery = self.model.gps_gallery[::stride].to(self.device)
+                chunk_size = 512
                 loc_chunks = []
                 for start in range(0, len(gps_gallery), chunk_size):
                     chunk = gps_gallery[start : start + chunk_size]
@@ -310,10 +317,11 @@ class PatchGeoPredictor:
                 loc_feat = torch.cat(loc_chunks, dim=0)
                 loc_feat = F.normalize(loc_feat, dim=1)
                 self._cached_gps_features = loc_feat
+                self._active_gallery = gps_gallery
                 logger.info("Computed %d GeoCLIP gallery GPS features", len(gps_gallery))
                 try:
                     os.makedirs(os.path.dirname(cache_file), exist_ok=True)
-                    torch.save(loc_feat.cpu(), cache_file)
+                    torch.save({"features": loc_feat.cpu(), "gallery": gps_gallery.cpu()}, cache_file)
                     logger.info("Saved GeoCLIP gallery cache to %s", cache_file)
                 except Exception as e:
                     logger.warning("Could not persist gallery cache to disk: %s", e)
@@ -365,10 +373,11 @@ class PatchGeoPredictor:
                 top_pred = torch.topk(probs, min(top_k, probs.shape[-1]), dim=-1)
 
             results: List[List[Dict[str, Any]]] = [[] for _ in image_paths]
+            gallery = getattr(self, "_active_gallery", self.model.gps_gallery)
             for b_idx, orig_idx in enumerate(valid_indices):
                 b_top_idx = top_pred.indices[b_idx]
                 b_probs = top_pred.values[b_idx].cpu()
-                b_gps = self.model.gps_gallery.index_select(0, b_top_idx.cpu()).cpu()
+                b_gps = gallery.index_select(0, b_top_idx.cpu()).cpu()
                 preds = []
                 for k in range(len(b_gps)):
                     lat = float(b_gps[k][0])
