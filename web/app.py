@@ -230,9 +230,9 @@ def oceanir_page():
 @app.route("/api/oceanir", methods=["POST"])
 def oceanir_analyze():
     """OceanIR-style evidence workspace analysis."""
-    if "images" not in request.files:
+    if "images" not in request.files and "image" not in request.files:
         return jsonify({"error": "No images uploaded"}), 400
-    files = request.files.getlist("images")
+    files = request.files.getlist("images") if "images" in request.files else [request.files.get("image")]
     if not files or files[0].filename == "":
         return jsonify({"error": "Empty filename"}), 400
     try:
