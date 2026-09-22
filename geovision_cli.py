@@ -18,7 +18,7 @@ if "--json-only" in sys.argv or "-j" in sys.argv:
     os.environ["TQDM_DISABLE"] = "1"
 
 import typer
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
@@ -1064,6 +1064,138 @@ def hermes_cmd(
     except subprocess.CalledProcessError as e:
         console.print(f"[bold red]Hermes execution exited with code {e.returncode}[/bold red]")
         raise typer.Exit(e.returncode)
+
+
+@app.command(name="street-target")
+def street_target_cmd(
+    lat: float = typer.Option(..., "--lat", help="Candidate latitude"),
+    lon: float = typer.Option(..., "--lon", help="Candidate longitude"),
+    image: Optional[Path] = typer.Option(None, "--image", "-i", help="Optional image to extract heading and OCR"),
+    radius: int = typer.Option(1500, "--radius", "-r", help="Search radius in meters"),
+    heading: Optional[float] = typer.Option(None, "--heading", help="Road heading / azimuth angle (0-180)"),
+    ocr: Optional[List[str]] = typer.Option(None, "--ocr", help="Storefront / sign OCR text clues"),
+    amenity: Optional[List[str]] = typer.Option(None, "--amenity", help="Amenity categories (e.g. cafe, pharmacy)"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Topological micro-GIS intersection targeter using OpenStreetMap."""
+    from modules.street_targeter import StreetTargeter
+    targeter = StreetTargeter()
+    res = targeter.target_street(
+        lat=lat,
+        lon=lon,
+        radius_m=radius,
+        expected_heading_deg=heading,
+        ocr_clues=ocr,
+        amenity_clues=amenity,
+        image_path=str(image) if image else None,
+    )
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit(f"[bold cyan]🎯 Street Targeter (OSM Topology at {lat}, {lon})[/bold cyan]", border_style="cyan"))
+    candidates = res.get("candidates", [])
+    if not candidates:
+        console.print("[yellow]No road intersections identified within search radius.[/yellow]")
+        return
+
+    t = Table(show_header=True, header_style="bold cyan")
+    t.add_column("Intersection")
+    t.add_column("Conf")
+    t.add_column("Distance")
+    t.add_column("Nearby Storefronts / POIs")
+    t.add_column("Maps Link")
+
+    for c in candidates[:6]:
+        pois = ", ".join(c.get("sample_pois", [])[:2]) or "—"
+        t.add_row(
+            c.get("intersection", ""),
+            f"{c.get('confidence', 0):.1%}",
+            f"{c.get('distance_from_center_m', 0):.0f}m",
+            pois,
+            f"[link={c.get('osm_url')}]OSM[/link]",
+        )
+    console.print(t)
+
+
+@app.command(name="plonkit")
+def plonkit_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Image path to evaluate"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """PlonkIt Grandmaster Infrastructure Evaluation (85-country rules)."""
+    from modules.plonkit_meta_engine import PlonkitMetaEngine
+    engine = PlonkitMetaEngine()
+    res = engine.scan_image(str(image))
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold green]🌍 PlonkIt Grandmaster Infrastructure Meta[/bold green]", border_style="green"))
+    t = Table(show_header=True, header_style="bold green")
+    t.add_column("Country (ISO)")
+    t.add_column("Relative Score")
+    t.add_column("Probability")
+    t.add_column("Status")
+
+    for c in res.get("candidates", [])[:8]:
+        status = "[red]❌ Falsified[/red]" if c.get("falsified") else "[green]✅ Compatible[/green]"
+        t.add_row(
+            f"{c.get('country')} ({c.get('iso')})",
+            str(c.get("relative_score")),
+            f"{c.get('probability', 0):.1%}",
+            status,
+        )
+    console.print(t)
+
+
+@app.command(name="car-id")
+def car_id_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Image path to profile"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """CarID vehicle silhouette and fleet demographic profiler."""
+    from modules.car_fleet_identifier import CarFleetIdentifier
+    identifier = CarFleetIdentifier()
+    res = identifier.analyze(str(image))
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold magenta]🚗 CarID Vehicle Fleet Profiler[/bold magenta]", border_style="magenta"))
+    demo = res.get("demographics", {})
+    console.print(f"[bold]Detected Vehicles:[/] {res.get('vehicle_count', 0)}")
+    console.print(f"[bold]Pickup/SUV Ratio:[/] {demo.get('pickup_suv_ratio', 0):.1%}")
+    console.print(f"[bold]Kei Car Ratio:[/] {demo.get('kei_car_ratio', 0):.1%}")
+    console.print(f"[bold]Sedan/Hatchback Ratio:[/] {demo.get('sedan_hatchback_ratio', 0):.1%}")
+    console.print(f"[bold]Top Regional Match:[/] {res.get('top_regional_match', {}).get('region', 'Global Normal')}")
+    console.print(f"[bold]Inferred Traffic Side:[/] {res.get('inferred_traffic_side', 'unknown')}")
+
+
+@app.command(name="dossier")
+def dossier_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Image path to investigate"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file path (e.g. report.html or report.md)"),
+    format_type: str = typer.Option("markdown", "--format", "-f", help="Output format: markdown, html, json"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Generate complete Raven-class forensic intelligence dossier."""
+    from mcp_geovision_server import tool_geovision_dossier
+    res = tool_geovision_dossier({"image_path": str(image), "format": format_type})
+
+    if json_only or format_type == "json":
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    content = res.get("dossier_markdown") or res.get("dossier_html") or json.dumps(res, indent=2)
+    if output:
+        output.write_text(content, encoding="utf-8")
+        console.print(f"[green]Dossier saved to {output}[/green]")
+    else:
+        console.print(content)
 
 
 if __name__ == "__main__":

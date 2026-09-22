@@ -552,6 +552,65 @@ TOOLS = [
         },
     },
     {
+        "name": "geovision_street_targeter",
+        "description": "Topological micro-GIS street intersection targeter. Pinpoints the exact street "
+                       "intersection or address matching visual road azimuths, storefront OCR, and amenities "
+                       "without requiring any reference photo database.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Approximate candidate latitude"},
+                "lon": {"type": "number", "description": "Approximate candidate longitude"},
+                "radius_m": {"type": "integer", "description": "Search radius in meters (default 1500)"},
+                "expected_heading_deg": {"type": "number", "description": "Optional road perspective angle/heading (0-180)"},
+                "ocr_clues": {"type": "array", "items": {"type": "string"}, "description": "Storefront or sign text clues"},
+                "amenity_clues": {"type": "array", "items": {"type": "string"}, "description": "Amenity categories (e.g. cafe, pharmacy, bank)"},
+                "image_path": {"type": "string", "description": "Optional image path to auto-extract road heading and signs"},
+            },
+            "required": ["lat", "lon"],
+        },
+    },
+    {
+        "name": "geovision_plonkit_rules",
+        "description": "Evaluates observed road furniture and infrastructure against the PlonkIt 85-country "
+                       "Grandmaster knowledge base (bollards, utility poles, guardrails, chevrons, pedestrian signs, "
+                       "road markings, plates, soil). Returns country probabilities and hard falsifications.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Optional path to image for automated CV extraction"},
+                "observations": {"type": "object", "description": "Optional direct dictionary of observations"},
+            },
+        },
+    },
+    {
+        "name": "geovision_car_id",
+        "description": "Vehicle silhouette and fleet demographic profiler (CarID). Detects vehicle body styles "
+                       "(sedans, SUVs, pickups, Kei cars, mopeds), calculates fleet ratios, and infers regional "
+                       "affinities (e.g. North American pickup dominance, Japan Kei cars, SE Asia mopeds).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to the image file"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
+        "name": "geovision_dossier",
+        "description": "Generates a complete forensic-grade intelligence dossier for an image, combining physical "
+                       "visual forensics, PlonkIt signatures, CarID fleet demographics, micro-GIS street targeting, "
+                       "and deduction chain in JSON, Markdown, or HTML.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to the image file"},
+                "format": {"type": "string", "enum": ["json", "markdown", "html"], "description": "Report output format (default json)"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
         "name": "geolocate_image",
         "description": "FULL geolocation deep-scan of an image: EXIF, OCR, CLIP/GeoCLIP/StreetCLIP models, "
                        "OSINT databases, satellite matching, evidence fusion. Returns ranked coordinates with "
@@ -1255,10 +1314,120 @@ def tool_geovision_osm_triangulate(args: Dict[str, Any]) -> Dict[str, Any]:
         return {"error": str(e), "status": "failed"}
 
 
+def tool_geovision_street_targeter(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Topological micro-GIS street intersection targeter."""
+    lat = args.get("lat") or args.get("latitude")
+    lon = args.get("lon") or args.get("longitude")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    try:
+        from modules.street_targeter import StreetTargeter
+        targeter = StreetTargeter()
+        return targeter.target_street(
+            lat=float(lat),
+            lon=float(lon),
+            radius_m=int(args.get("radius_m", 1500)),
+            expected_heading_deg=args.get("expected_heading_deg"),
+            ocr_clues=args.get("ocr_clues"),
+            amenity_clues=args.get("amenity_clues"),
+            image_path=args.get("image_path"),
+        )
+    except Exception as e:
+        logger.error("street targeter failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_plonkit_rules(args: Dict[str, Any]) -> Dict[str, Any]:
+    """PlonkIt 85-country infrastructure meta evaluator."""
+    try:
+        from modules.plonkit_meta_engine import PlonkitMetaEngine
+        engine = PlonkitMetaEngine()
+        image_path = args.get("image_path")
+        obs = args.get("observations")
+        if obs:
+            return engine.evaluate_observations(obs)
+        elif image_path:
+            return engine.scan_image(image_path)
+        else:
+            return {"error": "Either image_path or observations must be provided", "status": "failed"}
+    except Exception as e:
+        logger.error("plonkit rules failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_car_id(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Vehicle silhouette and fleet demographic profiler (CarID)."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.car_fleet_identifier import CarFleetIdentifier
+        identifier = CarFleetIdentifier()
+        return identifier.analyze(image_path)
+    except Exception as e:
+        logger.error("car id failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_dossier(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Generates complete forensic-grade intelligence dossier for an image."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    fmt = args.get("format", "json").lower()
+    try:
+        from modules.grandmaster_forensics import GrandmasterForensicsEngine
+        from modules.plonkit_meta_engine import PlonkitMetaEngine
+        from modules.car_fleet_identifier import CarFleetIdentifier
+        from modules.street_targeter import StreetTargeter
+        from modules.grandmaster_dossier import GrandmasterDossierGenerator
+
+        gm_engine = GrandmasterForensicsEngine()
+        inv_res = gm_engine.investigate(image_path)
+
+        plonkit_engine = PlonkitMetaEngine()
+        plonkit_res = plonkit_engine.scan_image(image_path)
+
+        car_engine = CarFleetIdentifier()
+        car_res = car_engine.analyze(image_path)
+
+        street_res = None
+        best = inv_res.get("best_estimate", {})
+        if best.get("latitude") is not None and best.get("longitude") is not None:
+            st = StreetTargeter()
+            street_res = st.target_street(
+                lat=best["latitude"],
+                lon=best["longitude"],
+                image_path=image_path,
+            )
+
+        gen = GrandmasterDossierGenerator()
+        dossier = gen.generate_dossier(
+            image_path=image_path,
+            investigation_result=inv_res,
+            plonkit_result=plonkit_res,
+            car_fleet_result=car_res,
+            street_target_result=street_res,
+        )
+
+        if fmt == "markdown":
+            return {"dossier_markdown": gen.render_markdown(dossier), "status": "success"}
+        elif fmt == "html":
+            return {"dossier_html": gen.render_html(dossier), "status": "success"}
+        return {"dossier": dossier, "status": "success"}
+    except Exception as e:
+        logger.error("dossier generation failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
 TOOL_IMPLS = {
     "geovision_grandmaster_locate": tool_geovision_grandmaster_locate,
     "geovision_forensic_breakdown": tool_geovision_forensic_breakdown,
     "geovision_osm_triangulate": tool_geovision_osm_triangulate,
+    "geovision_street_targeter": tool_geovision_street_targeter,
+    "geovision_plonkit_rules": tool_geovision_plonkit_rules,
+    "geovision_car_id": tool_geovision_car_id,
+    "geovision_dossier": tool_geovision_dossier,
     "geolocate_image": tool_geolocate_image,
     "geolocate_quick": tool_geolocate_quick,
     "ocr_extract": tool_ocr_extract,
