@@ -47,10 +47,11 @@ def test_track_reports_new_and_gone():
     pl = PropertyLocator()
     previous = [_mk("Hotel A", 48.85, 2.29), _mk("Cafe B", 48.86, 2.30, "dining")]
     current = [_mk("Hotel A", 48.85, 2.29), _mk("New Hotel", 48.87, 2.31)]
-    change = pl.track(48.85, 2.29, 1500, categories=["lodging"],
-                      previous=previous)
-    # NOTE: this calls the real Overpass network. To keep the unit test offline and
-    # fast, override list_nearby to return the synthetic current set.
+    # NOTE: this ideally calls the real Overpass network, but we override
+    # list_nearby to the synthetic current set so the unit test stays offline
+    # and fast (no flaky real-network dependency). The mock is set BEFORE the
+    # call — the previous code made a redundant real-network call that only
+    # caused timeouts under load and whose result was discarded.
     pl.list_nearby = lambda *a, **k: {"listings": current,
                                       "count": len(current), "status": "success",
                                       "latitude": 48.85, "longitude": 2.29,
