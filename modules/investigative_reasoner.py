@@ -61,6 +61,18 @@ VLM_BUDGET_S = 90
 RESEARCH_TIMEOUT_S = 18
 MAX_QUERIES = 4
 MAX_GEOCODES = 4
+OVERPASS_BUDGET_S = 20  # wall-clock for neighbor-parcel enumeration
+
+# Key-free web-search reality (verified live): DDG-lite anomaly-challenges,
+# Google/Bing HTML are JS-fenced, most public SearXNG disable format=json.
+# The rotator tries each briefly; 'fenced' is an honest status, and the
+# OSM-direct research path (B1) is the primary route regardless.
+_SEARXNG_INSTANCES = (
+    "https://searx.be",
+    "https://search.inetol.net",
+    "https://searx.tiekoetter.com",
+    "https://opnxng.com",
+)
 
 # Confidence policy (uncalibrated, honest caps)
 CONF_FOUND_GEOCODED = 0.70      # address surfaced by a real listing/records hit
@@ -297,6 +309,37 @@ class InvestigativeReasoner:
             status, note = "empty", f"no OSM match for {streets} in {region_hint}"
         return {"status": status, "findings": findings, "note": note}
 
+    def _searxng_rotate_search(self, query: str, n: int = 6
+                               ) -> Tuple[List[Dict[str, Any]], str]:
+        """Rotate SearXNG instances (env SEARXNG_URL first). Returns
+        (results, status); status in {ok, fenced, failed}."""
+        import requests as _rq
+        urls = []
+        env_url = os.environ.get("SEARXNG_URL")
+        if env_url:
+            urls.append(env_url.rstrip("/"))
+        urls.extend(_SEARXNG_INSTANCES)
+        for base in urls[:5]:
+            try:
+                r = _rq.get(f"{base}/search",
+                            params={"q": query, "format": "json",
+                                    "safesearch": "0"},
+                            headers={"User-Agent": "Mozilla/5.0",
+                                     "Accept": "application/json"},
+                            timeout=6)
+                if r.status_code != 200:
+                    continue
+                data = r.json()
+                out = [{"title": x.get("title", ""),
+                        "url": x.get("url", ""),
+                        "snippet": x.get("content", "")}
+                       for x in (data.get("results") or [])[:n]]
+                if out:
+                    return out, "ok"
+            except Exception:
+                continue
+        return [], "fenced"
+
     def research_property_records(self, clues: Dict[str, Any],
                                   region_hint: Optional[str]) -> Dict[str, Any]:
         """Run the queries through the key-free live web signal, then harvest
@@ -314,12 +357,23 @@ class InvestigativeReasoner:
                     "queries": queries, "findings": []}
 
         findings: List[Dict[str, Any]] = []
+        rec_status = ""
         for q in queries:
-            try:
-                res = orch.signal_web_search(q, n=6)
-            except Exception as e:
-                res = {"status": "failed", "note": str(e)[:120], "results": []}
-            for r in (res.get("results") or []):
+            # Rotating SearXNG first (instances that allow format=json);
+            # falls through to the orchestrator's DDG-lite when all fenced.
+            sx_results, sx_status = self._searxng_rotate_search(q)
+            if sx_results:
+                results_iter = sx_results
+            else:
+                try:
+                    res = orch.signal_web_search(q, n=6)
+                except Exception as e:
+                    res = {"status": "failed", "note": str(e)[:120],
+                           "results": []}
+                results_iter = (res.get("results") or [])
+                if not results_iter and sx_status == "fenced":
+                    rec_status = "fenced"
+            for r in results_iter:
                 url = r.get("url") or r.get("link") or ""
                 text = " ".join(str(r.get(k, "")) for k in ("title", "snippet"))
                 for addr in _harvest_addresses(url, text):
@@ -335,10 +389,14 @@ class InvestigativeReasoner:
             key = _canon_street(" ".join(f["address"].split()[1:]))
             if key and key not in dedup:
                 dedup[key] = f
-        status = "success" if dedup else ("empty" if queries else "skipped")
+        status = ("fenced" if rec_status and not dedup
+                  else "success" if dedup
+                  else ("empty" if queries else "skipped"))
         return {"status": status, "queries": queries,
                 "findings": list(dedup.values())[:8],
-                "note": f"{len(dedup)} unique candidate addresses from web research"}
+                "note": (f"{len(dedup)} unique candidate addresses"
+                         + (" — all key-free search engines bot-fenced"
+                            if status == "fenced" else ""))}
 
     # ------------------------------------------------------------------ #
     # Stage C — US street-numbering + adjacency deduction                 #
@@ -470,6 +528,132 @@ class InvestigativeReasoner:
                          f"(Nominatim)")}
 
     # ------------------------------------------------------------------ #
+    # Stage E — scene verification (Gemini step 4: cross-check the map)   #
+    # ------------------------------------------------------------------ #
+    def verify_scene(self, candidates: List[Dict[str, Any]],
+                     radius_m: int = 90) -> Dict[str, Any]:
+        """Post-geocode scene verification around the TOP candidate:
+
+        E1  Overpass neighbor-parcel enumeration — real addr:housenumber
+            buildings within radius_m feed a SECOND deduction round (the
+            Gemini 'adjacent lot' step, deterministic). Thread-budgeted;
+            Overpass degrades regularly so timeout = honest skip.
+        E2  ESRI z20 house-level satellite tile fetch (content-validated)
+            with tile math computed HERE (vision models misplace themselves
+            200-400m inside a tile — see SKILL.md).
+        E3  Ready-made key-free verification URLs (Street View + satellite +
+            OSM) so the calling agent executes the final visual check with
+            its own vision.
+
+        Best-effort at every part; never raises, never blocks > budget.
+        """
+        out: Dict[str, Any] = {"status": "skipped", "neighbors": [],
+                               "satellite": None, "verification_urls": None}
+        if not candidates:
+            return out
+        top = candidates[0]
+        lat, lon = float(top["latitude"]), float(top["longitude"])
+
+        # E3 — verification URLs (cheap, always emitted for the agent)
+        sv = ("https://www.google.com/maps/@{:.6f},{:.6f},3a,75y,0h,90t"
+              "/data=!3m6!1e1!3b1!7s2!8m2!3d{:.6f}!4d{:.6f}").format(
+                  lat, lon, lat, lon)
+        out["verification_urls"] = {
+            "street_view": sv,
+            "satellite": ("https://www.google.com/maps/@{:.6f},{:.6f},20z"
+                          "/data=!3m1!1e3").format(lat, lon),
+            "osm": f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=19/{lat}/{lon}",
+        }
+
+        # E2 — ESRI z20 satellite tile (house-level), content-validated
+        try:
+            import math
+            import requests as _rq
+            z = 20
+            n = 2 ** z
+            xt = int((lon + 180.0) / 360.0 * n)
+            lat_r = math.radians(lat)
+            yt = int((1.0 - math.log(math.tan(lat_r) +
+                                     1.0 / math.cos(lat_r)) / math.pi) / 2.0 * n)
+            r = _rq.get(
+                ("https://server.arcgisonline.com/ArcGIS/rest/services/"
+                 f"World_Imagery/MapServer/tile/{z}/{yt}/{xt}"),
+                timeout=8, headers={"User-Agent": "GeoVision-OSINT/2.0"})
+            if r.status_code == 200 and r.content[:3] == b"\xff\xd8\xff":
+                # tile-center coords computed by US, not estimated
+                lon_c = xt / n * 360.0 - 180.0
+                lat_c = math.degrees(math.atan(
+                    math.sinh(math.pi * (1.0 - 2.0 * yt / n))))
+                out["satellite"] = {
+                    "status": "fetched", "zoom": z,
+                    "tile": [xt, yt],
+                    "tile_center": [round(lat_c, 6), round(lon_c, 6)],
+                    "bytes": len(r.content),
+                    "note": ("query parcel lies within this z20 tile "
+                             "(~150m across)"),
+                }
+                out["status"] = "partial"
+            else:
+                out["satellite"] = {"status": "failed",
+                                    "note": f"HTTP {r.status_code}"}
+        except Exception as e:
+            out["satellite"] = {"status": "failed", "note": str(e)[:100]}
+
+        # E1 — Overpass neighbor parcels (the second deduction round)
+        try:
+            from modules.property_locator import overpass_query
+            q = (f'[out:json][timeout:15];'
+                 f'way["building"]["addr:housenumber"]'
+                 f'(around:{radius_m},{lat},{lon});'
+                 f'out tags center 12;')
+            result: Dict[str, Any] = {}
+
+            def _op():
+                result["els"] = overpass_query(q, timeout=15)
+
+            t = threading.Thread(target=_op, daemon=True)
+            t.start()
+            t.join(OVERPASS_BUDGET_S)
+            if t.is_alive():
+                out["neighbors_status"] = "overpass_timeout"
+            else:
+                els = result.get("els")
+                if isinstance(els, dict):  # defensive: raw {'elements': [...]}
+                    els = els.get("elements", [])
+                neighbors = []
+                street_hint = _street_core(
+                    " ".join(str(top.get("address", "")).split()[1:]))
+                for el in (els or []):
+                    tags = el.get("tags", {})
+                    c = el.get("center") or {}
+                    hnum = tags.get("addr:housenumber")
+                    hstreet = tags.get("addr:street", "")
+                    if not hnum or not c:
+                        continue
+                    # keep parcels on the SAME street as the candidate when
+                    # the street name is known (else keep all — sparse data)
+                    if street_hint and hstreet and \
+                            street_hint not in _street_core(hstreet) and \
+                            _street_core(hstreet) not in street_hint:
+                        continue
+                    neighbors.append({
+                        "address": f"{hnum} {hstreet}".strip(),
+                        "latitude": float(c.get("lat", 0) or 0),
+                        "longitude": float(c.get("lon", 0) or 0),
+                        "via": "overpass_neighbor",
+                        "url": "", "title": "OSM neighbor parcel",
+                        "query": "scene-verification",
+                    })
+                out["neighbors"] = neighbors[:8]
+                out["neighbors_status"] = ("success" if neighbors
+                                           else "no_tagged_parcels")
+                if out["status"] == "skipped":
+                    out["status"] = "partial"
+        except Exception as e:
+            out["neighbors_status"] = f"failed: {str(e)[:80]}"
+        return out
+
+    # ------------------------------------------------------------------ #
     # Orchestrator — the full loop                                        #
     # ------------------------------------------------------------------ #
     def investigate(self, image_path: Optional[str] = None,
@@ -593,6 +777,49 @@ class InvestigativeReasoner:
             rec["candidates"].sort(key=lambda c: c["confidence"], reverse=True)
         else:
             rec["note"] = "addresses found but none geocoded — honest negative"
+
+        # Stage E — scene verification around the TOP candidate (Gemini's
+        # map cross-check): neighbor-parcel enumeration + satellite tile +
+        # ready-made verification URLs for the calling agent's own vision.
+        if rec["candidates"]:
+            try:
+                scene = self.verify_scene(rec["candidates"])
+                rec["scene_verification"] = scene
+                urls = scene.get("verification_urls") or {}
+                top = rec["candidates"][0]
+                rec["reasoning_chain"].append(
+                    f"SCENE: verify {top['address']} — satellite tile "
+                    f"{(scene.get('satellite') or {}).get('status')}, neighbors "
+                    f"{scene.get('neighbors_status')}; agent visual check: "
+                    f"{urls.get('street_view', 'n/a')[:80]}")
+                # Neighbor-parity confirmation: if an Overpass neighbor parcel
+                # matches the clue number exactly on the same street, the
+                # top candidate's block is corroborated (real records twice).
+                clue_nums = [int(re.sub(r"\D", "", str(n)))
+                             for n in (clues.get("visible_numbers") or [])
+                             if re.sub(r"\D", "", str(n))]
+                if scene.get("neighbors") and clue_nums:
+                    top_street = _street_core(
+                        " ".join(str(top.get("address", "")).split()[1:]))
+                    for nb in scene["neighbors"]:
+                        nb_toks = nb["address"].split()
+                        if not nb_toks or not nb_toks[0].isdigit():
+                            continue
+                        nb_street = _street_core(" ".join(nb_toks[1:]))
+                        same_street = (not top_street or not nb_street
+                                       or top_street in nb_street
+                                       or nb_street in top_street)
+                        if int(nb_toks[0]) in clue_nums and same_street:
+                            top["confidence"] = min(
+                                CONF_CAP, float(top.get("confidence", 0)) + 0.05)
+                            rec["reasoning_chain"].append(
+                                f"SCENE CONFIRMED: OSM neighbor parcel "
+                                f"{nb['address']} carries the image clue "
+                                f"number — block corroborated")
+                            break
+            except Exception as e:
+                rec["scene_verification"] = {"status": "failed",
+                                             "note": str(e)[:120]}
         return rec
 
 

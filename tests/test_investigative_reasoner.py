@@ -158,7 +158,11 @@ def _fake_geocode_factory():
 
 def test_full_loop_web_fallback_mocks(monkeypatch):
     """No street_names in clues -> OSM-direct skips -> web fallback runs."""
+    import modules.property_locator as pl
+    monkeypatch.setattr(pl, "overpass_query", lambda q, timeout=40: [])
     r = InvestigativeReasoner()
+    monkeypatch.setattr(r, "_searxng_rotate_search",
+                        lambda q, n=6: ([], "fenced"))
     monkeypatch.setattr("modules.live_signal_orchestrator.LiveSignalOrchestrator",
                         _FakeOrch)
     monkeypatch.setattr("modules.listing_finder.geocode_address",
@@ -246,6 +250,108 @@ def test_mcp_tool_requires_input():
     import mcp_geovision_server as mcp
     out = mcp.TOOL_IMPLS["investigative_locate"]({})
     assert "error" in out
+
+
+# ---------------------------------------------------------------------- #
+# Stage E — scene verification (mocked network)                           #
+# ---------------------------------------------------------------------- #
+class _FakeResponse:
+    def __init__(self, status_code=200, content=b"\xff\xd8\xffJFIFfake"):
+        self.status_code = status_code
+        self.content = content
+
+
+def test_verify_scene_urls_always_emitted(monkeypatch):
+    """E3 URLs computed from the top candidate; E2 tile fetch content-checked;
+    E1 Overpass empty -> honest no_tagged_parcels."""
+    import requests as _rq
+    monkeypatch.setattr(_rq, "get",
+                        lambda *a, **k: _FakeResponse(200, b"\xff\xd8\xffxyz"))
+    import modules.property_locator as pl
+    monkeypatch.setattr(pl, "overpass_query", lambda q, timeout=40: [])
+
+    from modules.investigative_reasoner import InvestigativeReasoner as R
+    scene = R().verify_scene([{"latitude": 37.45643, "longitude": -79.09972,
+                               "address": "151 Stratford Place"}])
+    urls = scene["verification_urls"]
+    assert "google.com/maps/@37.456430" in urls["street_view"]
+    assert "mlat=37.45643" in urls["osm"]
+    assert ",20z/data=!3m1!1e3" in urls["satellite"]
+    # ESRI tile math computed here, content-validated JPEG
+    assert scene["satellite"]["status"] == "fetched"
+    assert scene["satellite"]["tile"][0] > 0 and scene["satellite"]["tile"][1] > 0
+    assert scene["neighbors_status"] == "no_tagged_parcels"
+
+
+def test_verify_scene_bad_tile_reported_honestly(monkeypatch):
+    import requests as _rq
+    import modules.property_locator as pl
+    monkeypatch.setattr(_rq, "get",
+                        lambda *a, **k: _FakeResponse(404, b"nope"))
+    monkeypatch.setattr(pl, "overpass_query", lambda q, timeout=40: [])
+    from modules.investigative_reasoner import InvestigativeReasoner as R
+    scene = R().verify_scene([{"latitude": 0.0, "longitude": 0.0,
+                               "address": "1 Test St"}])
+    assert scene["satellite"]["status"] == "failed"
+    assert "404" in scene["satellite"]["note"]
+
+
+def test_verify_scene_empty_candidates():
+    from modules.investigative_reasoner import InvestigativeReasoner as R
+    scene = R().verify_scene([])
+    assert scene["status"] == "skipped"
+    assert scene["neighbors"] == [] and scene["verification_urls"] is None
+
+
+def test_scene_parity_confirmation_bumps_confidence(monkeypatch):
+    """E1: an Overpass neighbor parcel carrying the clue number confirms the
+    block -> +0.05 confidence (capped at 0.85), SCENE CONFIRMED in chain."""
+    r = InvestigativeReasoner()
+    monkeypatch.setattr("modules.listing_finder.geocode_address",
+                        _fake_geocode_factory())
+
+    def _stub_scene(cands, radius_m=90):
+        return {"status": "partial",
+                "satellite": {"status": "fetched", "zoom": 20},
+                "neighbors": [{"address": "149 Stratford Place",
+                               "latitude": 37.4564, "longitude": -79.0997,
+                               "via": "overpass_neighbor",
+                               "url": "", "title": "", "query": ""}],
+                "neighbors_status": "success",
+                "verification_urls": {"street_view": "sv", "osm": "o",
+                                      "satellite": "s"}}
+
+    monkeypatch.setattr(r, "verify_scene", _stub_scene)
+    rec = r.investigate(
+        clues={"visible_numbers": ["149"], "street_names": ["Stratford Place"],
+               "region_guess": "Madison Heights, VA"},
+        region_hint="Madison Heights, VA")
+    assert any("SCENE CONFIRMED" in s for s in rec["reasoning_chain"])
+    # 0.82 deduced + 0.05 scene-confirmed -> capped at the honest 0.85 ceiling
+    assert rec["candidates"][0]["confidence"] == 0.85
+
+
+def test_web_fallback_reports_fenced_honestly(monkeypatch):
+    """All SearXNG fenced + DDG empty -> status 'fenced', not fake success."""
+    import requests as _rq
+
+    def _boom(*a, **k):
+        raise _rq.RequestException("fenced")
+
+    monkeypatch.setattr(_rq, "get", _boom)
+
+    class _EmptyOrch(_FakeOrch):
+        def signal_web_search(self, query, n=5):
+            return {"status": "empty", "query": query, "results": [],
+                    "count": 0}
+
+    monkeypatch.setattr("modules.live_signal_orchestrator."
+                        "LiveSignalOrchestrator", _EmptyOrch)
+    web = InvestigativeReasoner().research_property_records(
+        {"visible_numbers": ["10"], "high_leverage_features": ["blue door"],
+         "region_guess": "Nowheresville, VS"}, "Nowheresville, VS")
+    assert web["status"] in ("fenced", "empty")
+    assert web["findings"] == []
 
 
 # ---------------------------------------------------------------------- #
