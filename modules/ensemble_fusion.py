@@ -57,12 +57,15 @@ FAMILY_NAMES = {
     # Grandmaster forensics = a fully independent Raven-class engine verdict.
     "grandmaster": "grandmaster",
     "multiscale_patch_consensus": "grandmaster",
+    # OSV-5M = a 4th independent deep-geoloc engine (trained on 65M street images).
+    "osv5m": "osv5m",
 }
 
 # Per-family influence weight in the agreement multiplier (0 = not used for location).
 FAMILY_WEIGHT = {
     "location": 1.00,
     "grandmaster": 0.95,  # independent Raven-class engine — near top weight
+    "osv5m": 0.90,        # 4th independent deep-geoloc engine (65M-image trained)
     "visual": 0.55,
     "vlm": 0.85,
     "country": 0.40,   # corroborates geography, not pin-level

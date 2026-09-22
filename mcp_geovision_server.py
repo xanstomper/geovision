@@ -611,6 +611,37 @@ TOOLS = [
         },
     },
     {
+        "name": "geovision_skyeye_footprint",
+        "description": "Cross-view building facade and overhead satellite footprint verifier. Matches ground-level "
+                       "perspective building architecture and roof type against OpenStreetMap vector building polygons "
+                       "and ESRI World Imagery satellite orthophotos.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Candidate latitude coordinate"},
+                "lon": {"type": "number", "description": "Candidate longitude coordinate"},
+                "image_path": {"type": "string", "description": "Optional ground query image to extract facade features"},
+                "radius_m": {"type": "integer", "description": "Search radius in meters (default 400)"},
+            },
+            "required": ["lat", "lon"],
+        },
+    },
+    {
+        "name": "geovision_solar_lock",
+        "description": "Solar Lock: NOAA astronomical ephemeris shadow and latitude band solver. Analyzes shadow angles "
+                       "and shadow-to-height ratios to calculate solar elevation, azimuth, and strict latitude bounds "
+                       "ruling out impossible latitude bands worldwide.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Path to image to detect shadows via OpenCV"},
+                "date_str": {"type": "string", "description": "Optional date string (YYYY-MM-DD)"},
+                "approx_season": {"type": "string", "enum": ["summer", "winter", "spring_fall"], "description": "Optional season heuristic"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
         "name": "geolocate_image",
         "description": "FULL geolocation deep-scan of an image: EXIF, OCR, CLIP/GeoCLIP/StreetCLIP models, "
                        "OSINT databases, satellite matching, evidence fusion. Returns ranked coordinates with "
@@ -1420,6 +1451,44 @@ def tool_geovision_dossier(args: Dict[str, Any]) -> Dict[str, Any]:
         return {"error": str(e), "status": "failed"}
 
 
+def tool_geovision_skyeye_footprint(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Cross-view building facade and overhead satellite footprint verifier."""
+    lat = args.get("lat") or args.get("latitude")
+    lon = args.get("lon") or args.get("longitude")
+    if lat is None or lon is None:
+        return {"error": "lat and lon required"}
+    try:
+        from modules.skyeye_footprint_verifier import SkyEyeFootprintVerifier
+        verifier = SkyEyeFootprintVerifier()
+        return verifier.verify_candidate_footprints(
+            lat=float(lat),
+            lon=float(lon),
+            image_path=args.get("image_path"),
+            radius_m=int(args.get("radius_m", 400)),
+        )
+    except Exception as e:
+        logger.error("skyeye footprint failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_solar_lock(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Solar Lock: NOAA astronomical ephemeris shadow and latitude solver."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.solar_lock_solver import SolarLockSolver
+        solver = SolarLockSolver()
+        return solver.analyze_image_shadows(
+            image_path=image_path,
+            date_str=args.get("date_str"),
+            approx_season=args.get("approx_season"),
+        )
+    except Exception as e:
+        logger.error("solar lock failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
 TOOL_IMPLS = {
     "geovision_grandmaster_locate": tool_geovision_grandmaster_locate,
     "geovision_forensic_breakdown": tool_geovision_forensic_breakdown,
@@ -1428,6 +1497,8 @@ TOOL_IMPLS = {
     "geovision_plonkit_rules": tool_geovision_plonkit_rules,
     "geovision_car_id": tool_geovision_car_id,
     "geovision_dossier": tool_geovision_dossier,
+    "geovision_skyeye_footprint": tool_geovision_skyeye_footprint,
+    "geovision_solar_lock": tool_geovision_solar_lock,
     "geolocate_image": tool_geolocate_image,
     "geolocate_quick": tool_geolocate_quick,
     "ocr_extract": tool_ocr_extract,

@@ -18,11 +18,15 @@ from modules.plonkit_meta_engine import PlonkitMetaEngine, PLONKIT_COUNTRY_METAS
 from modules.car_fleet_identifier import CarFleetIdentifier
 from modules.street_targeter import StreetTargeter, compute_azimuth_deg, angle_diff_deg
 from modules.grandmaster_dossier import GrandmasterDossierGenerator
+from modules.skyeye_footprint_verifier import SkyEyeFootprintVerifier
+from modules.solar_lock_solver import SolarLockSolver
 from mcp_geovision_server import (
     tool_geovision_street_targeter,
     tool_geovision_plonkit_rules,
     tool_geovision_car_id,
     tool_geovision_dossier,
+    tool_geovision_skyeye_footprint,
+    tool_geovision_solar_lock,
 )
 
 
@@ -148,6 +152,58 @@ class TestGrandmasterDossier:
         assert "leaflet" in html.lower()
 
 
+class TestSkyEyeFootprintVerifier:
+    def test_facade_and_footprint_matching(self):
+        """Tests SkyEye building facade perspective and OSM building polygon cross-matching."""
+        verifier = SkyEyeFootprintVerifier()
+        test_img = "test_building.jpg"
+        if os.path.exists(test_img):
+            facade = verifier.extract_ground_building_features(test_img)
+            assert facade["status"] == "success"
+            assert "roof_archetype" in facade
+            assert "facade_yaw_deg" in facade
+
+            res = verifier.verify_candidate_footprints(
+                lat=43.6532,
+                lon=-79.3832,
+                image_path=test_img,
+                radius_m=300,
+            )
+            assert res["status"] == "success"
+            assert "total_footprints_found" in res
+
+
+class TestSolarLockSolver:
+    def test_solar_declination_and_elevation(self):
+        """Tests astronomical ephemeris equations for solar declination and elevation."""
+        from modules.solar_lock_solver import compute_solar_declination_deg
+        solver = SolarLockSolver()
+        # Equinox (day 80): declination should be near 0
+        dec_equinox = compute_solar_declination_deg(day_of_year=80)
+        assert abs(dec_equinox) < 1.5
+
+        # Summer solstice (day 172): declination ~ +23.45 deg
+        dec_summer = compute_solar_declination_deg(day_of_year=172)
+        assert abs(dec_summer - 23.45) < 0.5
+
+        # Solar elevation from shadow ratio 1.0 (45 degrees)
+        band = solver.solve_latitude_band(shadow_to_height_ratio=1.0, shadow_azimuth_deg=0.0)
+        assert abs(band["solar_elevation_deg"] - 45.0) < 0.1
+
+    def test_solar_latitude_bounds(self):
+        """Tests latitude bounding mathematically eliminates impossible regions."""
+        solver = SolarLockSolver()
+        test_img = "test_building.jpg"
+        if os.path.exists(test_img):
+            res = solver.analyze_image_shadows(test_img, approx_season="summer")
+            assert res["status"] == "success"
+            assert "latitude_bounds" in res
+            lat_min, lat_max = res["latitude_bounds"]
+            assert lat_min <= lat_max
+            assert -90.0 <= lat_min <= 90.0
+            assert -90.0 <= lat_max <= 90.0
+
+
 class TestMcpHandlers:
     def test_mcp_new_tools(self):
         """Verifies that all new tool handlers execute cleanly."""
@@ -164,3 +220,13 @@ class TestMcpHandlers:
         if os.path.exists(test_img):
             c_res = tool_geovision_car_id({"image_path": test_img})
             assert c_res["status"] == "success"
+
+            # 4. skyeye tool
+            sky_res = tool_geovision_skyeye_footprint({"lat": 43.6532, "lon": -79.3832, "image_path": test_img, "radius_m": 300})
+            assert sky_res["status"] == "success"
+
+            # 5. solar lock tool
+            sol_res = tool_geovision_solar_lock({"image_path": test_img, "approx_season": "summer"})
+            assert sol_res["status"] == "success"
+            assert "latitude_bounds" in sol_res
+

@@ -1198,6 +1198,81 @@ def dossier_cmd(
         console.print(content)
 
 
+@app.command(name="skyeye")
+def skyeye_cmd(
+    lat: float = typer.Option(..., "--lat", help="Candidate latitude"),
+    lon: float = typer.Option(..., "--lon", help="Candidate longitude"),
+    image: Optional[Path] = typer.Option(None, "--image", "-i", help="Optional query image to extract facade features"),
+    radius: int = typer.Option(400, "--radius", "-r", help="Search radius in meters"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """SkyEye cross-view building facade and overhead satellite footprint verifier."""
+    from modules.skyeye_footprint_verifier import SkyEyeFootprintVerifier
+    verifier = SkyEyeFootprintVerifier()
+    res = verifier.verify_candidate_footprints(
+        lat=lat,
+        lon=lon,
+        image_path=str(image) if image else None,
+        radius_m=radius,
+    )
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit(f"[bold blue]🛰️ SkyEye Overhead Satellite Footprint Verifier ({lat}, {lon})[/bold blue]", border_style="blue"))
+    gf = res.get("ground_features", {})
+    if gf:
+        console.print(f"[bold]Detected Roof Archetype:[/] {gf.get('roof_archetype')} (conf {gf.get('confidence', 0):.0%})")
+        console.print(f"[bold]Perspective Facade Yaw:[/] {gf.get('facade_yaw_deg')}°")
+
+    footprints = res.get("candidates", [])
+    if not footprints:
+        console.print("[yellow]No building footprints found within search radius.[/yellow]")
+        return
+
+    t = Table(show_header=True, header_style="bold blue")
+    t.add_column("Building")
+    t.add_column("Type / Levels")
+    t.add_column("Roof Shape")
+    t.add_column("Orientation")
+    t.add_column("Cross-View Match")
+
+    for fp in footprints[:6]:
+        t.add_row(
+            fp.get("name", "Building"),
+            f"{fp.get('building_type')} (L{fp.get('levels') or '?'})",
+            fp.get("roof_shape", "unspecified"),
+            f"{fp.get('principal_orientation_deg')}°",
+            f"{fp.get('alignment_confidence', 0):.1%}",
+        )
+    console.print(t)
+
+
+@app.command(name="solar-lock")
+def solar_lock_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Path to image with visible shadows"),
+    date: Optional[str] = typer.Option(None, "--date", "-d", help="Optional date in YYYY-MM-DD format"),
+    season: Optional[str] = typer.Option(None, "--season", "-s", help="Optional season: summer, winter, spring_fall"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Solar Lock: NOAA astronomical ephemeris shadow and latitude solver."""
+    from modules.solar_lock_solver import SolarLockSolver
+    solver = SolarLockSolver()
+    res = solver.analyze_image_shadows(str(image), date_str=date, approx_season=season)
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold yellow]☀️ Solar Lock: Astronomical Latitude Envelope[/bold yellow]", border_style="yellow"))
+    bounds = res.get("latitude_bounds", [0, 0])
+    console.print(f"[bold]Inferred Hemisphere:[/] [green]{res.get('inferred_hemisphere', 'unknown').upper()}[/green]")
+    console.print(f"[bold]Constrained Latitude Band:[/] [cyan]{bounds[0]}° to {bounds[1]}°[/cyan] (Center: {res.get('center_latitude_deg')}°)")
+    console.print(f"[bold]Solar Elevation:[/] {res.get('solar_elevation_deg')}° | [bold]Zenith Angle:[/] {res.get('zenith_angle_deg')}°")
+    console.print(f"[bold]Shadow Azimuth:[/] {res.get('shadow_azimuth_deg')}° (detected {res.get('detected_shadow_lines', 0)} shadow lines)")
+
+
 if __name__ == "__main__":
     app()
 

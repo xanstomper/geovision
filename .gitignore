@@ -17,6 +17,8 @@ models--*/
 *.safetensors
 *.pt
 *.pth
+# OSV-5M code repo — cloned via scripts/setup_osv5m.sh (57MB, third-party)
+osv5m/
 # Reference DB — rebuildable via scripts/build_reference_db.py
 data/visual_geo_db/embeddings.npy
 data/visual_geo_db/meta.jsonl.gz

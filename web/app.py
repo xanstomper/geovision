@@ -449,6 +449,84 @@ def api_dossier():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/skyeye", methods=["POST"])
+def api_skyeye():
+    """SkyEye cross-view building facade and overhead satellite footprint verifier."""
+    lat = request.form.get("lat") or request.form.get("latitude")
+    lon = request.form.get("lon") or request.form.get("longitude")
+    if not lat or not lon:
+        data = request.get_json(silent=True) or {}
+        lat = data.get("lat") or data.get("latitude")
+        lon = data.get("lon") or data.get("longitude")
+    if lat is None or lon is None:
+        return jsonify({"error": "lat and lon required"}), 400
+
+    radius = int(request.form.get("radius_m") or 400)
+    image_path = None
+    tmp_path = None
+    if "image" in request.files or "images" in request.files:
+        file = request.files.get("image") or request.files.getlist("images")[0]
+        if file and file.filename != "":
+            import tempfile
+            suffix = Path(file.filename).suffix or ".jpg"
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                tmp_path = tmp.name
+                file.save(tmp_path)
+            image_path = tmp_path
+
+    try:
+        from modules.skyeye_footprint_verifier import SkyEyeFootprintVerifier
+        verifier = SkyEyeFootprintVerifier()
+        res = verifier.verify_candidate_footprints(
+            lat=float(lat),
+            lon=float(lon),
+            image_path=image_path,
+            radius_m=radius,
+        )
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+        return jsonify(res)
+    except Exception as e:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/solar_lock", methods=["POST"])
+def api_solar_lock():
+    """Solar Lock: NOAA astronomical ephemeris shadow and latitude solver."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    date_str = request.form.get("date") or request.form.get("date_str")
+    season = request.form.get("season")
+    try:
+        import tempfile
+        from modules.solar_lock_solver import SolarLockSolver
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        solver = SolarLockSolver()
+        res = solver.analyze_image_shadows(tmp_path, date_str=date_str, approx_season=season)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/cases")
 def cases_page():
     return render_template("cases.html")

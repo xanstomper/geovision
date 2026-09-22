@@ -8,11 +8,25 @@ import os
 
 
 class OSV5MPredictor:
+    """
+    OSV-5M geolocation — an INDEPENDENT 4th engine family for the ensemble.
+
+    IMPORTANT — NO 65M-IMAGE DOWNLOAD REQUIRED:
+      OSV-5M's 65M streetview images are its TRAINING corpus (the osv5m/osv5m
+      HF dataset, terabytes). Geospatially they are baked into the pretrained
+      weights. This predictor loads ONLY the small code repo (osv5m/, ~57MB,
+      cloned via scripts/setup_osv5m.sh) + the single ~700MB pretrained model
+      (osv5m/baseline, auto-fetched by Geolocalizer.from_pretrained). ZERO image
+      corpus is ever downloaded. Run scripts/setup_osv5m.sh to wire it up.
+    """
+
     def __init__(self, model_name: str = "osv5m/baseline"):
         print("\n=== Initializing OSV5M Predictor ===")
         try:
-            # Add osv5m directory to path
-            osv5m_path = os.environ.get("OSV5M_PATH", os.path.join(os.path.dirname(__file__), "..", "osv5m"))
+            # Add osv5m directory to path (from env OR <repo>/osv5m)
+            repo_osv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "osv5m")
+            osv5m_path = os.environ.get("OSV5M_PATH", "") or repo_osv
+            osv5m_path = os.path.abspath(osv5m_path)
             if osv5m_path not in sys.path:
                 sys.path.append(osv5m_path)
 
@@ -23,6 +37,7 @@ class OSV5MPredictor:
             print("✓ OSV5M model loaded successfully")
         except Exception as e:
             print(f"! Error initializing OSV5M model: {e}")
+            print("  Run: bash scripts/setup_osv5m.sh  (clones code, fetches model)")
             self.model = None
 
     def predict(self, image: Image.Image) -> Tuple[Dict, float]:

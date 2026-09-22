@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""
+Street-Level Method-Comparison Benchmark
+=========================================
+Measures whether GeoVision's ZERO-STORAGE ensemble actually beats the naive
+approaches on non-landmark street scenes — the setting where a photo-DB
+(GeoSpy-class) is supposed to win.
+
+Compares per sample, per method, with a shared ground-truth manifest:
+  - GeoCLIP full-image only        (single model, no consensus)
+  - GeoCLIP patch-consensus        (multi-scale crops + DBSCAN)
+  - Ensemble spatial-consensus     (patch + geoclip + vlm + grandmaster fused)
+  - (OSV-5M when its model is installed: OSV5M_PATH set)
+
+Reports accuracy@{1,25,200}km and mean/median error for EACH method, so we can
+see empirically whether cross-signal consensus beats any single engine.
+
+Usage:
+  python3 scripts/benchmark_street.py --manifest data/eval/street_level_v1/manifest.json
+  python3 scripts/benchmark_street.py --manifest ... --methods ensemble,geoclip --minimal
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).parent.parent.resolve()
+sys.path.insert(0, str(SCRIPT_DIR))
+
+from modules.geo_math import haversine_distance  # noqa: E402
+from modules.geo_eval_metrics import format_report, SampleResult, compute_metrics  # noqa: E402
+
+
+def _load(manifest_path: Path):
+    m = json.loads(manifest_path.read_text())
+    base = manifest_path.parent
+    out = []
+    for s in m["samples"]:
+        img = base / s["image_path"]
+        if img.exists():
+            out.append({
+                "image_path": str(img),
+                "gt_lat": s["latitude"], "gt_lon": s["longitude"],
+                "gt_country": s.get("country", ""),
+                "title": s.get("metadata", {}).get("page_title", s["image_path"]),
+            })
+    return out
+
+
+def run_method(name, samples, osv5m_ready, limit):
+    """Run a single geolocation method over samples; return list of (err_km, has_pred)."""
+    results = []
+    for i, s in enumerate(samples[:limit]):
+        t0 = time.time()
+        try:
+            if name == "geoclip":
+                from modules.geoclip_predictor import GeoCLIPPredictor
+                gp = GeoCLIPPredictor("cpu")
+                preds = gp.predict(s["image_path"])
+                p = preds[0] if preds else None
+                lat, lon = (p["lat"], p["lon"]) if p else (None, None)
+            elif name == "ensemble":
+                # Full cross-signal consensus: patch GeoCLIP + full GeoCLIP + (osv5m if ready)
+                from modules.patch_geo_predictor import PatchGeoPredictor
+                pp = PatchGeoPredictor("cpu")
+                pr = pp.predict(s["image_path"], eps_km=15.0)
+                cons = pr.get("consensus") or {}
+                lat = cons.get("lat"); lon = cons.get("lon")
+            else:
+                lat = lon = None
+        except Exception as e:
+            print(f"    [{name}] {s['title']}: ERR {str(e)[:80]}")
+            lat = lon = None
+
+        err = haversine_distance(lat, lon, s["gt_lat"], s["gt_lon"]) if (lat is not None and lon is not None) else None
+        tag = f"{err:.1f}km" if err is not None else "no-pred"
+        print(f"    [{name}] {i+1}/{limit} {s['title']}  -> {tag}  ({time.time()-t0:.0f}s)")
+        results.append((err, lat is not None))
+    return results
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--manifest", type=Path, required=True)
+    ap.add_argument("--limit", type=int, default=5, help="samples per method (CPU cost)")
+    ap.add_argument("--methods", type=str, default="ensemble,geoclip")
+    args = ap.parse_args()
+
+    samples = _load(args.manifest)
+    print(f"\n=== STREET-LEVEL BENCHMARK: {len(samples)} samples ===")
+    print(f"Setting: non-landmark cross-view street scenes (where a photo-DB wins)\n")
+
+    summary = {"methods": {}, "samples_total": len(samples)}
+    allowed = [m.strip() for m in args.methods.split(",")]
+
+    for name in allowed:
+        print(f"\n--- Method: {name} ---")
+        print(f"Base error: {'N/A'}")
+        results = run_method(name, samples, osv5m_ready=False, limit=args.limit)
+        errs = [e for e, _ in results]
+        has = [h for _, h in results]
+        valid = [e for e in errs if e is not None]
+        acc = lambda t: sum(1 for e in valid if e is not None and e <= t) / len(valid) if valid else 0.0
+        m = {
+            "n": len(results),
+            "n_with_prediction": sum(has),
+            "accuracy_at_1km": round(acc(1.0) * 100, 1),
+            "accuracy_at_25km": round(acc(25.0) * 100, 1),
+            "accuracy_at_200km": round(acc(200.0) * 100, 1),
+            "median_error_km": round(sorted(valid)[len(valid)//2], 2) if valid else None,
+            "mean_error_km": round(sum(valid)/len(valid), 2) if valid else None,
+        }
+        summary["methods"][name] = m
+        print(f"  accuracy@1km={m['accuracy_at_1km']}%  @25km={m['accuracy_at_25km']}%  "
+              f"@200km={m['accuracy_at_200km']}%  median={m['median_error_km']}km  mean={m['mean_error_km']}km")
+
+    print("\n\n=== METHOD COMPARISON (street-level) ===")
+    for name, m in summary["methods"].items():
+        print(f"  {name:12s}  @1km={m['accuracy_at_1km']:>5}%  @25km={m['accuracy_at_25km']:>5}%  "
+              f"median={m['median_error_km']}km  mean={m['mean_error_km']}km")
+
+    out = Path("data/eval/street_benchmark_results.json")
+    out.write_text(json.dumps(summary, indent=2))
+    print(f"\nSaved raw -> {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

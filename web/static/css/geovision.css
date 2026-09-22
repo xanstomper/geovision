@@ -177,3 +177,381 @@ header .tagline { color: var(--text-dim); font-size: 14px; }
 .log-area .info { color: #58a6ff; }
 .log-area .warn { color: #d29922; }
 .log-area .error { color: #f85149; }
+
+/* =========================================================================
+   Grandmaster Control HUD & Tactical Glassmorphic Layout
+   ========================================================================= */
+
+/* Mode Switcher */
+.mode-switcher-container {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0 24px;
+}
+.mode-switcher {
+    display: inline-flex;
+    background: #161b22;
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 4px;
+    gap: 4px;
+}
+.mode-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.mode-btn:hover {
+    color: var(--text);
+}
+.mode-btn.active {
+    background: var(--accent);
+    color: #0d1117;
+    box-shadow: 0 0 12px rgba(88, 166, 255, 0.4);
+}
+.mode-btn.active[data-mode="grandmaster"] {
+    background: #d29922;
+    color: #0d1117;
+    box-shadow: 0 0 12px rgba(210, 153, 34, 0.4);
+}
+.mode-btn.active[data-mode="forensics"] {
+    background: #39c5cf;
+    color: #0d1117;
+    box-shadow: 0 0 12px rgba(57, 197, 207, 0.4);
+}
+
+/* Header pills & badges */
+.grandmaster-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.badge-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.hud-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.hud-pill-gold { background: rgba(210, 153, 34, 0.15); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.4); }
+.hud-pill-cyan { background: rgba(57, 197, 207, 0.15); color: #39c5cf; border: 1px solid rgba(57, 197, 207, 0.4); }
+.hud-pill-green { background: rgba(63, 185, 80, 0.15); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.4); }
+
+/* Dossier actions */
+.dossier-actions {
+    display: flex;
+    gap: 8px;
+}
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 12px;
+}
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+.btn-outline:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Pinpoint primary card */
+.pinpoint-card {
+    background: linear-gradient(135deg, #161b22, #1f2735);
+    border: 1px solid #d29922;
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+.pinpoint-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+.pinpoint-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f0f6fc;
+}
+.pinpoint-sub {
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+.pinpoint-confidence {
+    text-align: right;
+}
+.conf-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #3fb950;
+    line-height: 1;
+}
+.conf-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+/* Coords box */
+.coords-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin: 14px 0;
+    font-family: 'SF Mono', monospace;
+}
+.coords-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: #58a6ff;
+}
+.btn-copy {
+    background: #21262d;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-copy:hover {
+    background: #30363d;
+}
+
+/* Navigation Links */
+.pinpoint-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+.hud-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+.hud-btn:hover { opacity: 0.85; }
+.hud-btn-streetview { background: #ea4335; color: #fff; }
+.hud-btn-osm { background: #7ebc6f; color: #0d1117; }
+.hud-btn-gmaps { background: #4285f4; color: #fff; }
+.hud-btn-esri { background: #166b7b; color: #fff; }
+
+/* Intelligence Grid */
+.hud-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.hud-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+}
+.hud-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+.hud-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+}
+.hud-tag {
+    font-size: 11px;
+    background: #21262d;
+    padding: 3px 8px;
+    border-radius: 10px;
+    color: var(--text-dim);
+}
+
+/* Tag lattice */
+.tag-lattice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.lattice-tag {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--text);
+}
+
+/* Candidates & Progress Bars */
+.section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+.candidate-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.candidate-name {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.candidate-iso {
+    background: #21262d;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+}
+.candidate-bar-wrap {
+    flex: 2;
+    background: #0d1117;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+.candidate-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #58a6ff, #3fb950);
+    border-radius: 4px;
+}
+.candidate-pct {
+    width: 38px;
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+/* Fleet Demographics */
+.fleet-demographics-grid, .solar-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.demo-metric, .solar-stat {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+}
+.demo-val, .solar-val {
+    font-size: 16px;
+    font-weight: 700;
+    color: #f0f6fc;
+}
+.demo-lbl, .solar-lbl {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* Reasoning deduction chain */
+.reasoning-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+}
+.reasoning-list {
+    margin-left: 20px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.8;
+}
+
+/* Image preview card */
+.preview-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin: 12px 0;
+}
+.img-preview {
+    max-width: 140px;
+    max-height: 100px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    object-fit: cover;
+}
+.preview-meta {
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+/* Custom leaflet map pin */
+.custom-map-pin {
+    background: transparent;
+    border: none;
+}
+.pin-inner {
+    width: 36px;
+    height: 36px;
+    background: #d29922;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 16px rgba(210, 153, 34, 0.8);
+    animation: pinPulse 2s infinite;
+}
+@keyframes pinPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}

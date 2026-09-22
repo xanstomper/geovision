@@ -165,6 +165,33 @@ class GeoVisionHarness:
         except Exception as e:
             out["signals"]["patch_geo"] = {"status": "failed", "error": str(e)[:200]}
 
+        # --- OSV-5M: independent 4th engine (65M-image-trained deep geolocation).
+        # Loads ONLY the pretrained model (~700 MB) via scripts/setup_osv5m.sh —
+        # never the 65M-image corpus. Skips cleanly if not set up.
+        try:
+            from modules.osv5m_predictor import OSV5MPredictor
+            _ov = OSV5MPredictor()
+            if _ov.model is not None:
+                from PIL import Image as _PIL
+                _ov_img = _PIL.open(p).convert("RGB")
+                _ov_res, _ov_conf = _ov.predict(_ov_img)
+                if _ov_res and _ov_res.get("lat") is not None:
+                    out["candidates"].append({
+                        "latitude": float(_ov_res["lat"]),
+                        "longitude": float(_ov_res["lon"]),
+                        "confidence": float(_ov_conf),
+                        "source": "osv5m",
+                        "country": (_ov_res.get("metadata") or {}).get("country", ""),
+                    })
+                    out["signals"]["osv5m"] = {"status": "success",
+                                               "confidence": float(_ov_conf)}
+                else:
+                    out["signals"]["osv5m"] = {"status": "no_estimate"}
+            else:
+                out["signals"]["osv5m"] = {"status": "skipped", "note": "model not set up (run scripts/setup_osv5m.sh)"}
+        except Exception as e:
+            out["signals"]["osv5m"] = {"status": "skipped", "note": str(e)[:120]}
+
         # --- CLIP reference-DB nearest neighbor (real geotagged photos) ---
         try:
             from modules.visual_geo_engine import VisualGeoEngine
@@ -882,6 +909,58 @@ class GeoVisionHarness:
         except Exception as e:
             grandmaster_signal = {"status": "skipped", "note": str(e)[:120]}
         record["stages"]["grandmaster_forensics"] = grandmaster_signal
+
+        # Orphan corroborators — wire previously-unused independent signals into
+        # the case. Each is best-effort and isolated (never crashes the pipeline):
+        #   park_finder       -> OSM park proximity (rural/urban corroboration)
+        #   mapillary_client  -> live street-level imagery if MAPILLARY token set
+        #   geo_hierarchy     -> ground the fused best estimate to country/region/city
+        corroborators = {}
+        try:
+            from modules.park_finder import find_nearby_parks
+            _pl = None
+            for c in pruned[:3]:
+                if c.get("latitude") is not None:
+                    _pl = (c["latitude"], c["longitude"]); break
+            if _pl:
+                parks = find_nearby_parks(_pl[0], _pl[1], max_distance_km=2.0)
+                corroborators["parks_nearby"] = {
+                    "count": len(parks), "nearest_m": parks[0].get("distance_m")
+                    if parks else None}
+        except Exception:
+            pass
+
+        try:
+            from modules.mapillary_client import MapillaryClient
+            token = os.environ.get("MAPILLARY_ACCESS_TOKEN")
+            if token and _pl:
+                _mc = MapillaryClient(token)
+                streets = __import__("asyncio").run(
+                    _mc.search_nearby(_pl[0], _pl[1], 250, 4))
+                corroborators["street_views_live"] = {
+                    "count": len(streets),
+                    "images": [_s.get("thumb_url") for _s in streets[:3]],
+                }
+        except Exception:
+            pass
+
+        try:
+            from modules.geo_hierarchy import HierarchicalResolver
+            if best is not None and best.get("latitude") is not None:
+                _pred = {"country": best.get("country"), "city": best.get("city"),
+                         "latitude": best.get("latitude"), "longitude": best.get("longitude"),
+                         "confidence": best.get("confidence")}
+                hpred = HierarchicalResolver().resolve(_pred, chain=None)
+                hd = hpred.to_dict() if hasattr(hpred, "to_dict") else {}
+                corroborators["geo_hierarchy"] = {
+                    "resolved_country": hd.get("country"), "city": hd.get("city"),
+                    "best_level": hd.get("resolved_level") or hd.get("level"),
+                }
+        except Exception:
+            pass
+
+        if corroborators:
+            record["stages"]["corroborators"] = corroborators
 
         # Deep-dive OSINT (best-effort, each isolated)
         deep = self._deep_dive(str(p), pruned[:5])

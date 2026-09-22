@@ -120,6 +120,23 @@ class TestStorageFree:
         assert FAMILY_NAMES["vlm_verify"] == "vlm"
         assert FAMILY_NAMES["grandmaster"] == "grandmaster"
         assert FAMILY_NAMES["multiscale_patch_consensus"] == "grandmaster"
+        assert FAMILY_NAMES["osv5m"] == "osv5m"
+
+    def test_osv5m_counts_as_4th_independent_engine(self):
+        # 3 engines agreeing near Paris: harness-location, grandmaster, OSV-5M
+        cands = [
+            _cand(48.8584, 2.2945, 0.5, "geoclip", "France"),
+            _cand(48.8575, 2.2948, 0.6, "grandmaster", "France"),
+            _cand(48.8590, 2.2935, 0.35, "osv5m", "France"),
+        ]
+        out = EnsembleFusion().fuse(cands)
+        v = out["verdict"]
+        # all three are distinct families → independent
+        assert "location" in v["independent_families"]
+        assert "grandmaster" in v["independent_families"]
+        assert "osv5m" in v["independent_families"]
+        # 2+ families → allowed past the 0.75 single-family cap
+        assert v["confidence"] >= 0.75
 
     def test_grandmaster_family_counts_as_independent(self):
         # main harness location cluster + independent grandmaster engine verdict

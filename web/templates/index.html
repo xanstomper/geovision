@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoVision Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>GeoVision Grandmaster Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="/static/css/geovision.css">
@@ -12,29 +12,53 @@
 <body>
 <div class="container">
     <header>
-        <h1>&#128308; GeoVision Intelligence</h1>
-        <p class="tagline">Multi-phase OSINT geolocation pipeline &mdash; drop in an image, get a pinned coordinate</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:24px;">&#128308;</span>
+                <span style="font-size:20px;font-weight:800;color:var(--accent);letter-spacing:0.5px;">GEOVISION GRANDMASTER</span>
+                <span class="hud-pill hud-pill-gold" id="activeModeBadge">MODE: Grandmaster Zero-Storage</span>
+            </div>
+            <nav style="display:flex;gap:12px;">
+                <a href="/" style="color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;">&#127919; Grandmaster HUD</a>
+                <a href="/ocean" style="color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:600;">&#128373;&#65039; OceanIR Canvas</a>
+                <a href="/cases" style="color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:600;">&#128193; Cases &amp; Evidence</a>
+            </nav>
+        </div>
+        <p class="tagline">Universal OSINT Geolocation Engine &mdash; Zero Reference Photos Required</p>
     </header>
+
+    <!-- Mode Switcher -->
+    <div class="mode-switcher-container">
+        <div class="mode-switcher">
+            <button class="mode-btn active" data-mode="grandmaster">&#127919; Grandmaster Zero-Storage</button>
+            <button class="mode-btn" data-mode="forensics">&#9889; Physical Forensics (&lt;100ms)</button>
+            <button class="mode-btn" data-mode="deep">&#128303; Deep Multi-Phase Scan</button>
+        </div>
+    </div>
 
     <!-- Upload Section -->
     <div id="uploadSection">
         <div class="upload-area" id="dropZone">
             <div class="icon">&#128247;</div>
-            <p><strong>Drag &amp; drop images here</strong></p>
-            <p class="tagline">or click to browse &mdash; supports JPG, PNG, WebP</p>
-            <input type="file" id="fileInput" multiple accept="image/*">
+            <p><strong>Drag &amp; drop query image here</strong></p>
+            <p class="tagline">or click to browse &mdash; JPG, PNG, WebP (auto-detects EXIF, shadows, road lines, vehicles)</p>
+            <input type="file" id="fileInput" accept="image/*">
         </div>
-        <div id="fileList" style="margin:12px 0;"></div>
-        <div style="margin:12px 0;">
-            <label style="font-size:14px;color:var(--text-dim);">
-                Region hint (optional):
-                <input type="text" id="regionHint" placeholder="e.g. Tokyo, Paris, downtown Berlin"
-                       style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius);margin-left:8px;width:300px;">
+
+        <div id="imagePreviewArea"></div>
+        <div id="fileInfoText" style="font-size:13px;color:var(--text-dim);margin:6px 0;"></div>
+
+        <div id="regionHintContainer" style="margin:14px 0;">
+            <label style="font-size:13px;color:var(--text-dim);">
+                Optional Region Hint:
+                <input type="text" id="regionHint" placeholder="e.g. Toronto, Hokkaido, Rio de Janeiro, downtown Berlin"
+                       style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius);margin-left:8px;width:340px;">
             </label>
         </div>
-        <div style="margin:12px 0;">
-            <button class="btn btn-primary" id="startScan" disabled>&#9654; Start Scan</button>
-            <button class="btn btn-secondary" id="clearFiles" style="margin-left:8px;">Clear</button>
+
+        <div style="margin:16px 0;display:flex;gap:10px;">
+            <button class="btn btn-primary" id="startScan" disabled>&#127919; Pinpoint Location (Zero-Storage)</button>
+            <button class="btn btn-secondary" id="clearFiles">Clear</button>
         </div>
     </div>
 
@@ -42,8 +66,8 @@
     <div id="progressSection" style="display:none;">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
             <span class="spinner"></span>
-            <strong>Running pipeline...</strong>
-            <span id="progressPercent" style="color:var(--accent);"></span>
+            <strong>Running investigation...</strong>
+            <span id="progressPercent" style="color:var(--accent);font-weight:600;"></span>
         </div>
         <div class="phase-tracker" id="phaseTracker"></div>
         <div class="log-area" id="logArea"></div>
@@ -52,215 +76,95 @@
     <!-- Results Section -->
     <div id="resultsSection" style="display:none;">
         <div id="resultsArea"></div>
+
+        <!-- Interactive Leaflet Map with Basemap Switcher -->
         <div class="map-container" id="mapContainer" style="display:none;">
-            <div id="map" style="height:400px;"></div>
+            <div style="background:#161b22;padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:13px;font-weight:600;color:var(--accent);">&#127760; Interactive Tactical Geospatial Viewport</span>
+                <span style="font-size:11px;color:var(--text-dim);">Toggle vector OSM or high-res ESRI World Satellite imagery in top-right layer switcher</span>
+            </div>
+            <div id="map" style="height:440px;"></div>
         </div>
-        <div style="margin:16px 0;">
-            <button class="btn btn-primary" id="newScan">&#128303; New Scan</button>
-            <button class="btn btn-secondary" id="toggleMap" style="margin-left:8px;">&#127760; Toggle Map</button>
+
+        <div style="margin:20px 0;display:flex;gap:10px;">
+            <button class="btn btn-primary" id="newScan">&#128303; New Investigation</button>
+            <button class="btn btn-secondary" id="toggleMap">&#127760; Toggle Map View</button>
         </div>
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="/static/js/geovision_ws.js"></script>
+<script src="/static/js/geovision_grandmaster.js"></script>
 <script>
 (function() {
     'use strict';
 
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-    const fileList = document.getElementById('fileList');
-    const startBtn = document.getElementById('startScan');
-    const clearBtn = document.getElementById('clearFiles');
-    const uploadSection = document.getElementById('uploadSection');
-    const progressSection = document.getElementById('progressSection');
-    const resultsSection = document.getElementById('resultsSection');
-    const logArea = document.getElementById('logArea');
-    let selectedFiles = [];
-    let map = null;
-
-    // --- File handling ---
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone.addEventListener('drop', e => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        handleFiles(e.dataTransfer.files);
-    });
-    fileInput.addEventListener('change', () => handleFiles(fileInput.files));
-
-    function handleFiles(files) {
-        for (const f of files) {
-            if (f.type.startsWith('image/')) selectedFiles.push(f);
-        }
-        renderFileList();
-    }
-
-    function renderFileList() {
-        fileList.innerHTML = selectedFiles.map(f =>
-            `<span style="display:inline-block;background:var(--bg-card);border:1px solid var(--border);padding:6px 12px;border-radius:var(--radius);margin:4px;font-size:13px;">${f.name} (${(f.size/1024).toFixed(0)}KB)</span>`
-        ).join('');
-        startBtn.disabled = selectedFiles.length === 0;
-    }
-
-    clearBtn.addEventListener('click', () => {
-        selectedFiles = [];
-        renderFileList();
-    });
-
-    document.getElementById('newScan').addEventListener('click', () => {
-        resultsSection.style.display = 'none';
-        uploadSection.style.display = '';
-    });
-
-    document.getElementById('toggleMap').addEventListener('click', () => {
-        const mc = document.getElementById('mapContainer');
-        mc.style.display = mc.style.display === 'none' ? '' : 'none';
-    });
-
-    // --- Scan flow ---
-    startBtn.addEventListener('click', startScan);
-
-    async function startScan() {
-        const fd = new FormData();
-        selectedFiles.forEach(f => fd.append('images', f));
-        fd.append('context_text', document.getElementById('regionHint').value);
+    // Bridge for Deep Multi-Phase Pipeline Mode
+    window.runDeepScan = function(file) {
+        const uploadSection = document.getElementById('uploadSection');
+        const progressSection = document.getElementById('progressSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const logArea = document.getElementById('logArea');
+        const progressPercent = document.getElementById('progressPercent');
 
         uploadSection.style.display = 'none';
         progressSection.style.display = '';
-        logArea.innerHTML = '';
+        resultsSection.style.display = 'none';
+        if (logArea) logArea.innerHTML = '';
 
-        try {
-            // Connect WebSocket
-            await GeoVisionClient.connect();
-
-            // Listen for events
-            GeoVisionClient.on('log', (data) => {
-                const line = document.createElement('div');
-                line.textContent = data.data;
-                logArea.appendChild(line);
-                logArea.scrollTop = logArea.scrollHeight;
-            });
-
-            GeoVisionClient.on('phase:start', (data) => {
-                const p = document.getElementById('progressPercent');
-                p.textContent = `Running ${data.data.phase.replace('phase', 'Phase ')}...`;
-            });
-
-            GeoVisionClient.on('phase:progress', (data) => {
-                const p = document.getElementById('progressPercent');
-                if (data.data.progress) {
-                    p.textContent = `Phase ${data.phase.replace('phase', 'Phase ')}: ${Math.round(data.data.progress)}%`;
-                }
-            });
-
-            GeoVisionClient.on('progress:overall', (data) => {
-                const p = document.getElementById('progressPercent');
-                p.textContent = `Overall: ${Math.round(data.progress)}% — ${data.phase}`;
-            });
-
-            GeoVisionClient.on('result', (data) => {
-                GeoVisionClient.renderResults(data.data);
-                progressSection.style.display = 'none';
-                resultsSection.style.display = '';
-                renderMap(data.data);
-            });
-
-            GeoVisionClient.on('error', (data) => {
-                const err = document.createElement('div');
-                err.style.color = 'var(--danger)';
-                err.textContent = `Error: ${data.data}`;
-                logArea.appendChild(err);
-            });
-
-            // Send start signal
-            GeoVisionClient.send({ type: 'scan:start', files: selectedFiles.map(f => f.name) });
-
-        } catch (err) {
-            logArea.innerHTML += `<div style="color:var(--danger)">WebSocket connection failed: ${err}</div>`;
-            // Fallback: use HTTP-based streaming
-            startScanHTTP();
-        }
-    }
-
-    // HTTP fallback (using the existing SSE endpoint)
-    async function startScanHTTP() {
         const fd = new FormData();
-        selectedFiles.forEach(f => fd.append('images', f));
-        fd.append('context_text', document.getElementById('regionHint').value);
+        fd.append('images', file);
+        const hint = document.getElementById('regionHint')?.value || '';
+        fd.append('context_text', hint);
 
-        try {
-            const resp = await fetch('/api/analyze', { method: 'POST', body: fd });
-            const data = await resp.json();
-            if (data.job_id) {
-                connectSSE(data.job_id);
-            }
-        } catch (err) {
-            logArea.innerHTML += `<div style="color:var(--danger)">Failed to start scan: ${err}</div>`;
-        }
-    }
+        fetch('/api/analyze', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.job_id) {
+                    connectSSE(data.job_id);
+                }
+            })
+            .catch(err => {
+                if (logArea) logArea.innerHTML += `<div class="error">Failed to start scan: ${err}</div>`;
+            });
+    };
 
     function connectSSE(jobId) {
+        const logArea = document.getElementById('logArea');
+        const progressSection = document.getElementById('progressSection');
+        const resultsSection = document.getElementById('resultsSection');
         const evtSource = new EventSource(`/api/stream/${jobId}`);
 
         evtSource.onmessage = function(e) {
             try {
                 const msg = JSON.parse(e.data);
-                if (msg.type === 'log') {
+                if (msg.type === 'log' && logArea) {
                     const line = document.createElement('div');
                     line.textContent = msg.data;
                     logArea.appendChild(line);
                     logArea.scrollTop = logArea.scrollHeight;
                 } else if (msg.type === 'result') {
                     evtSource.close();
-                    GeoVisionClient.renderResults(msg.data);
+                    if (window.GeoVisionClient) {
+                        GeoVisionClient.renderResults(msg.data);
+                    }
                     progressSection.style.display = 'none';
                     resultsSection.style.display = '';
-                    renderMap(msg.data);
-                } else if (msg.type === 'error') {
-                    logArea.innerHTML += `<div style="color:var(--danger)">${msg.data}</div>`;
+                } else if (msg.type === 'error' && logArea) {
+                    logArea.innerHTML += `<div class="error">${msg.data}</div>`;
                 }
             } catch (err) {}
         };
     }
 
-    // --- Map rendering ---
-    function renderMap(data) {
-        const estimates = data.location_estimates || [];
-        const best = data.best_estimate || {};
-
-        if (estimates.length === 0 && (!best.latitude || !best.longitude)) return;
-
-        const mapContainer = document.getElementById('mapContainer');
-        mapContainer.style.display = '';
-
-        if (map) { map.remove(); map = null; }
-
-        const center = best.latitude && best.longitude ? [best.latitude, best.longitude] :
-                       (estimates.length > 0 ? [estimates[0].latitude, estimates[0].longitude] : [0, 0]);
-
-        map = L.map('map').setView(center, 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Best estimate (red)
-        if (best.latitude && best.longitude) {
-            L.circleMarker([best.latitude, best.longitude], {
-                radius: 10, color: '#f85149', fillColor: '#f85149', fillOpacity: 0.7
-            }).addTo(map).bindPopup(`<b>Best Estimate</b><br>Conf: ${(best.confidence*100).toFixed(1)}%`);
-        }
-
-        // Candidates
-        const colors = ['#58a6ff', '#3fb950', '#a371f7', '#d29922', '#f778ba', '#79c0ff'];
-        estimates.slice(1).forEach((e, i) => {
-            L.circleMarker([e.latitude, e.longitude], {
-                radius: 8, color: colors[i % colors.length], fillColor: colors[i % colors.length], fillOpacity: 0.6
-            }).addTo(map).bindPopup(`#${i+2}<br>Conf: ${(e.confidence*100).toFixed(1)}%<br>${(e.sources||[]).join(', ')}`);
+    const toggleMapBtn = document.getElementById('toggleMap');
+    if (toggleMapBtn) {
+        toggleMapBtn.addEventListener('click', () => {
+            const mc = document.getElementById('mapContainer');
+            mc.style.display = mc.style.display === 'none' ? '' : 'none';
         });
     }
-
 })();
 </script>
 </body>
