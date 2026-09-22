@@ -466,6 +466,57 @@
                         <div id="ecoregionResultsArea" style="margin-top: 12px; font-size: 12px;"></div>
                     </div>
                 </div>
+
+                <!-- Card 7: Global Utility Grid & Hardware Standards -->
+                <div class="hud-card">
+                    <div class="hud-card-header">
+                        <span class="hud-card-title">&#9889; Utility Grid &amp; Hardware Classifier</span>
+                        <span class="hud-tag">Transformers &amp; Poles</span>
+                    </div>
+                    <div class="hud-card-body">
+                        <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">
+                            Profiles distribution canister transformers, pole materials (ladder, holey concrete, timber), and line architecture.
+                        </p>
+                        <button class="btn btn-outline btn-sm" id="btnRunUtilityGrid">
+                            &#9889; Classify Power Grid Architecture
+                        </button>
+                        <div id="utilityGridResultsArea" style="margin-top: 12px; font-size: 12px;"></div>
+                    </div>
+                </div>
+
+                <!-- Card 8: Camera Generation & Optical Profiler -->
+                <div class="hud-card">
+                    <div class="hud-card-header">
+                        <span class="hud-card-title">&#128247; Camera Generation &amp; Optical Meta</span>
+                        <span class="hud-tag">Lens Aberrations &amp; Car Meta</span>
+                    </div>
+                    <div class="hud-card-body">
+                        <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">
+                            Determines Street View generation (Gen 1-4), chromatic fringing, sensor sharpness, and vehicle hardware artifacts.
+                        </p>
+                        <button class="btn btn-outline btn-sm" id="btnRunCameraGen">
+                            &#128247; Profile Optical Artifacts
+                        </button>
+                        <div id="cameraGenResultsArea" style="margin-top: 12px; font-size: 12px;"></div>
+                    </div>
+                </div>
+
+                <!-- Card 9: Video & Dashcam Panorama Stitcher -->
+                <div class="hud-card">
+                    <div class="hud-card-header">
+                        <span class="hud-card-title">&#127909; Dashcam Panorama &amp; Spatial Bearings</span>
+                        <span class="hud-tag">Multi-Frame LOS Vectors</span>
+                    </div>
+                    <div class="hud-card-body">
+                        <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">
+                            Stitches sequential video keyframes into wide-angle panoramas and computes sun azimuth and road headings.
+                        </p>
+                        <button class="btn btn-outline btn-sm" id="btnRunPanorama">
+                            &#127909; Stitch &amp; Solve Spatial Bearings
+                        </button>
+                        <div id="panoramaResultsArea" style="margin-top: 12px; font-size: 12px;"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Reasoning Deduction Chain -->
@@ -531,6 +582,8 @@
                     outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
                 }
             });
+        }
+
         // Wire Mountain Ridge Interactive Button
         const mntBtn = document.getElementById('btnRunMountainRidge');
         if (mntBtn) {
@@ -618,6 +671,92 @@
                     alert(`Hermes debate error: ${e.message}`);
                     hermesBtn.disabled = false;
                     hermesBtn.innerHTML = '&#129302; Hermes Consensus';
+                }
+            });
+        }
+
+        // Wire Utility Grid Interactive Button
+        const utilBtn = document.getElementById('btnRunUtilityGrid');
+        if (utilBtn) {
+            utilBtn.addEventListener('click', async () => {
+                const outDiv = document.getElementById('utilityGridResultsArea');
+                outDiv.innerHTML = '<span class="spinner"></span> Analyzing power lines, transformers &amp; pole geometry...';
+                try {
+                    const fd = new FormData();
+                    if (selectedImageFile) fd.append('image', selectedImageFile);
+                    const r = await fetch('/api/utility_grid', { method: 'POST', body: fd });
+                    const res = await r.json();
+                    if (res.status === 'success') {
+                        outDiv.innerHTML = `
+                            <div style="background:#0d1117;padding:8px;border-radius:6px;border:1px solid var(--border);">
+                                <strong style="color:var(--success);">&#9889; ${res.top_grid_region}</strong> (${res.top_countries?.join(', ') || 'Global'})<br>
+                                Transformer Archetype: <code>${res.transformer_archetype}</code> &bull; Confidence: <code>${Math.round(res.confidence * 100)}%</code><br>
+                                Overhead Lines: <code>${res.line_architecture}</code> &bull; Vertical Poles: <code>${res.vertical_poles_detected}</code> &bull; Crossarms: <code>${res.crossarms_detected}</code>
+                            </div>
+                        `;
+                    } else {
+                        outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${res.error || 'Failed'}</span>`;
+                    }
+                } catch (e) {
+                    outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+                }
+            });
+        }
+
+        // Wire Camera Generation Interactive Button
+        const camBtn = document.getElementById('btnRunCameraGen');
+        if (camBtn) {
+            camBtn.addEventListener('click', async () => {
+                const outDiv = document.getElementById('cameraGenResultsArea');
+                outDiv.innerHTML = '<span class="spinner"></span> Profiling lens aberrations, chromatic fringing &amp; capture car meta...';
+                try {
+                    const fd = new FormData();
+                    if (selectedImageFile) fd.append('image', selectedImageFile);
+                    const r = await fetch('/api/camera_gen', { method: 'POST', body: fd });
+                    const res = await r.json();
+                    if (res.status === 'success') {
+                        outDiv.innerHTML = `
+                            <div style="background:#0d1117;padding:8px;border-radius:6px;border:1px solid var(--border);">
+                                <strong style="color:var(--success);">&#128247; ${res.camera_generation}</strong> (Conf: ${Math.round(res.confidence * 100)}%)<br>
+                                Resolution: <code>${res.resolution}</code> &bull; Laplacian Sharpness: <code>${res.sharpness_laplacian}</code> &bull; Chroma Edge Diff: <code>${res.chromatic_aberration_score}</code><br>
+                                Jurisdiction Priors: ${(res.jurisdiction_priors || []).slice(0, 5).join(', ')}<br>
+                                ${res.detected_capture_meta?.length ? `<span style="color:var(--gold);">Capture Meta: ${res.detected_capture_meta.join(' &bull; ')}</span>` : ''}
+                            </div>
+                        `;
+                    } else {
+                        outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${res.error || 'Failed'}</span>`;
+                    }
+                } catch (e) {
+                    outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+                }
+            });
+        }
+
+        // Wire Video Panorama Interactive Button
+        const panoBtn = document.getElementById('btnRunPanorama');
+        if (panoBtn) {
+            panoBtn.addEventListener('click', async () => {
+                const outDiv = document.getElementById('panoramaResultsArea');
+                outDiv.innerHTML = '<span class="spinner"></span> Triangulating line-of-sight bearings &amp; road headings...';
+                try {
+                    const fd = new FormData();
+                    if (selectedImageFile) fd.append('image', selectedImageFile);
+                    const r = await fetch('/api/video_panorama', { method: 'POST', body: fd });
+                    const res = await r.json();
+                    if (res.status === 'success') {
+                        const sb = res.spatial_bearings || {};
+                        outDiv.innerHTML = `
+                            <div style="background:#0d1117;padding:8px;border-radius:6px;border:1px solid var(--border);">
+                                <strong style="color:var(--success);">&#127909; Spatial Bearings Triangulated</strong><br>
+                                Dominant Road Angle: <code>${sb.dominant_road_angle_deg}&deg;</code> &bull; Sun Azimuth Offset: <code>${sb.sun_bearing_offset_deg}&deg;</code><br>
+                                Multi-Perspective Verified: <code>${sb.multi_perspective_verified ? 'Yes' : 'Single Vantage'}</code> &bull; Road Angles Found: <code>${sb.road_angles_detected}</code>
+                            </div>
+                        `;
+                    } else {
+                        outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${res.error || 'Failed'}</span>`;
+                    }
+                } catch (e) {
+                    outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
                 }
             });
         }

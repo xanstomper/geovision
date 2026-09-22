@@ -364,6 +364,38 @@ class TestPatchGeoSmoke:
         assert hasattr(pp, "predict_patches")
 
 
+class TestNoAnswerHonesty:
+    """Regression guard for the fake-salvage fix: when inference produces no
+    valid GPS point, the predictor MUST return an honest no-answer (None coords),
+    NEVER a fabricated (0,0) Gulf-of-Guinea default."""
+
+    def test_empty_consensus_uses_none_not_zero(self):
+        import inspect
+        # The no-answer branch must set lat=None (not 0.0) and lon=None — this
+        # is the contract that prevents a fake (0,0) primary location signal.
+        src = inspect.getsource(
+            __import__("modules.patch_geo_predictor", fromlist=["PatchGeoPredictor"]).PatchGeoPredictor.predict_patches)
+        no_answer_block = src.split('"no_answer": True,')[0]  # everything up to the flag
+        assert '"lat": None' in src   # honest no-answer lat
+        assert '"lon": None' in src   # honest no-answer lon
+        assert '"no_answer": True' in src
+        # The old fabricated default coarse (0.0,0.0) must be gone — coarse default
+        # is now None, not a Gulf-of-Guinea point.
+        assert '"lat": None, "lon": None, "confidence": 0.0' in src or \
+               '"lat": None, "lon": None,' in src
+
+    def test_grandmaster_no_answer_not_greenwich(self):
+        import inspect
+        from modules.grandmaster_forensics import GrandmasterForensicsEngine
+        src = inspect.getsource(GrandmasterForensicsEngine.investigate)
+        # The fabricated hardcoded Greenwich COORDINATE default must be gone
+        # (the word may still appear in an explanatory comment — that's fine).
+        assert "51.4769" not in src
+        # An honest no-answer path must exist.
+        assert '"no_answer": True' in src
+        assert '"latitude": None' in src
+
+
 # ---------------------------------------------------------------------------
 # Storage comparison — proves patch approach saves storage
 # ---------------------------------------------------------------------------

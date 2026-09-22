@@ -104,6 +104,16 @@ class EvidenceChain:
         self.items: List[Evidence] = []
         self._seen_hashes: set = set()
 
+    @property
+    def evidences(self) -> List[Evidence]:
+        """Compatibility alias — GroundingEngine reads chain.evidences."""
+        return self.items
+
+    @property
+    def geo_evidences(self) -> List[Evidence]:
+        """Coordinate-bearing evidence (for coordinate grounding)."""
+        return self.with_coords()
+
     def add(self, evidence: Evidence) -> bool:
         """Add evidence if not a duplicate. Returns True if added."""
         if evidence.hash in self._seen_hashes:

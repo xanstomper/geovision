@@ -23,6 +23,9 @@ from modules.solar_lock_solver import SolarLockSolver
 from modules.mountain_ridge_matcher import MountainRidgeMatcher
 from modules.ecoregion_classifier import EcoregionClassifier
 from modules.hermes_collaborative_solver import HermesCollaborativeSolver
+from modules.panorama_spatial_stitcher import VideoPanoramaStitcher
+from modules.utility_grid_signature import UtilityGridClassifier
+from modules.camera_generation_classifier import CameraGenerationClassifier
 from mcp_geovision_server import (
     tool_geovision_street_targeter,
     tool_geovision_plonkit_rules,
@@ -33,6 +36,9 @@ from mcp_geovision_server import (
     tool_geovision_mountain_ridge,
     tool_geovision_ecoregion_classify,
     tool_geovision_hermes_consensus,
+    tool_geovision_video_panorama,
+    tool_geovision_utility_grid,
+    tool_geovision_camera_gen,
 )
 
 
@@ -253,6 +259,54 @@ class TestHermesCollaborativeSolver:
             assert len(res["multi_agent_debate_log"]) > 0
 
 
+class TestVideoPanoramaStitcher:
+    def test_panorama_stitching_and_bearings(self):
+        """Tests keyframe extraction, stitching fallback, and bearing triangulation."""
+        stitcher = VideoPanoramaStitcher()
+        test_img = "test_building.jpg"
+        if os.path.exists(test_img):
+            res = stitcher.process_video_or_images(test_img)
+            assert res["status"] == "success"
+            assert "stitching" in res
+            assert "spatial_bearings" in res
+            assert "sun_bearing_offset_deg" in res["spatial_bearings"]
+            assert "dominant_road_angle_deg" in res["spatial_bearings"]
+            assert "multi_perspective_verified" in res["spatial_bearings"]
+
+
+class TestUtilityGridClassifier:
+    def test_utility_grid_detection(self):
+        """Tests utility pole, line, and transformer classification."""
+        classifier = UtilityGridClassifier()
+        test_img = "test_building.jpg"
+        if os.path.exists(test_img):
+            res = classifier.detect_grid_features(test_img)
+            assert res["status"] == "success"
+            assert "has_utility_lines" in res
+            assert "vertical_poles_detected" in res
+            assert "crossarms_detected" in res
+            assert "detected_transformer" in res
+            assert "line_architecture" in res
+            assert "candidate_regions" in res
+            assert len(res["candidate_regions"]) > 0
+
+
+class TestCameraGenerationClassifier:
+    def test_camera_generation_and_artifacts(self):
+        """Tests Google Street View generation and optical artifact profiling."""
+        classifier = CameraGenerationClassifier()
+        test_img = "test_building.jpg"
+        if os.path.exists(test_img):
+            res = classifier.analyze_optical_artifacts(test_img)
+            assert res["status"] == "success"
+            assert "camera_generation" in res
+            assert "confidence" in res
+            assert "sharpness_laplacian" in res
+            assert "chromatic_aberration_score" in res
+            assert "jurisdiction_priors" in res
+            assert "detected_capture_meta" in res
+
+
 class TestMcpHandlers:
     def test_mcp_new_tools(self):
         """Verifies that all new tool handlers execute cleanly."""
@@ -291,5 +345,23 @@ class TestMcpHandlers:
             herm_res = tool_geovision_hermes_consensus({"image_path": test_img})
             assert herm_res["status"] == "success"
             assert "verdict" in herm_res
+
+            # 9. video panorama tool
+            pano_res = tool_geovision_video_panorama({"input_path": test_img})
+            assert pano_res["status"] == "success"
+            assert "spatial_bearings" in pano_res
+
+            # 10. utility grid tool
+            grid_res = tool_geovision_utility_grid({"image_path": test_img})
+            assert grid_res["status"] == "success"
+            assert "vertical_poles_detected" in grid_res
+            assert "candidate_regions" in grid_res
+
+            # 11. camera gen tool
+            cam_res = tool_geovision_camera_gen({"image_path": test_img})
+            assert cam_res["status"] == "success"
+            assert "camera_generation" in cam_res
+
+
 
 

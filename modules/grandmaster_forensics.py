@@ -493,9 +493,27 @@ class GrandmasterForensicsEngine:
             best["falsification_warning"] = "Candidate violated physical constraints but was preserved as nearest mathematical prior"
             surviving = [best]
         else:
-            # Ultimate default (Greenwich centroid)
-            best = {"latitude": 51.4769, "longitude": 0.0005, "confidence": 0.05, "city": "Greenwich", "country": "GB"}
-            surviving = [best]
+            # Honest NO-ANSWER: every source (patch consensus, GeoCLIP fallback)
+            # failed to produce a candidate. Do NOT inject a hardcoded default
+            # (the old "Greenwich centroid" was fabricated salvage). Signal the
+            # caller that no location could be determined.
+            dossier["no_answer"] = True
+            dossier["reasoning_chain"].append(
+                "NO-ANSWER: all geolocation engines returned no valid candidate.")
+            dossier["best_estimate"] = {
+                "latitude": None, "longitude": None,
+                "confidence": 0.0,
+                "no_answer": True,
+                "note": "No valid geolocation candidate was produced by any engine.",
+            }
+            dossier["candidates"] = []
+            dossier["multi_crop_consensus"] = {
+                "total_candidates_generated": 0, "clusters_count": 0}
+            dossier["forensic_breakdown"] = forensics
+            dossier["elimination_matrix"] = eliminated if eliminated else []
+            dossier["jit_verification"] = {}
+            # Return early — nothing to rank/verify when we have no winner.
+            return dossier
 
         # Step 5: JIT Micro-GIS Verification on the Winner
         best_lat = best["latitude"]

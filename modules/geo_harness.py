@@ -946,15 +946,22 @@ class GeoVisionHarness:
 
         try:
             from modules.geo_hierarchy import HierarchicalResolver
-            if best is not None and best.get("latitude") is not None:
-                _pred = {"country": best.get("country"), "city": best.get("city"),
-                         "latitude": best.get("latitude"), "longitude": best.get("longitude"),
-                         "confidence": best.get("confidence")}
-                hpred = HierarchicalResolver().resolve(_pred, chain=None)
+            # NOTE: `best` is not yet defined here (assigned later in _finalize),
+            # so ground the CURRENT top ranked candidate instead. Use pruned's
+            # highest-confidence candidate — the real ensemble input.
+            _anchor = pruned[0] if pruned else None
+            if _anchor is not None and _anchor.get("latitude") is not None:
+                from modules.evidence_chain import EvidenceChain as _EvidenceChain
+                _pred = {"country": _anchor.get("country"), "city": _anchor.get("city"),
+                         "latitude": _anchor.get("latitude"), "longitude": _anchor.get("longitude"),
+                         "confidence": _anchor.get("confidence")}
+                # Pass a real (empty) evidence chain — None crashes the GroundingEngine.
+                hpred = HierarchicalResolver().resolve(_pred, chain=_EvidenceChain())
                 hd = hpred.to_dict() if hasattr(hpred, "to_dict") else {}
                 corroborators["geo_hierarchy"] = {
                     "resolved_country": hd.get("country"), "city": hd.get("city"),
                     "best_level": hd.get("resolved_level") or hd.get("level"),
+                    "source": "top_pruned_candidate",
                 }
         except Exception:
             pass

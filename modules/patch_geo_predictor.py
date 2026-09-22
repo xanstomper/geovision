@@ -440,7 +440,7 @@ class PatchGeoPredictor:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-        coarse = full_preds[0] if full_preds else {"lat": 0.0, "lon": 0.0, "confidence": 0.0}
+        coarse = full_preds[0] if full_preds else {"lat": None, "lon": None, "confidence": 0.0}
 
         if not all_preds and full_preds:
             all_preds = [{
@@ -534,14 +534,18 @@ class PatchGeoPredictor:
                 "coarse_prior_aligned": coarse_aligned,
             }
         else:
+            # Honest NO-ANSWER: inference failed or produced no valid GPS point.
+            # Never fabricate a default location (the old (0,0) Gulf-of-Guinea
+            # fallback was a fake primary signal). Consumers gate on lat is None.
             consensus = {
-                "lat": coarse.get("lat", 0.0),
-                "lon": coarse.get("lon", 0.0),
-                "confidence": 0.20,
-                "uncertainty_radius_km": 100.0,
+                "lat": None,
+                "lon": None,
+                "confidence": 0.0,
+                "uncertainty_radius_km": None,
                 "cluster_size": 0,
                 "supporting_crops": 0,
-                "coarse_prior_aligned": True,
+                "coarse_prior_aligned": False,
+                "no_answer": True,
             }
 
         return {

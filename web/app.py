@@ -615,6 +615,87 @@ def api_hermes_consensus():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/video_panorama", methods=["POST"])
+def api_video_panorama():
+    """Video & Dashcam Multi-Frame Panorama Spatial Stitcher."""
+    if "video" not in request.files and "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No video or image uploaded"}), 400
+    file = request.files.get("video") or request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    try:
+        import tempfile
+        from modules.panorama_spatial_stitcher import VideoPanoramaStitcher
+        suffix = Path(file.filename).suffix or ".mp4"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        stitcher = VideoPanoramaStitcher()
+        res = stitcher.process_video_or_images(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/utility_grid", methods=["POST"])
+def api_utility_grid():
+    """Global Power Grid & Utility Transformer Hardware Classifier."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    try:
+        import tempfile
+        from modules.utility_grid_signature import UtilityGridClassifier
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        classifier = UtilityGridClassifier()
+        res = classifier.detect_grid_features(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/camera_gen", methods=["POST"])
+def api_camera_gen():
+    """Camera Generation & Street View Optical Artifact Profiler."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    try:
+        import tempfile
+        from modules.camera_generation_classifier import CameraGenerationClassifier
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        classifier = CameraGenerationClassifier()
+        res = classifier.analyze_optical_artifacts(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/cases")
 def cases_page():
     return render_template("cases.html")

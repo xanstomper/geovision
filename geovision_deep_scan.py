@@ -1529,21 +1529,14 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
                 road_data = analyzer.analyze_road_features(image_path_opt)
                 phases["road_analysis"] = road_data
                 if road_data.get("region_indicators"):
-                    center_lat, center_lon = 0.0, 0.0
-                    if all_estimates:
-                        best_est = sorted(all_estimates, key=lambda x: x["confidence"], reverse=True)[0]
-                        center_lat = best_est["latitude"]
-                        center_lon = best_est["longitude"]
-                    
-                    for ind in road_data["region_indicators"]:
-                        all_estimates.append({
-                            "latitude": center_lat,
-                            "longitude": center_lon,
-                            "confidence": road_data.get("confidence", 0.5) * 0.8,
-                            "sources": [f"road:{ind}"],
-                            "evidence": {"road_features": f"Driving side: {road_data.get('driving_side')}, Line color: {road_data.get('line_color')}, Indicator: {ind}"},
-                            "phase": "Road"
-                        })
+                    # HONESTY: road features (driving side, line color) are a
+                    # REGIONAL signal, not a pin coordinate. Do NOT append them
+                    # to all_estimates — the reasoner would default their None
+                    # coords to (0.0,0.0) and pollute spatial fusion with a fake
+                    # Gulf-of-Guinea cluster (previous fake-salvage pattern).
+                    # Keep them as regional evidence only, surfaced via phases.
+                    phases["road_analysis"]["region_indicators"] = road_data["region_indicators"]
+                    phases["road_analysis"]["is_regional_signal"] = True
             except Exception as e:
                 logger.error(f"  [-] Road Analysis skipped/failed: {e}", exc_info=True)
 
@@ -1980,9 +1973,11 @@ def phase9_synthesis(phases: Dict[str, Dict[str, Any]],
             "success_rate": f"{len(completed)}/{len(phases)}",
         }
 
-        result["status"] = "success"
+        # Honest status: only "success" when location estimates were produced.
+        # An empty `merged` (no geo candidates from any phase) is NOT success.
+        result["status"] = "success" if merged else "no_estimate"
         logger.info(f"  ✓ Synthesis complete — {len(merged)} estimates, "
-                     f"best conf: {result['confidence_summary'].get('highest', 0):.4f}")
+                    f"best conf: {result['confidence_summary'].get('highest', 0):.4f}")
 
     except Exception as e:
         result["error"] = str(e)

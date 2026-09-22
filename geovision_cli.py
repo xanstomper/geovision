@@ -1346,6 +1346,73 @@ def hermes_solve_cmd(
         console.print(f"  {line}")
 
 
+@app.command(name="panorama")
+def panorama_cmd(
+    input_path: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Path to video (MP4/WebM) or image"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Optional output path to save stitched panorama"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Video & Dashcam Multi-Frame Panorama Spatial Stitcher."""
+    from modules.panorama_spatial_stitcher import VideoPanoramaStitcher
+    stitcher = VideoPanoramaStitcher()
+    res = stitcher.process_video_or_images(str(input_path), output_panorama_path=str(output) if output else None)
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold blue]🎥 Video & Multi-Frame Panorama Spatial Stitcher[/bold blue]", border_style="blue"))
+    st = res.get("stitching", {})
+    br = res.get("spatial_bearings", {})
+    console.print(f"[bold]Input Type:[/] {'Video Clip' if res.get('is_video') else 'Image'}")
+    console.print(f"[bold]Stitching Status:[/] {st.get('status')} (Estimated FOV: {st.get('estimated_fov_deg')}°)")
+    console.print(f"[bold]Dominant Road Angle:[/] {br.get('dominant_road_angle_deg')}° | [bold]Sun Azimuth Offset:[/] {br.get('sun_bearing_offset_deg')}°")
+
+
+@app.command(name="utility-grid")
+def utility_grid_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Path to image with visible utility poles / wires"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Global Power Grid & Utility Transformer Hardware Classifier."""
+    from modules.utility_grid_signature import UtilityGridClassifier
+    classifier = UtilityGridClassifier()
+    res = classifier.detect_grid_features(str(image))
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold yellow]⚡ Global Power Grid & Utility Transformer Hardware[/bold yellow]", border_style="yellow"))
+    console.print(f"[bold]Top Grid Standard:[/] [cyan]{res.get('top_grid_region')}[/cyan] (conf {res.get('confidence', 0):.0%})")
+    console.print(f"[bold]Transformer Archetype:[/] {res.get('transformer_archetype')}")
+    console.print(f"[bold]Line Architecture:[/] {res.get('line_architecture')}")
+    console.print(f"[bold]Identified Countries:[/] {', '.join(res.get('top_countries', []))}")
+
+
+@app.command(name="camera-gen")
+def camera_gen_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Path to Street View or query image"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Camera Generation & Street View Optical Artifact Classifier."""
+    from modules.camera_generation_classifier import CameraGenerationClassifier
+    classifier = CameraGenerationClassifier()
+    res = classifier.analyze_optical_artifacts(str(image))
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold magenta]📷 Camera Generation & Optical Artifact Profiler[/bold magenta]", border_style="magenta"))
+    console.print(f"[bold]Identified Camera Generation:[/] [cyan]{res.get('camera_generation')}[/cyan] (conf {res.get('confidence', 0):.0%})")
+    console.print(f"[bold]Resolution & Sharpness:[/] {res.get('resolution')} (Laplacian variance: {res.get('sharpness_laplacian')})")
+    console.print(f"[bold]Chromatic Aberration Score:[/] {res.get('chromatic_aberration_score')}")
+    if res.get("hardware_notes"):
+        console.print(f"[bold]Hardware Notes:[/] {' '.join(res.get('hardware_notes'))}")
+    console.print(f"[bold]Geographic Priors:[/] {', '.join(res.get('jurisdiction_priors', []))}")
+
+
 if __name__ == "__main__":
     app()
 

@@ -687,6 +687,46 @@ TOOLS = [
         },
     },
     {
+        "name": "geovision_video_panorama",
+        "description": "Video & Dashcam Multi-Frame Panorama Spatial Stitcher. Extracts sharp keyframes from "
+                       "video clips (MP4/WebM/MOV) or image sequences, stitches wide-angle panoramas, and calculates "
+                       "multi-bearing line-of-sight vectors (road angle, sun azimuth, horizon profile).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "input_path": {"type": "string", "description": "Absolute path to video file or image"},
+                "output_path": {"type": "string", "description": "Optional output path for stitched panorama image"},
+            },
+            "required": ["input_path"],
+        },
+    },
+    {
+        "name": "geovision_utility_grid",
+        "description": "Global Power Grid & Utility Transformer Hardware Classifier. Classifies pole-mounted "
+                       "canister transformers, insulator types, overhead line architecture (open-wire vs Aerial Bundled Cable), "
+                       "and pole structural engineering (ladder, perforated, timber) to identify national grid standards.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to image with utility poles/wires"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
+        "name": "geovision_camera_gen",
+        "description": "Camera Generation & Street View Optical Artifact Profiler. Classifies Google Street View "
+                       "camera generations (Gen 1/2/3/4), optical aberrations (purple fringing, chromatic aberration), "
+                       "and capture vehicle metadata (snorkels, roof racks, sky rifts) to determine capture provenance.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to query image"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
         "name": "geolocate_image",
         "description": "FULL geolocation deep-scan of an image: EXIF, OCR, CLIP/GeoCLIP/StreetCLIP models, "
                        "OSINT databases, satellite matching, evidence fusion. Returns ranked coordinates with "
@@ -1585,6 +1625,51 @@ def tool_geovision_hermes_consensus(args: Dict[str, Any]) -> Dict[str, Any]:
         return {"error": str(e), "status": "failed"}
 
 
+def tool_geovision_video_panorama(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Video & Dashcam Multi-Frame Panorama Spatial Stitcher."""
+    input_path = args.get("input_path")
+    if not input_path:
+        return {"error": "input_path required"}
+    try:
+        from modules.panorama_spatial_stitcher import VideoPanoramaStitcher
+        stitcher = VideoPanoramaStitcher()
+        return stitcher.process_video_or_images(
+            input_path=input_path,
+            output_panorama_path=args.get("output_path"),
+        )
+    except Exception as e:
+        logger.error("video panorama failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_utility_grid(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Global Power Grid & Utility Transformer Hardware Classifier."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.utility_grid_signature import UtilityGridClassifier
+        classifier = UtilityGridClassifier()
+        return classifier.detect_grid_features(image_path)
+    except Exception as e:
+        logger.error("utility grid failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_camera_gen(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Camera Generation & Street View Optical Artifact Profiler."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.camera_generation_classifier import CameraGenerationClassifier
+        classifier = CameraGenerationClassifier()
+        return classifier.analyze_optical_artifacts(image_path)
+    except Exception as e:
+        logger.error("camera gen failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
 TOOL_IMPLS = {
     "geovision_grandmaster_locate": tool_geovision_grandmaster_locate,
     "geovision_forensic_breakdown": tool_geovision_forensic_breakdown,
@@ -1598,6 +1683,9 @@ TOOL_IMPLS = {
     "geovision_mountain_ridge": tool_geovision_mountain_ridge,
     "geovision_ecoregion_classify": tool_geovision_ecoregion_classify,
     "geovision_hermes_consensus": tool_geovision_hermes_consensus,
+    "geovision_video_panorama": tool_geovision_video_panorama,
+    "geovision_utility_grid": tool_geovision_utility_grid,
+    "geovision_camera_gen": tool_geovision_camera_gen,
     "geolocate_image": tool_geolocate_image,
     "geolocate_quick": tool_geolocate_quick,
     "ocr_extract": tool_ocr_extract,
