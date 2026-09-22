@@ -1273,6 +1273,79 @@ def solar_lock_cmd(
     console.print(f"[bold]Shadow Azimuth:[/] {res.get('shadow_azimuth_deg')}° (detected {res.get('detected_shadow_lines', 0)} shadow lines)")
 
 
+@app.command(name="mountain-ridge")
+def mountain_ridge_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Path to mountain / wilderness landscape image"),
+    hint: Optional[str] = typer.Option(None, "--hint", "-H", help="Optional mountain range or region hint"),
+    lat: Optional[float] = typer.Option(None, "--lat", help="Optional candidate latitude"),
+    lon: Optional[float] = typer.Option(None, "--lon", help="Optional candidate longitude"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Mountain Ridge & DEM Skyline Solver: matches horizon contour against global topography without reference photos."""
+    from modules.mountain_ridge_matcher import MountainRidgeMatcher
+    matcher = MountainRidgeMatcher()
+    res = matcher.analyze_image_horizon(str(image), hint_region=hint, candidate_lat=lat, candidate_lon=lon)
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold green]🏔️ Mountain Ridge & DEM Skyline Solver[/bold green]", border_style="green"))
+    console.print(f"[bold]Skyline Detected:[/] {res.get('skyline_detected')} (Roughness: {res.get('topographic_roughness')})")
+    console.print(f"[bold]Top Mountain Range Match:[/] [cyan]{res.get('top_mountain_range')}[/cyan] ({res.get('top_region')})")
+    console.print(f"[bold]Topographic Confidence:[/] [green]{res.get('confidence', 0):.1%}[/green] | [bold]Peaks Detected:[/] {res.get('peaks_detected')}")
+    for cand in res.get("candidates", [])[:3]:
+        console.print(f"  • [bold]{cand.get('range')}[/] ({cand.get('region')}): {cand.get('confidence', 0):.0%} confidence")
+
+
+@app.command(name="ecoregion")
+def ecoregion_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Path to landscape/vegetation image"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Global Ecoregion & Soil Bio-Classifier: classifies WWF biome and soil taxonomy without reference photos."""
+    from modules.ecoregion_classifier import EcoregionClassifier
+    classifier = EcoregionClassifier()
+    res = classifier.extract_bio_spectral_features(str(image))
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    console.print(Panel.fit("[bold magenta]🌿 Global Ecoregion & Soil Bio-Classifier[/bold magenta]", border_style="magenta"))
+    console.print(f"[bold]Classified Biome:[/] [cyan]{res.get('top_biome')}[/cyan] (Archetype: {res.get('foliage_archetype')})")
+    console.print(f"[bold]Identified Soil Order:[/] [yellow]{res.get('soil_type')}[/yellow] (conf {res.get('soil_confidence', 0):.0%})")
+    console.print(f"[bold]Vegetation Coverage Ratio:[/] {res.get('vegetation_coverage_ratio', 0):.1%}")
+    console.print(f"[bold]Inferred Latitude Limits:[/] {res.get('inferred_lat_range')}")
+    console.print(f"[bold]Dominant Global Jurisdictions:[/] {', '.join(res.get('top_countries', []))}")
+
+
+@app.command(name="hermes-solve")
+def hermes_solve_cmd(
+    image: Path = typer.Argument(..., exists=True, file_okay=True, readable=True, help="Path to query image"),
+    hint: Optional[str] = typer.Option(None, "--hint", "-H", help="Optional location hint"),
+    season: Optional[str] = typer.Option(None, "--season", "-s", help="Optional season: summer, winter, spring_fall"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON to stdout"),
+):
+    """Autonomous Hermes & Antigravity Multi-Agent Collaborative Solver."""
+    from modules.hermes_collaborative_solver import HermesCollaborativeSolver
+    solver = HermesCollaborativeSolver()
+    res = solver.run_collaborative_investigation(str(image), location_hint=hint, season_hint=season)
+
+    if json_only:
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        return
+
+    verdict = res.get("verdict", {})
+    console.print(Panel.fit("[bold gold1]🤖 Hermes & Antigravity Autonomous Multi-Agent Consensus[/bold gold1]", border_style="gold1"))
+    console.print(f"[bold]Pinpoint Coordinates:[/] [cyan]{verdict.get('latitude')}, {verdict.get('longitude')}[/cyan]")
+    console.print(f"[bold]Target Location:[/] {verdict.get('street')} ({verdict.get('city')}, {verdict.get('country')})")
+    console.print(f"[bold]Consensus Confidence:[/] [green]{verdict.get('confidence', 0):.1%}[/green] ({verdict.get('precision_tier')})")
+    console.print("\n[bold]Multi-Agent Cross-Interrogation Debate Log:[/]")
+    for line in res.get("multi_agent_debate_log", []):
+        console.print(f"  {line}")
+
+
 if __name__ == "__main__":
     app()
 

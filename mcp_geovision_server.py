@@ -642,6 +642,51 @@ TOOLS = [
         },
     },
     {
+        "name": "geovision_mountain_ridge",
+        "description": "Mountain Ridge & DEM Skyline Solver. Extracts 1D horizon skyline contours from wilderness "
+                       "or landscape query images, detects peak prominences and topographic roughness, and matches "
+                       "them against global mountain catalogs and Digital Elevation Models (DEM) without reference photos.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to landscape/mountain query image"},
+                "hint": {"type": "string", "description": "Optional regional mountain range hint"},
+                "lat": {"type": "number", "description": "Optional candidate latitude"},
+                "lon": {"type": "number", "description": "Optional candidate longitude"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
+        "name": "geovision_ecoregion_classify",
+        "description": "Global Ecoregion & Soil Bio-Classifier. Analyzes soil spectral colorimetry (laterite, "
+                       "chernozem, aridisol, podzol) and vegetation greenness index (ExG) to map query images to "
+                       "WWF Terrestrial Biomes and USDA Soil Orders, deterministically eliminating impossible world regions.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to query image"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
+        "name": "geovision_hermes_consensus",
+        "description": "Autonomous Hermes & Antigravity Multi-Agent Collaborative Solver. Runs dual-agent forensic "
+                       "cross-interrogation between Agent 1 (Forensic Hunter & Ephemeris Arbiter) and Agent 2 "
+                       "(Topological Cartographer & Micro-GIS Triangulator), detects physical contradictions, "
+                       "and reaches a unified consensus pinpoint verdict.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to query image"},
+                "location_hint": {"type": "string", "description": "Optional regional or municipality hint"},
+                "season_hint": {"type": "string", "enum": ["summer", "winter", "spring_fall"], "description": "Optional season heuristic"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
         "name": "geolocate_image",
         "description": "FULL geolocation deep-scan of an image: EXIF, OCR, CLIP/GeoCLIP/StreetCLIP models, "
                        "OSINT databases, satellite matching, evidence fusion. Returns ranked coordinates with "
@@ -1489,6 +1534,57 @@ def tool_geovision_solar_lock(args: Dict[str, Any]) -> Dict[str, Any]:
         return {"error": str(e), "status": "failed"}
 
 
+def tool_geovision_mountain_ridge(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Mountain Ridge & DEM Skyline Solver."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.mountain_ridge_matcher import MountainRidgeMatcher
+        matcher = MountainRidgeMatcher()
+        return matcher.analyze_image_horizon(
+            image_path=image_path,
+            hint_region=args.get("hint"),
+            candidate_lat=args.get("lat"),
+            candidate_lon=args.get("lon"),
+        )
+    except Exception as e:
+        logger.error("mountain ridge match failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_ecoregion_classify(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Global Ecoregion & Soil Bio-Classifier."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.ecoregion_classifier import EcoregionClassifier
+        classifier = EcoregionClassifier()
+        return classifier.extract_bio_spectral_features(image_path)
+    except Exception as e:
+        logger.error("ecoregion classify failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
+def tool_geovision_hermes_consensus(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Autonomous Hermes & Antigravity Multi-Agent Collaborative Solver."""
+    image_path = args.get("image_path")
+    if not image_path:
+        return {"error": "image_path required"}
+    try:
+        from modules.hermes_collaborative_solver import HermesCollaborativeSolver
+        solver = HermesCollaborativeSolver()
+        return solver.run_collaborative_investigation(
+            image_path=image_path,
+            location_hint=args.get("location_hint"),
+            season_hint=args.get("season_hint"),
+        )
+    except Exception as e:
+        logger.error("hermes consensus solver failed: %s", e)
+        return {"error": str(e), "status": "failed"}
+
+
 TOOL_IMPLS = {
     "geovision_grandmaster_locate": tool_geovision_grandmaster_locate,
     "geovision_forensic_breakdown": tool_geovision_forensic_breakdown,
@@ -1499,6 +1595,9 @@ TOOL_IMPLS = {
     "geovision_dossier": tool_geovision_dossier,
     "geovision_skyeye_footprint": tool_geovision_skyeye_footprint,
     "geovision_solar_lock": tool_geovision_solar_lock,
+    "geovision_mountain_ridge": tool_geovision_mountain_ridge,
+    "geovision_ecoregion_classify": tool_geovision_ecoregion_classify,
+    "geovision_hermes_consensus": tool_geovision_hermes_consensus,
     "geolocate_image": tool_geolocate_image,
     "geolocate_quick": tool_geolocate_quick,
     "ocr_extract": tool_ocr_extract,

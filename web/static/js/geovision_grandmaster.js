@@ -290,6 +290,7 @@
                     <span class="hud-pill hud-pill-green">&#10003; 0 REFERENCE PHOTOS NEEDED</span>
                 </div>
                 <div class="dossier-actions">
+                    <button class="btn btn-sm btn-outline" id="btnRunHermesConsensus" style="border-color:#d29922;color:#d29922;font-weight:700;">&#129302; Hermes Consensus</button>
                     <button class="btn btn-sm btn-outline" id="exportMdDossier">&#128196; Export Markdown Dossier</button>
                     <button class="btn btn-sm btn-outline" id="exportHtmlDossier">&#127760; Export HTML Dossier</button>
                 </div>
@@ -431,6 +432,40 @@
                         <div id="skyEyeResultsArea" style="margin-top: 12px; font-size: 12px;"></div>
                     </div>
                 </div>
+
+                <!-- Card 5: Mountain Ridge & DEM Skyline Solver -->
+                <div class="hud-card">
+                    <div class="hud-card-header">
+                        <span class="hud-card-title">&#127956; Mountain Ridge &amp; DEM Skyline Solver</span>
+                        <span class="hud-tag">Topographic Elevation</span>
+                    </div>
+                    <div class="hud-card-body">
+                        <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">
+                            Extracts 1D horizon skyline contours, peak prominences, and topographic relief without storing reference photos.
+                        </p>
+                        <button class="btn btn-outline btn-sm" id="btnRunMountainRidge">
+                            &#127956; Match Mountain Skyline Against DEM
+                        </button>
+                        <div id="mountainResultsArea" style="margin-top: 12px; font-size: 12px;"></div>
+                    </div>
+                </div>
+
+                <!-- Card 6: Global Ecoregion & Soil Bio-Classifier -->
+                <div class="hud-card">
+                    <div class="hud-card-header">
+                        <span class="hud-card-title">&#127807; Global Ecoregion &amp; Soil Bio-Classifier</span>
+                        <span class="hud-tag">WWF Biomes &amp; USDA Soils</span>
+                    </div>
+                    <div class="hud-card-body">
+                        <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">
+                            Classifies spectral soil orders (oxisol, mollisol, aridisol) and ExG vegetation density to bound biomes globally.
+                        </p>
+                        <button class="btn btn-outline btn-sm" id="btnRunEcoregion">
+                            &#127807; Classify Soil &amp; Biome Envelope
+                        </button>
+                        <div id="ecoregionResultsArea" style="margin-top: 12px; font-size: 12px;"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Reasoning Deduction Chain -->
@@ -494,6 +529,95 @@
                     }
                 } catch (e) {
                     outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+                }
+            });
+        // Wire Mountain Ridge Interactive Button
+        const mntBtn = document.getElementById('btnRunMountainRidge');
+        if (mntBtn) {
+            mntBtn.addEventListener('click', async () => {
+                const outDiv = document.getElementById('mountainResultsArea');
+                outDiv.innerHTML = '<span class="spinner"></span> Extracting skyline contour &amp; matching against global DEM...';
+                try {
+                    const fd = new FormData();
+                    if (selectedImageFile) fd.append('image', selectedImageFile);
+                    const r = await fetch('/api/mountain_ridge', { method: 'POST', body: fd });
+                    const res = await r.json();
+                    if (res.status === 'success') {
+                        outDiv.innerHTML = `
+                            <div style="background:#0d1117;padding:8px;border-radius:6px;border:1px solid var(--border);">
+                                <strong style="color:var(--success);">&#127956; ${res.top_mountain_range}</strong> (${res.top_region})<br>
+                                Topographic Roughness: <code>${res.topographic_roughness}</code> &bull; Confidence: <code>${Math.round(res.confidence * 100)}%</code><br>
+                                Reference Peaks: ${(res.reference_peaks || []).map(p => p.name).join(', ') || 'N/A'}
+                            </div>
+                        `;
+                    } else {
+                        outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${res.error || 'Failed'}</span>`;
+                    }
+                } catch (e) {
+                    outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+                }
+            });
+        }
+
+        // Wire Ecoregion Interactive Button
+        const ecoBtn = document.getElementById('btnRunEcoregion');
+        if (ecoBtn) {
+            ecoBtn.addEventListener('click', async () => {
+                const outDiv = document.getElementById('ecoregionResultsArea');
+                outDiv.innerHTML = '<span class="spinner"></span> Classifying soil spectral colorimetry &amp; ExG vegetation...';
+                try {
+                    const fd = new FormData();
+                    if (selectedImageFile) fd.append('image', selectedImageFile);
+                    const r = await fetch('/api/ecoregion', { method: 'POST', body: fd });
+                    const res = await r.json();
+                    if (res.status === 'success') {
+                        outDiv.innerHTML = `
+                            <div style="background:#0d1117;padding:8px;border-radius:6px;border:1px solid var(--border);">
+                                <strong style="color:var(--success);">&#127807; ${res.top_biome}</strong><br>
+                                Soil Order: <code>${res.soil_type}</code> (${Math.round(res.soil_confidence * 100)}%)<br>
+                                Foliage Archetype: <code>${res.foliage_archetype}</code> &bull; Veg Ratio: <code>${(res.vegetation_coverage_ratio * 100).toFixed(1)}%</code><br>
+                                Candidate Jurisdictions: ${(res.top_countries || []).join(', ')}
+                            </div>
+                        `;
+                    } else {
+                        outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${res.error || 'Failed'}</span>`;
+                    }
+                } catch (e) {
+                    outDiv.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+                }
+            });
+        }
+
+        // Wire Hermes Consensus Interactive Button
+        const hermesBtn = document.getElementById('btnRunHermesConsensus');
+        if (hermesBtn) {
+            hermesBtn.addEventListener('click', async () => {
+                if (!selectedImageFile) return;
+                hermesBtn.disabled = true;
+                hermesBtn.innerHTML = '<span class="spinner"></span> Hermes Debating...';
+                try {
+                    const fd = new FormData();
+                    fd.append('image', selectedImageFile);
+                    const r = await fetch('/api/hermes_consensus', { method: 'POST', body: fd });
+                    const res = await r.json();
+                    if (res.status === 'success') {
+                        renderGrandmasterResults({
+                            best_estimate: res.verdict,
+                            reasoning_chain: res.multi_agent_debate_log,
+                            forensic_breakdown: res.agent1_hunter_findings?.physical_forensics,
+                            plonkit_evaluation: res.agent1_hunter_findings?.plonkit,
+                            car_fleet: res.agent1_hunter_findings?.car_fleet,
+                            street_targeting: res.agent2_cartographer_findings?.street_targeting,
+                        });
+                    } else {
+                        alert(`Hermes debate error: ${res.error || 'Failed'}`);
+                        hermesBtn.disabled = false;
+                        hermesBtn.innerHTML = '&#129302; Hermes Consensus';
+                    }
+                } catch (e) {
+                    alert(`Hermes debate error: ${e.message}`);
+                    hermesBtn.disabled = false;
+                    hermesBtn.innerHTML = '&#129302; Hermes Consensus';
                 }
             });
         }

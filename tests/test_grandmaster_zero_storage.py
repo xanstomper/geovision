@@ -20,6 +20,9 @@ from modules.street_targeter import StreetTargeter, compute_azimuth_deg, angle_d
 from modules.grandmaster_dossier import GrandmasterDossierGenerator
 from modules.skyeye_footprint_verifier import SkyEyeFootprintVerifier
 from modules.solar_lock_solver import SolarLockSolver
+from modules.mountain_ridge_matcher import MountainRidgeMatcher
+from modules.ecoregion_classifier import EcoregionClassifier
+from modules.hermes_collaborative_solver import HermesCollaborativeSolver
 from mcp_geovision_server import (
     tool_geovision_street_targeter,
     tool_geovision_plonkit_rules,
@@ -27,6 +30,9 @@ from mcp_geovision_server import (
     tool_geovision_dossier,
     tool_geovision_skyeye_footprint,
     tool_geovision_solar_lock,
+    tool_geovision_mountain_ridge,
+    tool_geovision_ecoregion_classify,
+    tool_geovision_hermes_consensus,
 )
 
 
@@ -204,6 +210,49 @@ class TestSolarLockSolver:
             assert -90.0 <= lat_max <= 90.0
 
 
+class TestMountainRidgeMatcher:
+    def test_mountain_horizon_analysis(self):
+        """Tests zero-storage mountain ridge and skyline DEM matching."""
+        matcher = MountainRidgeMatcher()
+        test_img = "test_building.jpg"
+        if os.path.exists(test_img):
+            res = matcher.analyze_image_horizon(test_img)
+            assert res["status"] == "success"
+            assert "top_mountain_range" in res
+            assert "confidence" in res
+            assert len(res["candidates"]) > 0
+
+
+class TestEcoregionClassifier:
+    def test_ecoregion_classification(self):
+        """Tests zero-storage WWF biome and soil taxonomy spectral classification."""
+        classifier = EcoregionClassifier()
+        test_img = "test_building.jpg"
+        if os.path.exists(test_img):
+            res = classifier.extract_bio_spectral_features(test_img)
+            assert res["status"] == "success"
+            assert "top_biome" in res
+            assert "soil_type" in res
+            assert "vegetation_coverage_ratio" in res
+            assert len(res["candidate_biomes"]) > 0
+
+
+class TestHermesCollaborativeSolver:
+    def test_hermes_consensus(self):
+        """Tests autonomous multi-agent co-op geolocation consensus."""
+        solver = HermesCollaborativeSolver()
+        test_img = "test_building.jpg"
+        if os.path.exists(test_img):
+            res = solver.run_collaborative_investigation(test_img)
+            assert res["status"] == "success"
+            assert "verdict" in res
+            assert "latitude" in res["verdict"]
+            assert "longitude" in res["verdict"]
+            assert "confidence" in res["verdict"]
+            assert "multi_agent_debate_log" in res
+            assert len(res["multi_agent_debate_log"]) > 0
+
+
 class TestMcpHandlers:
     def test_mcp_new_tools(self):
         """Verifies that all new tool handlers execute cleanly."""
@@ -229,4 +278,18 @@ class TestMcpHandlers:
             sol_res = tool_geovision_solar_lock({"image_path": test_img, "approx_season": "summer"})
             assert sol_res["status"] == "success"
             assert "latitude_bounds" in sol_res
+
+            # 6. mountain ridge tool
+            mnt_res = tool_geovision_mountain_ridge({"image_path": test_img})
+            assert mnt_res["status"] == "success"
+
+            # 7. ecoregion tool
+            eco_res = tool_geovision_ecoregion_classify({"image_path": test_img})
+            assert eco_res["status"] == "success"
+
+            # 8. hermes consensus tool
+            herm_res = tool_geovision_hermes_consensus({"image_path": test_img})
+            assert herm_res["status"] == "success"
+            assert "verdict" in herm_res
+
 

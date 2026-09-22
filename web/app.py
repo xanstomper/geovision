@@ -527,6 +527,94 @@ def api_solar_lock():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/mountain_ridge", methods=["POST"])
+def api_mountain_ridge():
+    """Mountain Ridge & DEM Skyline Solver."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    hint = request.form.get("hint")
+    lat = float(request.form.get("lat")) if request.form.get("lat") else None
+    lon = float(request.form.get("lon")) if request.form.get("lon") else None
+
+    try:
+        import tempfile
+        from modules.mountain_ridge_matcher import MountainRidgeMatcher
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        matcher = MountainRidgeMatcher()
+        res = matcher.analyze_image_horizon(tmp_path, hint_region=hint, candidate_lat=lat, candidate_lon=lon)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/ecoregion", methods=["POST"])
+def api_ecoregion():
+    """Global Ecoregion & Soil Bio-Classifier."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    try:
+        import tempfile
+        from modules.ecoregion_classifier import EcoregionClassifier
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        classifier = EcoregionClassifier()
+        res = classifier.extract_bio_spectral_features(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/hermes_consensus", methods=["POST"])
+def api_hermes_consensus():
+    """Autonomous Hermes & Antigravity Multi-Agent Collaborative Solver."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    hint = request.form.get("hint") or request.form.get("location_hint")
+    season = request.form.get("season") or request.form.get("season_hint")
+
+    try:
+        import tempfile
+        from modules.hermes_collaborative_solver import HermesCollaborativeSolver
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        solver = HermesCollaborativeSolver()
+        res = solver.run_collaborative_investigation(tmp_path, location_hint=hint, season_hint=season)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/cases")
 def cases_page():
     return render_template("cases.html")

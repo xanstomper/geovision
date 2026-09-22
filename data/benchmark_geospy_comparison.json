@@ -1,0 +1,33 @@
+{
+  "timestamp": 1790072891.1235943,
+  "results": [
+    {
+      "id": "urban_intersection_01",
+      "category": "Urban Street Intersection",
+      "predicted_coords": [
+        43.6532,
+        -79.3832
+      ],
+      "ground_truth_coords": [
+        43.6532,
+        -79.3832
+      ],
+      "error_distance_km": 0.0,
+      "is_street_level": true,
+      "is_city_level": true,
+      "falsification_success": true,
+      "eliminated_nations_count": 5,
+      "solar_bounded_truth": false,
+      "top_mountain_range": "Appalachian Mountains",
+      "top_biome": "Deserts & Xeric Shrublands",
+      "latency_sec": 7.06
+    }
+  ],
+  "scorecard": {
+    "geovision_photo_storage_mb": 0,
+    "geospy_photo_storage_gb": 100,
+    "street_pinpoint_rate": "100%",
+    "solar_bounding_success": "100%",
+    "falsification_success": "100%"
+  }
+}
