@@ -118,3 +118,16 @@ class TestStorageFree:
         assert FAMILY_NAMES["patch_clustering"] == "location"
         assert FAMILY_NAMES["geoclip"] == "location"
         assert FAMILY_NAMES["vlm_verify"] == "vlm"
+        assert FAMILY_NAMES["grandmaster"] == "grandmaster"
+        assert FAMILY_NAMES["multiscale_patch_consensus"] == "grandmaster"
+
+    def test_grandmaster_family_counts_as_independent(self):
+        # main harness location cluster + independent grandmaster engine verdict
+        cands = [
+            _cand(48.8584, 2.2945, 0.5, "geoclip"),
+            _cand(48.8570, 2.2951, 0.6, "multiscale_patch_consensus"),
+        ]
+        out = EnsembleFusion().fuse(cands)
+        v = out["verdict"]
+        assert "location" in v["independent_families"]
+        assert "grandmaster" in v["independent_families"]

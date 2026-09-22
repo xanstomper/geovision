@@ -41,7 +41,11 @@ FAMILY_NAMES = {
     "patch_clustering": "location",
     "patch_clustering_alt": "location",
     "geoclip": "location",
+    "geoclip_global_prior": "location",
     "regionl_estimates": "location",
+    "regional_retrieval": "location",
+    "visual_geo": "location",
+    "visual_geo_db": "visual",
     "wikimedia_commons": "visual",
     "visual_similarity": "visual",
     "vlm_verify": "vlm",
@@ -50,11 +54,15 @@ FAMILY_NAMES = {
     "heuristics": "heuristics",
     "osm": "osm",
     "mapillary": "visual",
+    # Grandmaster forensics = a fully independent Raven-class engine verdict.
+    "grandmaster": "grandmaster",
+    "multiscale_patch_consensus": "grandmaster",
 }
 
 # Per-family influence weight in the agreement multiplier (0 = not used for location).
 FAMILY_WEIGHT = {
     "location": 1.00,
+    "grandmaster": 0.95,  # independent Raven-class engine — near top weight
     "visual": 0.55,
     "vlm": 0.85,
     "country": 0.40,   # corroborates geography, not pin-level

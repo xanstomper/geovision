@@ -849,6 +849,40 @@ class GeoVisionHarness:
                         f"({prior_lat:.2f},{prior_lon:.2f}) re-ranked by CLIP")
         record["stages"]["regional_retrieval"] = regional
 
+        # Grandmaster forensics — an independent Raven-class engine adding a
+        # genuinely separate signal family to the ensemble (falsification lattice
+        # + JIT micro-GIS + its own patch consensus). Best-effort; skips cleanly.
+        grandmaster_signal = {"status": "skipped"}
+        try:
+            from modules.grandmaster_forensics import GrandmasterForensicsEngine
+            gd = GrandmasterForensicsEngine(self.device)
+            dossier = gd.investigate(str(p), location_hint=location_hint, top_k=3)
+            ge = dossier.get("best_estimate") or {}
+            if ge.get("latitude") is not None and ge.get("longitude") is not None:
+                pruned.append({
+                    "latitude": float(ge["latitude"]),
+                    "longitude": float(ge["longitude"]),
+                    "confidence": float(ge.get("confidence", 0.5)),
+                    "source": "grandmaster",
+                    "country": ge.get("country"),
+                    "city": ge.get("city"),
+                })
+                grandmaster_signal = {
+                    "status": "success",
+                    "latitude": ge["latitude"], "longitude": ge["longitude"],
+                    "confidence": ge.get("confidence"),
+                    "falsified_regions": len(dossier.get("elimination_matrix", [])),
+                }
+                record["reasoning_chain"].append(
+                    f"GRANDMASTER engine independently estimated "
+                    f"{ge['latitude']:.4f},{ge['longitude']:.4f} "
+                    f"(falsified {len(dossier.get('elimination_matrix', []))} regions)")
+            else:
+                grandmaster_signal = {"status": "no_estimate"}
+        except Exception as e:
+            grandmaster_signal = {"status": "skipped", "note": str(e)[:120]}
+        record["stages"]["grandmaster_forensics"] = grandmaster_signal
+
         # Deep-dive OSINT (best-effort, each isolated)
         deep = self._deep_dive(str(p), pruned[:5])
         record["deep_dive"] = deep
