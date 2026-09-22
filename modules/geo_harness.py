@@ -120,6 +120,51 @@ class GeoVisionHarness:
         except Exception as e:
             out["signals"]["geoclip"] = {"status": "failed", "error": str(e)[:200]}
 
+        # --- Patch-based GeoCLIP spatial clustering (street-level, zero-storage) ---
+        # Splits image into 3x3 patches, runs GeoCLIP on each, clusters GPS predictions.
+        # Captures local cues (signs, poles, markings) diluted in full-image encoding.
+        # Achieves street-level accuracy without pre-caching reference photos.
+        try:
+            from modules.patch_geo_predictor import PatchGeoPredictor
+            pp = PatchGeoPredictor(self.device)
+            patch_result = pp.predict(p, eps_km=0.5)  # 0.5km cluster for urban
+            consensus = patch_result.get("consensus", {})
+            coarse = patch_result.get("coarse_prior", {})
+
+            # Add consensus as a candidate
+            if consensus:
+                clat = consensus.get("lat")
+                clon = consensus.get("lon")
+                if clat is not None and clon is not None:
+                    out["candidates"].append({
+                        "latitude": float(clat), "longitude": float(clon),
+                        "confidence": float(consensus.get("confidence", 0.0)),
+                        "source": "patch_clustering",
+                        "cluster_size": consensus.get("cluster_size", 0),
+                        "cluster_tightness_km": consensus.get("cluster_tightness_km", 0.0),
+                    })
+
+            # Add top cluster members as secondary candidates
+            for cluster in patch_result.get("clusters", [])[:2]:
+                centroid = cluster.get("centroid", (0, 0))
+                if centroid and len(cluster.get("points", [])) > 1:
+                    out["candidates"].append({
+                        "latitude": float(centroid[0]), "longitude": float(centroid[1]),
+                        "confidence": float(consensus.get("confidence", 0.0)) * 0.7,
+                        "source": "patch_clustering_alt",
+                        "cluster_id": cluster.get("id"),
+                    })
+
+            out["signals"]["patch_geo"] = {
+                "status": "success" if patch_result.get("consensus") else "limited",
+                "n_patches": len(patch_result.get("predictions", [])),
+                "n_clusters": len(patch_result.get("clusters", [])),
+                "consensus_conf": consensus.get("confidence", 0.0),
+                "coarse_aligned": consensus.get("coarse_prior_aligned", False),
+            }
+        except Exception as e:
+            out["signals"]["patch_geo"] = {"status": "failed", "error": str(e)[:200]}
+
         # --- CLIP reference-DB nearest neighbor (real geotagged photos) ---
         try:
             from modules.visual_geo_engine import VisualGeoEngine
