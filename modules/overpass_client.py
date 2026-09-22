@@ -1,6 +1,7 @@
 import requests
 import json
 import logging
+from pathlib import Path
 from typing import List, Dict, Optional, Any
 
 logger = logging.getLogger(__name__)
@@ -12,23 +13,45 @@ class OverpassClient:
     """
     def __init__(self, timeout: int = 30):
         self.endpoints = [
+            "https://lz4.overpass-api.de/api/interpreter",
             "https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
-            "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+            "https://overpass.private.coffee/api/interpreter",
         ]
-        self.headers = {'User-Agent': 'GeoVision OSINT Tool/2.0 (contact: admin@geovision.local)'}
+        self.headers = {'User-Agent': 'GeoVision-OSINT/2.0 (research: geovision@local.org)'}
         self.timeout = timeout
+        self.cache_dir = Path.home() / ".cache" / "geovision" / "overpass_cache"
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def _query_overpass(self, query: str) -> Optional[dict]:
+        import hashlib
         import time
+
+        q_hash = hashlib.sha256(query.strip().encode()).hexdigest()
+        cache_file = self.cache_dir / f"{q_hash}.json"
+        if cache_file.exists():
+            try:
+                # 24 hour cache
+                if time.time() - cache_file.stat().st_mtime < 86400:
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        return json.load(f)
+            except Exception:
+                pass
+
         for endpoint in self.endpoints:
             try:
-                resp = requests.post(endpoint, data={'data': query}, headers=self.headers, timeout=self.timeout)
+                resp = requests.post(endpoint, data=query, headers=self.headers, timeout=self.timeout)
                 if resp.status_code == 200:
-                    return resp.json()
+                    data = resp.json()
+                    try:
+                        with open(cache_file, "w", encoding="utf-8") as f:
+                            json.dump(data, f)
+                    except Exception:
+                        pass
+                    return data
                 elif resp.status_code == 429:
                     logger.warning(f"  [!] Overpass rate-limited at {endpoint}. Trying next...")
-                    time.sleep(2)
+                    time.sleep(1)
                     continue
                 elif resp.status_code >= 500:
                     logger.warning(f"  [!] Overpass {resp.status_code} at {endpoint}. Trying next...")

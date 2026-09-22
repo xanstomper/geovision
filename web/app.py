@@ -336,6 +336,119 @@ def api_grandmaster():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/street_target", methods=["POST"])
+def api_street_target():
+    """Topological micro-GIS street intersection targeter."""
+    data = request.get_json(silent=True) or request.form
+    lat = data.get("lat") or data.get("latitude")
+    lon = data.get("lon") or data.get("longitude")
+    if lat is None or lon is None:
+        return jsonify({"error": "lat and lon required"}), 400
+    radius = int(data.get("radius_m") or data.get("radius") or 1500)
+    heading = float(data.get("heading")) if data.get("heading") else None
+    ocr = data.get("ocr_clues") or []
+    amenity = data.get("amenity_clues") or []
+    try:
+        from modules.street_targeter import StreetTargeter
+        targeter = StreetTargeter()
+        res = targeter.target_street(
+            lat=float(lat),
+            lon=float(lon),
+            radius_m=radius,
+            expected_heading_deg=heading,
+            ocr_clues=ocr if isinstance(ocr, list) else [str(ocr)],
+            amenity_clues=amenity if isinstance(amenity, list) else [str(amenity)],
+        )
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/plonkit", methods=["POST"])
+def api_plonkit():
+    """PlonkIt Grandmaster Infrastructure Evaluation (85-country rules)."""
+    if "image" not in request.files and "images" not in request.files:
+        # Check if observations provided as JSON
+        obs = request.get_json(silent=True)
+        if obs:
+            from modules.plonkit_meta_engine import PlonkitMetaEngine
+            engine = PlonkitMetaEngine()
+            return jsonify(engine.evaluate_observations(obs))
+        return jsonify({"error": "No image or observations uploaded"}), 400
+
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+    try:
+        import tempfile
+        from modules.plonkit_meta_engine import PlonkitMetaEngine
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        engine = PlonkitMetaEngine()
+        res = engine.scan_image(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/car_id", methods=["POST"])
+def api_car_id():
+    """CarID vehicle fleet profiler on uploaded image."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+    try:
+        import tempfile
+        from modules.car_fleet_identifier import CarFleetIdentifier
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        identifier = CarFleetIdentifier()
+        res = identifier.analyze(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/dossier", methods=["POST"])
+def api_dossier():
+    """Generate complete Raven-class forensic intelligence dossier."""
+    if "image" not in request.files and "images" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    file = request.files.get("image") or request.files.getlist("images")[0]
+    if not file or file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+    fmt = request.form.get("format", "json").lower()
+    try:
+        import tempfile
+        from mcp_geovision_server import tool_geovision_dossier
+        suffix = Path(file.filename).suffix or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            file.save(tmp_path)
+        res = tool_geovision_dossier({"image_path": tmp_path, "format": fmt})
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/cases")
 def cases_page():
     return render_template("cases.html")

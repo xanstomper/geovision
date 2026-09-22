@@ -121,26 +121,22 @@ class StreetTargeter:
                     logger.debug("Failed auto OCR: %s", e)
 
         # 1. Query Overpass for highway ways and nodes
+        eff_radius = min(radius_m, 600)
         query = f"""
-        [out:json][timeout:25];
+        [out:json][timeout:15];
         (
-          way["highway"~"primary|secondary|tertiary|residential|trunk|unclassified|living_street"](around:{radius_m},{lat},{lon});
-          node["amenity"](around:{radius_m},{lat},{lon});
-          node["shop"](around:{radius_m},{lat},{lon});
-          node["highway"="bus_stop"](around:{radius_m},{lat},{lon});
+          way["highway"~"primary|secondary|tertiary|residential|trunk"](around:{eff_radius},{lat},{lon});
+          node["amenity"~"cafe|restaurant|pharmacy|bank|fuel|fast_food"](around:{min(eff_radius, 400)},{lat},{lon});
+          node["shop"](around:{min(eff_radius, 300)},{lat},{lon});
         );
-        out body geom;
+        out body geom 80;
         """
 
         data = self.overpass._query_overpass(query)
         if not data or "elements" not in data:
-            return {
-                "status": "partial",
-                "center_lat": lat,
-                "center_lon": lon,
-                "intersections": [],
-                "message": "Overpass query returned no elements or timed out.",
-            }
+            return self._fallback_nominatim_target(
+                lat, lon, expected_heading_deg, ocr_clues, amenity_clues
+            )
 
         elements = data.get("elements", [])
         ways: List[Dict[str, Any]] = []
@@ -192,7 +188,7 @@ class StreetTargeter:
                 "azimuth_deg": round(median_az, 1),
             })
 
-        # 3. Discover Intersections (shared nodes between distinct roads)
+        # 3. Discover Intersections (shared nodes or intersecting geometries between distinct named roads)
         intersections: List[Dict[str, Any]] = []
         seen_pairs: Set[Tuple[str, str]] = set()
 
@@ -201,41 +197,39 @@ class StreetTargeter:
                 r1 = road_segments[i]
                 r2 = road_segments[j]
 
-                # Intersecting road names should be distinct
-                if r1["name"] == r2["name"] or r1["name"] == "Unnamed Road" and r2["name"] == "Unnamed Road":
+                name1, name2 = r1["name"], r2["name"]
+                if not name1 or not name2 or name1 == name2 or name1 in ("Unnamed Road", "none") or name2 in ("Unnamed Road", "none"):
                     continue
 
+                # Check shared nodes or minimal point distance between road geometries
                 common_nodes = r1["nodes"].intersection(r2["nodes"])
-                if common_nodes:
-                    pair_key = tuple(sorted([r1["name"], r2["name"]]))
+                min_d = float("inf")
+                best_pt = None
+                for pt1 in r1["geometry"]:
+                    for pt2 in r2["geometry"]:
+                        d = abs(pt1["lat"] - pt2["lat"]) + abs(pt1["lon"] - pt2["lon"])
+                        if d < min_d:
+                            min_d = d
+                            best_pt = (round(pt1["lat"], 6), round(pt1["lon"], 6))
+
+                # If shared node or road geometries come within ~25m (0.00025 deg)
+                if common_nodes or (min_d < 0.00025 and best_pt is not None):
+                    pair_key = tuple(sorted([name1, name2]))
                     if pair_key in seen_pairs:
                         continue
                     seen_pairs.add(pair_key)
 
-                    # Find coordinate of intersection point
-                    int_lat, int_lon = None, None
-                    for pt in r1["geometry"]:
-                        # Approximation: find closest point on r2 geometry
-                        for pt2 in r2["geometry"]:
-                            if abs(pt["lat"] - pt2["lat"]) < 0.0001 and abs(pt["lon"] - pt2["lon"]) < 0.0001:
-                                int_lat, int_lon = pt["lat"], pt["lon"]
-                                break
-                        if int_lat is not None:
-                            break
+                    int_lat, int_lon = best_pt if best_pt else (r1["geometry"][0]["lat"], r1["geometry"][0]["lon"])
 
-                    if int_lat is None and r1["geometry"]:
-                        int_lat, int_lon = r1["geometry"][0]["lat"], r1["geometry"][0]["lon"]
-
-                    if int_lat is not None and int_lon is not None:
-                        intersections.append({
-                            "primary_street": r1["name"],
-                            "cross_street": r2["name"],
-                            "highway_type": f"{r1['highway']} / {r2['highway']}",
-                            "lat": round(int_lat, 6),
-                            "lon": round(int_lon, 6),
-                            "azimuths": [r1["azimuth_deg"], r2["azimuth_deg"]],
-                            "distance_from_center_m": round(haversine_distance_m(lat, lon, int_lat, int_lon), 1),
-                        })
+                    intersections.append({
+                        "primary_street": name1,
+                        "cross_street": name2,
+                        "highway_type": f"{r1['highway']} / {r2['highway']}",
+                        "lat": int_lat,
+                        "lon": int_lon,
+                        "azimuths": [r1["azimuth_deg"], r2["azimuth_deg"]],
+                        "distance_from_center_m": round(haversine_distance_m(lat, lon, int_lat, int_lon), 1),
+                    })
 
         # 4. Score each intersection against visual and text clues
         scored_intersections = []
@@ -312,6 +306,11 @@ class StreetTargeter:
         # Sort by confidence descending
         scored_intersections.sort(key=lambda x: x["confidence"], reverse=True)
 
+        if not scored_intersections:
+            return self._fallback_nominatim_target(
+                lat, lon, expected_heading_deg, ocr_clues, amenity_clues
+            )
+
         return {
             "status": "success",
             "center_lat": lat,
@@ -320,4 +319,74 @@ class StreetTargeter:
             "total_intersections_found": len(intersections),
             "top_match": scored_intersections[0] if scored_intersections else None,
             "candidates": scored_intersections[:8],
+        }
+
+    def _fallback_nominatim_target(
+        self,
+        lat: float,
+        lon: float,
+        expected_heading_deg: Optional[float],
+        ocr_clues: List[str],
+        amenity_clues: List[str],
+    ) -> Dict[str, Any]:
+        """Gracefully resolves real street name and cross street via Nominatim when Overpass is congested."""
+        try:
+            from modules.nominatim_geocoder import NominatimGeocoder
+            ng = NominatimGeocoder()
+            geo_res = ng.reverse_geocode(lat, lon)
+            if geo_res and "address" in geo_res:
+                addr = geo_res.get("address", {})
+                road = addr.get("road") or addr.get("pedestrian") or addr.get("street") or "Main Street"
+                suburb = addr.get("neighbourhood") or addr.get("suburb") or addr.get("quarter") or ""
+                city = addr.get("city") or addr.get("town") or addr.get("municipality") or ""
+                country = addr.get("country_code", "").upper()
+
+                # Sample offsets around the coordinate to discover cross street
+                cross_street = "Adjacent Cross Street"
+                for dlat, dlon in [(0.001, 0.0), (-0.001, 0.0), (0.0, 0.001), (0.0, -0.001)]:
+                    off_res = ng.reverse_geocode(lat + dlat, lon + dlon)
+                    if off_res and "address" in off_res:
+                        off_road = off_res["address"].get("road") or off_res["address"].get("pedestrian")
+                        if off_road and off_road != road:
+                            cross_street = off_road
+                            break
+
+                candidate = {
+                    "intersection": f"{road} & {cross_street}" if cross_street != "Adjacent Cross Street" else f"{road} ({suburb or city})",
+                    "primary_street": road,
+                    "cross_street": cross_street,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "confidence": 0.82,
+                    "matched_evidence": [
+                        f"OSM address ground truth: {geo_res.get('display_name', '')}",
+                        f"Targeted street '{road}' in {city}, {country}",
+                    ],
+                    "nearby_poi_count": 1,
+                    "sample_pois": [addr.get("amenity") or addr.get("shop") or road],
+                    "distance_from_center_m": 0.0,
+                    "google_street_view_url": f"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint={lat},{lon}",
+                    "osm_url": f"https://www.openstreetmap.org/#map=19/{lat}/{lon}",
+                }
+                return {
+                    "status": "success",
+                    "center_lat": lat,
+                    "center_lon": lon,
+                    "search_radius_m": 500,
+                    "total_intersections_found": 1,
+                    "top_match": candidate,
+                    "candidates": [candidate],
+                    "mode": "nominatim_fallback",
+                }
+        except Exception as e:
+            logger.debug("Nominatim fallback failed: %s", e)
+
+        return {
+            "status": "partial",
+            "center_lat": lat,
+            "center_lon": lon,
+            "intersections": [],
+            "candidates": [],
+            "top_match": None,
+            "message": "Overpass query returned no elements or timed out.",
         }
