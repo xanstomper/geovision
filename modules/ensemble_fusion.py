@@ -59,12 +59,16 @@ FAMILY_NAMES = {
     "multiscale_patch_consensus": "grandmaster",
     # OSV-5M = a 4th independent deep-geoloc engine (trained on 65M street images).
     "osv5m": "osv5m",
+    # Investigative reasoner = text/records evidence (web property research +
+    # numbering deduction + geocode) — zero overlap with visual engines.
+    "investigative": "investigative",
 }
 
 # Per-family influence weight in the agreement multiplier (0 = not used for location).
 FAMILY_WEIGHT = {
     "location": 1.00,
     "grandmaster": 0.95,  # independent Raven-class engine — near top weight
+    "investigative": 0.95,  # records-backed address evidence — near top weight
     "osv5m": 0.90,        # 4th independent deep-geoloc engine (65M-image trained)
     "visual": 0.55,
     "vlm": 0.85,

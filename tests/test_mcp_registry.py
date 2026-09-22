@@ -23,6 +23,7 @@ EXPECTED_TOOLS = {
     "satellite_landcover", "sun_shadow_estimate", "weather_corroborate",
     "elevation_lookup", "road_heading_match", "environment_classify",
     "nearby_ground_imagery", "uncertainty_bounds", "investigate_image",
+    "investigative_locate",
     "grow_reference_db", "query_listings",
 }
 

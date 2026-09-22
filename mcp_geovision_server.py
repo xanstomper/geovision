@@ -1028,6 +1028,7 @@ TOOLS = [
                                     "use_regional": {"type": "boolean", "description": "Enable region-constrained retrieval (default true)"},
                     "with_listings": {"type": "boolean", "description": "Snapshot nearby property/business listings (hotels, offices, shops) into the case"},
                     "auto_report": {"type": "boolean", "description": "Auto-write a professional Markdown case report"},
+                    "investigative_clues": {"type": "object", "description": "Gemini-style high-leverage clues from YOUR OWN vision: {visible_numbers:[], street_names:[], high_leverage_features:[], property_style:'', setting:'', business_names:[], region_guess:''}. Feeds the investigative loop (property-record web research + street-numbering deduction) even when no VLM key is configured — often resolves the EXACT address"},
                     "canvas_session": {"type": "string", "description": "Stream the ENTIRE investigation live onto the detective canvas (from canvas_start): every step, pulled reference images, side-by-side comparisons with scores, candidates, verdict"},
                     "save_case": {"type": "boolean", "description": "Persist the investigation as a case file in the SQLite CaseManager"},
                     "case_name": {"type": "string", "description": "Case name when save_case=true"},
@@ -1035,6 +1036,18 @@ TOOLS = [
                     "case_tags": {"type": "array", "items": {"type": "string"}, "description": "Case tags when save_case=true"}
                 },
                 "required": ["image_path"],
+            },
+        },
+        {
+            "name": "investigative_locate",
+            "description": "Gemini-style EXACT-ADDRESS investigative loop: extract high-leverage clues (visible house numbers, neighbor's distinctive features like rooftop solar arrays) -> research property records/listings on the live web -> apply US street-numbering deduction (consecutive odd/even numbers share a street side) -> geocode-verify the found+deduced addresses. Works WITHOUT a VLM key when you supply `clues` from your own vision. Use when the query is a house/property and the goal is the exact street address, not just a city.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "image_path": {"type": "string", "description": "Query image (used for VLM clue extraction when clues are not supplied)"},
+                    "clues": {"type": "object", "description": "High-leverage clues from your own vision: {visible_numbers:['151'], street_names:['Stratford Pl'], high_leverage_features:['rooftop solar panels on the neighbor'], property_style:'two-story vinyl colonial', setting:'newer planned subdivision', business_names:[], region_guess:'Madison Heights, VA'}"},
+                    "location_hint": {"type": "string", "description": "Town/city/region to research (required unless clues.region_guess is set)"}
+                },
             },
         },
         {
@@ -1186,6 +1199,7 @@ def tool_investigate_image(args: Dict[str, Any]) -> Dict[str, Any]:
             use_regional=bool(args.get("use_regional", True)),
             with_listings=bool(args.get("with_listings", False)),
             auto_report=bool(args.get("auto_report", False)),
+            investigative_clues=args.get("investigative_clues") or args.get("clues"),
             canvas=canvas,
         )
         if canvas is not None:
@@ -1194,6 +1208,27 @@ def tool_investigate_image(args: Dict[str, Any]) -> Dict[str, Any]:
         return res
     except Exception as e:
         return {"error": str(e), "image": str(p)}
+
+
+def tool_investigative_locate(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Gemini-style exact-address investigative loop, standalone: high-leverage
+    clues (VLM or agent-supplied) -> feature-rich property-record web research
+    -> US street-numbering deduction -> Nominatim geocode verification. Returns
+    reasoning_chain + ensemble-ready candidates (source='investigative')."""
+    image_path = args.get("image_path") or args.get("imagePath")
+    clues = args.get("clues") or args.get("investigative_clues")
+    if not image_path and not clues:
+        return {"error": "image_path or clues required"}
+    try:
+        sys.path.insert(0, str(BASE))
+        from modules.investigative_reasoner import InvestigativeReasoner
+        return InvestigativeReasoner().investigate(
+            image_path=str(Path(image_path).expanduser().resolve()) if image_path else None,
+            clues=clues,
+            region_hint=args.get("location_hint") or args.get("region"),
+        )
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def tool_grow_reference_db(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -1707,6 +1742,7 @@ TOOL_IMPLS = {
     "nearby_ground_imagery": tool_nearby_ground_imagery,
     "uncertainty_bounds": tool_uncertainty_bounds,
     "investigate_image": tool_investigate_image,
+    "investigative_locate": tool_investigative_locate,
     "grow_reference_db": tool_grow_reference_db,
     "query_listings": tool_query_listings,
     "render_case_report": tool_render_case_report,

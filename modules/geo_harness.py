@@ -748,13 +748,18 @@ class GeoVisionHarness:
                     use_regional: bool = True,
                     with_listings: bool = False,
                     auto_report: bool = False,
+                    investigative_clues: Optional[Dict[str, Any]] = None,
                     canvas: Optional[Any] = None) -> Dict[str, Any]:
         """Run the full multi-stage investigation and produce a structured case record.
 
         Stages:
+          Stage 0 exif_forensics                -> GPS metadata = ground truth
           Stage 1 coarse_reason (VLM, optional)  -> priors + constraints
           Stage 2 deterministic_scan             -> candidates from all deterministic signal
           regional_retrieval (better-than-GeoSpy)-> region-constrained CLIP-NN
+          grandmaster_forensics                  -> independent Raven-class engine
+          investigative_reasoner                 -> clues -> property-records
+                                                    research -> deduction -> geocode
           constraint prune                        -> eliminate impossible candidates
           Stage 3 verify_candidates (VLM+photos) -> cross-check top candidates
            deep-dive OSINT (best-effort)          -> reverse-image / chain-store
@@ -909,6 +914,41 @@ class GeoVisionHarness:
         except Exception as e:
             grandmaster_signal = {"status": "skipped", "note": str(e)[:120]}
         record["stages"]["grandmaster_forensics"] = grandmaster_signal
+
+        # Investigative reasoner — the Gemini-style exact-address loop (high-
+        # leverage clues -> property-record web research -> street-numbering
+        # deduction -> geocode verification). A genuinely independent signal
+        # family: text/records evidence, no overlap with visual engines.
+        # Best-effort; skips cleanly when no VLM and no clues and no region.
+        investigative_record: Dict[str, Any] = {"status": "skipped"}
+        try:
+            from modules.investigative_reasoner import InvestigativeReasoner
+            coarse_city = (coarse.get("prediction") or {}).get("city") \
+                if isinstance(coarse.get("prediction"), dict) else None
+            inv = InvestigativeReasoner().investigate(
+                image_path=str(p),
+                clues=investigative_clues or None,
+                region_hint=location_hint,
+                coarse_city=coarse_city,
+            )
+            investigative_record = inv
+            record["stages"]["investigative_reasoner"] = inv
+            for step in inv.get("reasoning_chain", [])[:8]:
+                record["reasoning_chain"].append(f"INVESTIGATIVE {step}")
+                if canvas is not None:
+                    try:
+                        canvas.add("step", title="Investigative loop", text=step[:400])
+                    except Exception:
+                        pass
+            for c in inv.get("candidates", []):
+                pruned.append(dict(c))
+            if inv.get("candidates"):
+                record["reasoning_chain"].append(
+                    f"INVESTIGATIVE family added {len(inv['candidates'])} "
+                    f"records-backed candidate(s)")
+        except Exception as e:
+            investigative_record = {"status": "skipped", "note": str(e)[:120]}
+        record["stages"]["investigative_reasoner"] = investigative_record
 
         # Orphan corroborators — wire previously-unused independent signals into
         # the case. Each is best-effort and isolated (never crashes the pipeline):

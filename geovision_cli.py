@@ -695,6 +695,51 @@ def investigate(
                   f"Case ID: {res.get('case_id','(not saved)')}[/dim]")
 
 
+@app.command(name="investigate-addr")
+def investigate_addr(
+    image: Path = typer.Option(None, "--image", exists=True, file_okay=True, dir_okay=False,
+                               help="Query image (for VLM clue extraction when --clues is not given)"),
+    clues: str = typer.Option(None, "--clues", help='Clues JSON from your own vision: {"visible_numbers":["151"],"high_leverage_features":["rooftop solar panels on neighbor"],"region_guess":"Madison Heights, VA"}'),
+    hint: str = typer.Option(None, "--hint", help="Town/city/region to research (overridden by clues.region_guess)"),
+    json_only: bool = typer.Option(False, "--json-only", "-j", help="Output raw JSON"),
+):
+    """Standalone Gemini-style exact-address loop: clues -> property-record web
+    research -> street-numbering deduction -> geocode verification. Works with
+    no VLM key when --clues is supplied from your own vision."""
+    from modules.investigative_reasoner import InvestigativeReasoner
+    clue_dict = None
+    if clues:
+        try:
+            clue_dict = json.loads(clues)
+        except Exception as e:
+            console.print(f"[red]--clues is not valid JSON: {e}[/red]")
+            raise typer.Exit(1)
+    if not image and not clue_dict:
+        console.print("[red]Provide --image and/or --clues[/red]")
+        raise typer.Exit(1)
+    with clean_json_context(json_only):
+        res = InvestigativeReasoner().investigate(
+            image_path=str(image) if image else None,
+            clues=clue_dict,
+            region_hint=hint or None)
+    if json_only:
+        print(json.dumps(res, indent=2, default=str))
+        return
+    console.print(Panel.fit("[bold magenta]🔎 Investigative Address Loop[/bold magenta]",
+                            border_style="magenta"))
+    console.print(f"[bold]Region:[/] {res.get('region_hint') or '(none)'}")
+    console.print(f"[bold]Status:[/] {res.get('status')}")
+    for step in res.get("reasoning_chain", []):
+        console.print(f"  → {step}")
+    if res.get("candidates"):
+        console.print("[bold green]Geocoded candidates:[/]")
+        for c in res["candidates"]:
+            console.print(f"  • {c['address']}: ({c['latitude']:.5f}, {c['longitude']:.5f}) "
+                          f"conf={c['confidence']} (uncalibrated)")
+    elif res.get("note"):
+        console.print(f"[yellow]Note:[/] {res['note']}")
+
+
 @app.command(name="grow-db")
 def grow_db(
     lat: float = typer.Option(..., "--lat", help="Coarse GPS prior latitude (region center)"),
