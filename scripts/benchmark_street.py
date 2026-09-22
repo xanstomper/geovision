@@ -69,6 +69,16 @@ def run_method(name, samples, osv5m_ready, limit):
                 pr = pp.predict(s["image_path"], eps_km=15.0)
                 cons = pr.get("consensus") or {}
                 lat = cons.get("lat"); lon = cons.get("lon")
+            elif name == "osv5m":
+                from modules.osv5m_predictor import OSV5MPredictor
+                from PIL import Image as _PIL
+                op = OSV5MPredictor()
+                if op.model is not None:
+                    img = _PIL.open(s["image_path"]).convert("RGB")
+                    res, _ = op.predict(img)
+                    lat, lon = (res["lat"], res["lon"]) if res else (None, None)
+                else:
+                    lat = lon = None
             else:
                 lat = lon = None
         except Exception as e:
