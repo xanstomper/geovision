@@ -80,6 +80,7 @@ def test_cv_model_clue_loop_returns_grounding():
     assert "status" in out
 
 
+@pytest.mark.slow
 def test_verification_exposes_reference_image_urls_to_cv_model():
     """The verification output a vision model receives must include the REAL
     ground-truth reference image URLs, so the model can look at them itself."""

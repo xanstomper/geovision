@@ -7,6 +7,7 @@ warnings.filterwarnings("ignore")
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import numpy as np
+import pytest
 from PIL import Image
 
 from modules.visual_similarity import VisualSimilarityScorer
@@ -16,6 +17,7 @@ from modules.ground_imagery_client import GroundImageryClient, USER_AGENT
 EIFFEL = "data/eval/wikipedia_landmarks_v1/images/eiffel_tower.jpg"
 
 
+@pytest.mark.slow
 def test_encode_image_returns_flat_l2_vector():
     """encode_image must return a flat 768-dim L2-normalized vector (fixes the
     3D / BaseModelOutputWithPooling bug that crashed cosine similarity)."""

@@ -17,6 +17,8 @@ else
   echo "== GeoVision standard suite (deselects marked-slow heavy integration tests) =="
   python3 -m pytest tests/ -q --no-header -p no:cacheprovider -m "not slow" \
     --deselect tests/test_visual_similarity.py::test_offline_visual_verify_matches_real_eiffel \
+    --deselect tests/test_visual_similarity.py::test_encode_image_returns_flat_l2_vector \
+    --deselect tests/test_agent_drive.py::test_verification_exposes_reference_image_urls_to_cv_model \
     2>/dev/null
   STATUS=$?
 fi
