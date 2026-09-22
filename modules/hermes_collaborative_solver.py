@@ -165,23 +165,45 @@ class HermesCollaborativeSolver:
             debate_log.append(f"[Consensus Arbiter] Contradiction flagged: {contradictions[-1]} Correcting country priority.")
 
         # Final consensus verdict calculation
-        verdict_lat = top_street.get("latitude") if top_street else ref_lat
-        verdict_lon = top_street.get("longitude") if top_street else ref_lon
-        confidence = 0.90 if top_street and not contradictions else 0.75
+        # HONESTY: if no real micro-GIS street match exists, we have only a
+        # country-centroid anchor. Emit a clearly LOW confidence and honest
+        # labels — never fabricated "Target Municipality"/"Primary Corridor"
+        # placeholders pretending a real pin was found.
+        street_matched = top_street is not None
+        verdict_lat = top_street.get("latitude") if street_matched else ref_lat
+        verdict_lon = top_street.get("longitude") if street_matched else ref_lon
+        # 0.90 only with real street match + no physical contradiction; a bare
+        # centroid with no corroboration is a weak hypothesis (0.35), not 0.75.
+        if street_matched and not contradictions:
+            confidence = 0.90
+            precision_tier = "street_level"
+            city_label = top_street.get("city") or top_country
+            street_label = top_street.get("road_name")
+        else:
+            confidence = 0.35
+            precision_tier = "country_centroid_prior"
+            city_label = f"{top_country} (approx.)"
+            street_label = None
 
         verdict = {
             "latitude": round(verdict_lat, 6),
             "longitude": round(verdict_lon, 6),
-            "city": top_street.get("city") or "Target Municipality",
+            "city": city_label,
             "country": top_country,
             "iso": top_iso,
-            "street": top_street.get("road_name") or "Primary Corridor",
-            "intersection": top_street.get("intersection"),
+            "street": street_label,
+            "intersection": top_street.get("intersection") if street_matched else None,
             "confidence": confidence,
-            "precision_tier": "street_level" if top_street else "city_level",
+            "precision_tier": precision_tier,
             "google_maps_url": f"https://www.google.com/maps/search/?api=1&query={verdict_lat},{verdict_lon}",
             "osm_url": f"https://www.openstreetmap.org/?mlat={verdict_lat}&mlon={verdict_lon}#map=18/{verdict_lat}/{verdict_lon}",
             "street_view_url": f"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint={verdict_lat},{verdict_lon}",
+            "honesty_note": (
+                "No real micro-GIS street match was found; verdict is a country-centroid "
+                "prior at LOW confidence, not a confirmed location."
+                if not street_matched else
+                "Verdict grounded in a real OpenStreetMap street / intersection match."
+            ),
         }
 
         debate_log.append(f"[Consensus Arbiter] Investigation consensus reached: ({verdict['latitude']}, {verdict['longitude']}) with {round(confidence * 100, 1)}% confidence.")
