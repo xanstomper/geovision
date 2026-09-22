@@ -898,6 +898,16 @@ class GeoVisionHarness:
         record["uncertainty"] = uncertainty
         record["duration_s"] = round(time.time() - started, 2)
         record["status"] = "success" if best else "limited"
+        if best is not None and best.get("method") == "ensemble_spatial_consensus":
+            record["reasoning_chain"].append(
+                f"ENSEMBLE consensus: {best.get('independent_families')} independent signal families "
+                f"agreed within {best.get('cluster_radius_km')}km → "
+                f"{best['latitude']:.4f},{best['longitude']:.4f} (conf {best.get('confidence')})")
+            record["stages"]["ensemble_fusion"] = {
+                "status": "success",
+                "verdict": best,
+                "note": best.get("note", ""),
+            }
         # OceanIR-style evidence verdict (research-derived): structured supports /
         # contradictions / precision_tier / verification_status / scope_consistent.
         record["evidence_verdict"] = self.build_evidence_verdict(record)
@@ -1005,20 +1015,47 @@ class GeoVisionHarness:
         return out
 
     # ------------------------------------------------------------------ #
-    # Finalize: rank + uncertainty                                        #
+    # Finalize: ensemble spatial-consensus fusion + uncertainty          #
     # ------------------------------------------------------------------ #
     def _finalize(self, candidates, coarse, verify):
         if not candidates:
             return None, None
-        best = dict(candidates[0])
-        best["confidence"] = min(0.97, float(best.get("confidence", 0.0)))
-        # If VLM verified one candidate, boost it
-        for v in verify.get("verifications", []):
-            if v.get("vlm_verified") and v.get("vlm_verdict", {}).get("matches"):
-                if abs(v["candidate"]["latitude"] - best["latitude"]) < 0.5 and \
-                   abs(v["candidate"]["longitude"] - best["longitude"]) < 0.5:
+
+        # Ensemble spatial consensus: find the GPS mode-cluster where the most
+        # INDEPENDENT signal families agree. Beats naive max-confidence for
+        # cross-signal agreement while requiring zero reference-photo storage.
+        try:
+            from modules.ensemble_fusion import EnsembleFusion
+            fused = EnsembleFusion().apply_to_harness(candidates)
+            verdict = fused.get("verdict")
+        except Exception:
+            verdict = None
+
+        if verdict and verdict.get("latitude") is not None:
+            best = verdict
+            # pin coordinates used across the harness (candidate convention)
+            if "longitude" in best and "coordinates" not in best:
+                best["coords"] = [best["latitude"], best["longitude"]]
+            # VLM boost if it verified the SAME fused point
+            for v in verify.get("verifications", []):
+                if (v.get("vlm_verified") and v.get("vlm_verdict", {}).get("matches")
+                        and abs(v["candidate"]["latitude"] - best["latitude"]) < 0.5
+                        and abs(v["candidate"]["longitude"] - best["longitude"]) < 0.5):
                     best["confidence"] = min(0.97, best["confidence"] + 0.15)
                     best["vlm_verification"] = True
+                    break
+        else:
+            # fallback: plain max-confidence (ensemble had nothing to fuse)
+            best = dict(candidates[0])
+            best["confidence"] = min(0.97, float(best.get("confidence", 0.0)))
+            for v in verify.get("verifications", []):
+                if (v.get("vlm_verified") and v.get("vlm_verdict", {}).get("matches")
+                        and abs(v["candidate"]["latitude"] - best["latitude"]) < 0.5
+                        and abs(v["candidate"]["longitude"] - best["longitude"]) < 0.5):
+                    best["confidence"] = min(0.97, best["confidence"] + 0.15)
+                    best["vlm_verification"] = True
+                    break
+
         uncertainty = None
         try:
             from modules.uncertainty_estimator import UncertaintyEstimator
