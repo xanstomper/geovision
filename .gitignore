@@ -29,3 +29,4 @@ data/cases.db
 data/visual_geo_db/*.bin
 data/visual_geo_db/*.faiss
 data/pytest_full_results.txt
+.env.systemd
