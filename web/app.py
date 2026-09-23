@@ -238,8 +238,12 @@ def oceanir_analyze():
     try:
         job_dir = UPLOAD_FOLDER / ("oceanir_" + str(random.randint(10000, 99999)))
         job_dir.mkdir(parents=True, exist_ok=True)
-        path = job_dir / files[0].filename
-        files[0].save(str(path))
+        saved_paths = []
+        for f in files:
+            fp = job_dir / f.filename
+            f.save(str(fp))
+            saved_paths.append(str(fp))
+        path = saved_paths[0]
         hint = request.form.get("hint") or request.form.get("location_hint") or None
         use_canvas = request.form.get("canvas", "1") != "0"
         with_canvas_flag = request.form.get("with_listings", "0") == "1"
@@ -248,10 +252,28 @@ def oceanir_analyze():
         canvas = None
         if use_canvas:
             from modules.canvas import DetectiveCanvas
-            canvas = DetectiveCanvas(session=f"oceanir_{path.stem[:20]}",
-                                     title=f"OceanIR — {path.name}")
+            canvas = DetectiveCanvas(session=f"oceanir_{Path(path).stem[:20]}",
+                                     title=f"OceanIR — {Path(path).name}")
         res = GeoVisionHarness().investigate(str(path), location_hint=hint,
                                              canvas=canvas, with_listings=with_canvas_flag)
+
+        # Multi-image session: investigate remaining frames, then correlate
+        # cross-frame evidence (spatial consensus + agreement boost). Opt-in
+        # by uploading >1 image; single-frame response shape is unchanged.
+        multi_frame = None
+        if len(saved_paths) > 1:
+            from modules.multi_image_session_correlator import MultiImageSessionCorrelator
+            frame_results = [{"image_path": str(path), "result": res}]
+            for extra in saved_paths[1:]:
+                try:
+                    frame_results.append({
+                        "image_path": extra,
+                        "result": GeoVisionHarness().investigate(extra, location_hint=hint),
+                    })
+                except Exception as fe:
+                    frame_results.append({"image_path": extra,
+                                          "result": {"candidates": [], "error": str(fe)[:200]}})
+            multi_frame = MultiImageSessionCorrelator().correlate(frame_results)
         best = res.get("best_estimate") or {}
         return {
             "status": "success",
@@ -273,6 +295,7 @@ def oceanir_analyze():
             ],
             "reasoning": res.get("reasoning_chain", []),
             "reference_urls": res.get("reference_urls_by_candidate", {}),
+            "multi_frame_correlation": multi_frame,
             "canvas_viewer_url": canvas.viewer_url if canvas else None,
             "record": res,
         }

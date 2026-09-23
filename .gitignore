@@ -25,3 +25,7 @@ data/visual_geo_db/meta.jsonl.gz
 benchmark_images/
 benchmark_reports/
 data/cases.db
+.venv/
+data/visual_geo_db/*.bin
+data/visual_geo_db/*.faiss
+data/pytest_full_results.txt

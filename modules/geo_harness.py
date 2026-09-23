@@ -247,6 +247,47 @@ class GeoVisionHarness:
         except Exception:
             out["signals"]["ocr"] = {"status": "skipped"}
 
+        # --- Temporal Era Classifier (decade/era from signal statistics) ---
+        try:
+            from modules.temporal_era_classifier import TemporalEraClassifier
+            era_res = TemporalEraClassifier().classify(p)
+            out["signals"]["temporal_era"] = era_res
+            for con in (era_res.get("geolocation_constraints") or []):
+                out["constraints"].append(f"temporal:{con}")
+        except Exception as e:
+            out["signals"]["temporal_era"] = {"status": "skipped", "note": str(e)[:120]}
+
+        # --- Infrastructure Signature Analyzer (poles, roofs, hydrants) ---
+        try:
+            from modules.infrastructure_signature_analyzer import InfrastructureSignatureAnalyzer
+            infra_res = InfrastructureSignatureAnalyzer().analyze(p)
+            out["signals"]["infrastructure"] = infra_res
+            for con in (infra_res.get("constraints") or []):
+                out["constraints"].append(f"infra:{con}")
+            # Surface top infrastructure country candidates as weak priors
+            for cand in (infra_res.get("top_candidates") or [])[:3]:
+                # Map ISO to a rough centroid for ensemble voting
+                _iso_centroids = {
+                    "US": (38.9, -77.0), "CA": (56.1, -96.3), "GB": (51.5, -0.1),
+                    "AU": (-33.9, 151.2), "FR": (48.8, 2.4), "DE": (52.5, 13.4),
+                    "JP": (35.7, 139.7), "BR": (-15.8, -47.9), "MX": (19.4, -99.1),
+                    "PL": (52.2, 21.0), "UA": (50.4, 30.5), "RO": (44.4, 26.1),
+                    "IT": (41.9, 12.5), "ES": (40.4, -3.7), "PT": (38.7, -9.1),
+                    "KR": (37.6, 127.0), "CN": (39.9, 116.4), "IN": (28.6, 77.2),
+                    "ZA": (-26.2, 28.0), "NG": (6.5, 3.4), "KE": (-1.3, 36.8),
+                }
+                iso = cand.get("iso", "")
+                if iso in _iso_centroids:
+                    clat, clon = _iso_centroids[iso]
+                    out["candidates"].append({
+                        "latitude": clat, "longitude": clon,
+                        "confidence": float(cand.get("score", 0.1)) * 0.3,
+                        "source": "infrastructure_prior",
+                        "country_iso": iso,
+                    })
+        except Exception as e:
+            out["signals"]["infrastructure"] = {"status": "skipped", "note": str(e)[:120]}
+
         # --- Consolidate candidates ---
         seen = set()
         uniq = []
@@ -699,6 +740,91 @@ class GeoVisionHarness:
         return res
 
     # ------------------------------------------------------------------ #
+    # Stage 3c — Retrieval-augmented re-ranker (PIGEON retrieval-head    #
+    # analogue, zero-storage). The StreetCLIP similarities from 3b must  #
+    # actually MOVE the ranking instead of dead-ending in a record:      #
+    #   (1) similarity-proportional boost   (2) hard-negative demotion   #
+    #   (3) discriminative margin bonus     (4) GPS-anchor injection of  #
+    #   a new candidate from the best-matching live ground photo's real  #
+    #   coordinates. Key-free, CPU, live-pull only.                      #
+    # ------------------------------------------------------------------ #
+    def retrieval_rerank(self,
+                         candidates: List[Dict[str, Any]],
+                         vverify: Dict[str, Any]) -> Dict[str, Any]:
+        out: Dict[str, Any] = {"stage": "retrieval_rerank", "status": "skipped",
+                               "boosts": [], "demotions": [], "injected": None}
+        verifs = vverify.get("verifications") or []
+        if not candidates or not verifs:
+            out["note"] = "nothing to re-rank"
+            return out
+
+        sims = [float(v.get("visual_similarity") or 0.0) for v in verifs]
+        best_sim = max(sims)
+        if len(sims) >= 2:
+            others = [s for s in sims if s != best_sim]
+            margin = best_sim - (sum(others) / len(others))
+        else:
+            margin = 0.0
+        out["best_similarity"] = round(best_sim, 4)
+        out["discriminative_margin"] = round(margin, 4)
+
+        for v in verifs:
+            lat = v.get("candidate", {}).get("latitude")
+            lon = v.get("candidate", {}).get("longitude")
+            sim = float(v.get("visual_similarity") or 0.0)
+            if lat is None or lon is None:
+                continue
+            for c in candidates:
+                if (abs(float(c.get("latitude", 1e9)) - lat) < 0.5
+                        and abs(float(c.get("longitude", 1e9)) - lon) < 0.5):
+                    base = float(c.get("confidence", 0.0))
+                    if sim >= 0.20:
+                        # proportional to how strongly the real ground photos match
+                        delta = max(0.0, min(1.0, (sim - 0.20) / 0.60))
+                        boost = delta * 0.25
+                        # discriminative retrieval-head signal: this candidate's
+                        # refs match clearly better than the others' refs
+                        if sim == best_sim and margin >= 0.08:
+                            boost += 0.06
+                        c["confidence"] = min(0.97, base + boost)
+                        out["boosts"].append({"latitude": lat, "longitude": lon,
+                                              "sim": round(sim, 4), "boost": round(boost, 4)})
+                    elif sim < 0.12:
+                        # hard negative: no visual support in the real world
+                        c["confidence"] = max(0.02, base * 0.85)
+                        out["demotions"].append({"latitude": lat, "longitude": lon,
+                                                 "sim": round(sim, 4)})
+
+        # GPS-anchor injection: the single best-matching live reference photo's
+        # OWN geotag is a fresh evidence-anchored candidate. Family = visual
+        # (weight 0.55): it corroborates a location-family cluster when it
+        # genuinely matches, and forms its own (losing) cluster when spurious.
+        best_v = max(verifs, key=lambda v: float(v.get("visual_similarity") or 0.0))
+        bsim = float(best_v.get("visual_similarity") or 0.0)
+        photos = best_v.get("reference_photos") or []
+        matches = best_v.get("reference_matches") or []
+        if bsim >= 0.45 and photos and matches:
+            best_m = max(matches, key=lambda m: float(m.get("similarity") or 0.0))
+            photo0 = next((ph for ph in photos
+                           if ph.get("thumbnail_url") == best_m.get("thumbnail_url")
+                           and ph.get("latitude") is not None), None)
+            if photo0 is not None:
+                out["injected"] = {
+                    "latitude": float(photo0["latitude"]),
+                    "longitude": float(photo0["longitude"]),
+                    "confidence": round(min(0.75, 0.30 + bsim * 0.5), 3),
+                    "source": "live_ground_retrieval",
+                    "ref_similarity": best_m.get("similarity"),
+                    "note": ("GPS of the best-matching live-pulled ground photo "
+                             f"(StreetCLIP sim {best_m.get('similarity')})"),
+                }
+        if out["boosts"] or out["demotions"] or out["injected"]:
+            out["status"] = "success"
+        else:
+            out["note"] = "no verification cleared boost/demotion thresholds"
+        return out
+
+    # ------------------------------------------------------------------ #
     # Stage 0 — EXIF / metadata forensics (exifLooter methodology)       #
     # A GPS tag in EXIF is decisive ground truth; check it BEFORE any    #
     # expensive model work, and surface it on the canvas + case record.  #
@@ -1041,16 +1167,35 @@ class GeoVisionHarness:
                                text=v.get("note", ""))
             except Exception:
                 pass
-        for v in vverify.get("verifications", []):
-            if v.get("visual_match"):
-                # boost that candidate's confidence — real cross-view signal
-                for c in pruned:
-                    if (abs(c.get("latitude", 1e9) - v["candidate"]["latitude"]) < 0.5) and \
-                       (abs(c.get("longitude", 1e9) - v["candidate"]["longitude"]) < 0.5):
-                        c["confidence"] = min(0.97, float(c.get("confidence", 0.0)) + 0.12)
+        # Stage 3c — retrieval-augmented re-rank: make the StreetCLIP evidence
+        # MOVE the ranking (proportional boost, hard-negative demotion,
+        # discriminative margin, live-photo GPS-anchor injection).
+        rerank = self.retrieval_rerank(pruned, vverify)
+        record["stages"]["retrieval_rerank"] = rerank
+        if rerank.get("injected"):
+            inj = rerank["injected"]
+            pruned.append(dict(inj))
+            pruned.sort(key=lambda c: float(c.get("confidence", 0.0)), reverse=True)
+            record["reasoning_chain"].append(
+                f"RETRIEVAL anchor injected at {inj['latitude']:.4f},{inj['longitude']:.4f} "
+                f"({inj.get('note', '')})")
+            if canvas is not None:
+                try:
+                    canvas.add("candidate", title="Live ground-photo anchor",
+                               text=f"source={inj.get('source')} conf={inj.get('confidence')}",
+                               lat=inj["latitude"], lon=inj["longitude"],
+                               confidence=inj.get("confidence"))
+                except Exception:
+                    pass
+        for b in rerank.get("boosts", []):
+            if b.get("boost", 0) > 0:
                 record["reasoning_chain"].append(
-                    f"VISUAL match (StreetCLIP sim {v.get('visual_similarity')}) at "
-                    f"{v['candidate']['latitude']:.4f},{v['candidate']['longitude']:.4f}")
+                    f"RETRIEVAL boost +{b['boost']:.2f} at {b['latitude']:.4f},{b['longitude']:.4f} "
+                    f"(StreetCLIP sim {b.get('sim')})")
+        for d in rerank.get("demotions", []):
+            record["reasoning_chain"].append(
+                f"RETRIEVAL demotion at {d['latitude']:.4f},{d['longitude']:.4f} "
+                f"(no visual support, sim {d.get('sim')})")
 
         # Fusion & final ranking (regional retrieval evidence is fused in)
         best, uncertainty = self._finalize(pruned, coarse, verify)

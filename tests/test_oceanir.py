@@ -83,3 +83,35 @@ def test_oceanir_page_serves(client):
     r = client.get("/ocean")
     assert r.status_code == 200
     assert "Evidence Workspace" in r.get_data(as_text=True)
+
+
+def test_oceanir_multi_image_correlation(client, monkeypatch):
+    """Multi-image upload investigates each frame and correlates evidence.
+
+    Both mocked frames agree on Paris candidates → the correlator must
+    report cross-frame agreement (>=2 frames in the winning cluster).
+    Single-frame tests above prove the shape is unchanged for 1 image.
+    """
+    import modules.geo_harness as gh
+    monkeypatch.setattr(gh.GeoVisionHarness, "investigate",
+                        lambda *a, **k: _harness_result())
+    r = client.post("/api/oceanir",
+                    data={"canvas": "0",
+                          "images": [(io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 32),
+                                      "frame_a.jpg"),
+                                     (io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 32),
+                                      "frame_b.jpg")]},
+                    content_type="multipart/form-data")
+    assert r.status_code == 200, r.get_data(as_text=True)
+    j = r.get_json()
+    assert j["status"] == "success"
+    mf = j["multi_frame_correlation"]
+    assert mf is not None
+    assert mf["status"] == "success"
+    assert mf["frame_count"] == 2
+    # The Paris cluster is seen in BOTH frames -> agreement recorded.
+    best = mf["best_estimate"]
+    assert best is not None
+    assert best.get("multi_frame_agreement", 0) >= 2
+    # Primary single-frame response fields still populated from frame A.
+    assert j["best"]["place"] == "Paris"

@@ -29,6 +29,12 @@ from modules.patch_geo_predictor import (
 )
 
 TEST_IMG = os.path.join(ROOT, "test_building.jpg")
+if not os.path.exists(TEST_IMG):
+    # The old hand-dropped fixture is gone (disk cleanup); fall back to the
+    # real committed eval image so the tests still exercise a real photo.
+    TEST_IMG = os.path.join(
+        ROOT, "data", "eval", "wikipedia_landmarks_v1", "images", "building_test.jpg"
+    )
 
 
 def test_grandmaster_engine_instantiation():

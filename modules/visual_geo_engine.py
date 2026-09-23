@@ -30,6 +30,7 @@ SCRIPT_DIR = Path(__file__).parent.parent.resolve()
 DB_DIR = SCRIPT_DIR / "data" / "visual_geo_db"
 DB_EMB = DB_DIR / "embeddings.npy"
 DB_META = DB_DIR / "meta.jsonl.gz"
+DB_FAISS = DB_DIR / "faiss_index.bin"
 CLIP_CACHE = SCRIPT_DIR / "data" / "clip_cache"
 
 # Mean Earth radius in km
@@ -53,6 +54,7 @@ class VisualGeoEngine:
         self._preprocess = None
         self._db_embeddings: Optional[np.ndarray] = None
         self._db_meta: List[Dict[str, Any]] = []
+        self._index_manager = None
 
     # ------------------------------------------------------------------
     # CLIP
@@ -102,7 +104,7 @@ class VisualGeoEngine:
         return 0 if self._db_embeddings is None else int(self._db_embeddings.shape[0])
 
     def _ensure_db(self) -> bool:
-        if self._db_embeddings is not None:
+        if self._db_embeddings is not None and self._index_manager is not None:
             return True
         if not (DB_EMB.exists() and DB_META.exists()):
             logger.info("No visual geo DB at %s", DB_DIR)
@@ -123,7 +125,24 @@ class VisualGeoEngine:
                 )
                 self._db_embeddings = None
                 return False
-            logger.info("Loaded visual geo DB: %d references", len(meta))
+
+            try:
+                from modules.faiss_index_manager import FaissIndexManager
+                self._index_manager = FaissIndexManager(
+                    index_path=DB_FAISS,
+                    metric="IP",
+                )
+                self._index_manager.sync_or_build(
+                    embeddings=self._db_embeddings,
+                    embeddings_path=DB_EMB,
+                    index_path=DB_FAISS,
+                )
+            except Exception as fe:
+                logger.warning("FAISS initialization failed (%s); using numpy fallback", fe)
+                self._index_manager = None
+
+            backend = "FAISS (IP)" if (self._index_manager and self._index_manager.is_faiss_active()) else "NumPy fallback"
+            logger.info("Loaded visual geo DB: %d references [%s]", len(meta), backend)
             return True
         except Exception as e:
             logger.error("Failed loading visual geo DB: %s", e)
@@ -132,6 +151,25 @@ class VisualGeoEngine:
     # ------------------------------------------------------------------
     # Search
     # ------------------------------------------------------------------
+    def search_neighbors(self, query: np.ndarray, top_k: int = 8) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Search nearest neighbors for a query CLIP embedding [512].
+        Returns (indices, similarities) using FAISS or NumPy fallback.
+        """
+        if not self._ensure_db():
+            return np.empty((0,), dtype=np.int64), np.empty((0,), dtype=np.float32)
+
+        if self._index_manager is not None:
+            try:
+                return self._index_manager.search(query, k=top_k)
+            except Exception as e:
+                logger.warning("Index manager search failed (%s); falling back to direct numpy", e)
+
+        # Direct NumPy fallback (embeddings are L2-normalized)
+        sims = self._db_embeddings @ query
+        order = np.argsort(-sims)[:top_k]
+        return order, sims[order]
+
     def locate(self, image_path: str, top_k: int = 8) -> Dict[str, Any]:
         """
         Locate an image against the reference DB.
@@ -139,8 +177,10 @@ class VisualGeoEngine:
         and neighbor stats. Confidence reflects real neighbor agreement —
         no invented numbers.
         """
+        backend = "FAISS" if (self._index_manager and self._index_manager.is_faiss_active()) else "NumPy"
         result: Dict[str, Any] = {
-            "engine": "CLIP ViT-B-32 (laion2b) + Wikimedia Commons reference DB",
+            "engine": f"CLIP ViT-B-32 (laion2b) + Wikimedia Commons reference DB [{backend}]",
+            "backend": backend,
             "status": "failed",
             "db_size": 0,
             "estimates": [],
@@ -149,23 +189,25 @@ class VisualGeoEngine:
             result["note"] = "Reference DB not built. Run scripts/build_reference_db.py"
             return result
         result["db_size"] = self.db_size()
+        backend = "FAISS" if (self._index_manager and self._index_manager.is_faiss_active()) else "NumPy"
+        result["backend"] = backend
+        result["engine"] = f"CLIP ViT-B-32 (laion2b) + Wikimedia Commons reference DB [{backend}]"
 
         query = self.embed_image(image_path)
         if query is None:
             result["note"] = "Could not embed query image"
             return result
 
-        # Cosine similarity (embeddings are L2-normalized)
-        sims = self._db_embeddings @ query  # [N]
-        order = np.argsort(-sims)[:top_k]
+        # Nearest neighbor search (FAISS accelerated with automatic numpy fallback)
+        order, sims = self.search_neighbors(query, top_k=top_k)
 
         neighbors = []
-        for idx in order:
+        for idx, sim in zip(order, sims):
             m = self._db_meta[int(idx)]
             neighbors.append({
                 "lat": float(m["lat"]),
                 "lon": float(m["lon"]),
-                "similarity": float(sims[int(idx)]),
+                "similarity": float(sim),
                 "title": m.get("title", ""),
                 "city": m.get("city", ""),
                 "country": m.get("country", ""),

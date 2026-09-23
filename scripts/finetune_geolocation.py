@@ -1,198 +1,257 @@
 #!/usr/bin/env python3
 """
-GeoVision — fine-tune a geolocation backbone (the accuracy leap; GPU required).
+finetune_geolocation.py -- Geolocation contrastive fine-tuning script.
 
-Builds on the retrieval methodology: a CLIP-based vision encoder fine-tuned
-contrastively on geotagged street photos (OSV-5M / Mapillary / any geo-tagged set)
-to produce embeddings that rank by geographic place better than the stock CLIP
-used today (GeoVision currently uses stock CLIP ViT-B-32 + GeoCLIP + StreetCLIP).
-
-How it works:
-  - Pairs each image with a coarse geography embedding (a learned embedding for its
-    (country, city) or gps-bin), trained with a contrastive loss (CLIP-style
-    symmetric InfoNCE) so that same-place images are pulled together in embedding
-    space.
-  - After training, `encode_image` replaces modules.visual_geo_engine's embedder;
-    the retrieval stage (regional retrieval) then uses the fine-tuned embeddings.
-
-HONEST CURRENT STATE on THIS box:
-  * NO CUDA (torch.cuda.is_available() == False) and ~7.6G free disk. Training a
-    large encoder needs a GPU and ~10s of GB. This script is therefore BUILT and the
-    NON-GPU parts (data loading, loss, device logic, checkpointing) are unit-tested,
-    but the actual fit() run REQUIRES a GPU box. Untested here = not claimed green.
-  * With no dataset dir, it reads from the local real reference DB instead (7k real
-    refs) — enough to sanity-run on a CPU for a tiny-number-of-steps smoke.
-
-Run on a GPU box:
-  python3 scripts/finetune_geolocation.py \
-      --data-dir /path/to/geotagged/images  \
-      --manifest /path/to/labels.jsonl {image,lat,lon} \
-      --num-steps 2000 --batch-size 64 --epochs 10 --save-out models/backbone.pt
+Implements:
+  - contrastive_loss(emb1, emb2) : NT-Xent / InfoNCE style loss for same-location pairs
+  - gps_bin(lat, lon, bin_size)  : discretise GPS into integer grid cells
+  - GeoContrastiveDataset         : torch Dataset wrapper around a manifest
+  - train_one_epoch()             : standard training loop step
+  - main()                        : CLI fine-tuning entry point
 """
+
 import argparse
-import json
 import math
 import os
 import sys
-import time
 from pathlib import Path
+from typing import Tuple
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-os.chdir(Path(__file__).resolve().parent.parent)
+# ---------------------------------------------------------------------------
+# GPS discretisation
+# ---------------------------------------------------------------------------
 
+def gps_bin(lat: float, lon: float, bin_size: float) -> Tuple[int, int]:
+    """Map a GPS coordinate to an integer grid cell.
 
-def load_geo_manifest(data_dir: str, manifest: str) -> list:
-    """Load {image,lat,lon} rows, resolving image paths into data_dir."""
-    imgs = []
-    data_dir = os.path.abspath(data_dir)
-    for line in open(manifest, "r", encoding="utf-8", errors="ignore"):
-        line = line.strip()
-        if not line:
-            continue
-        row = json.loads(line)
-        ip = row.get("image")
-        if not ip:
-            continue
-        path = ip if os.path.isabs(ip) else os.path.join(data_dir, ip)
-        if os.path.exists(path):
-            imgs.append({"path": path, "lat": float(row["lat"]), "lon": float(row["lon"])})
-    return imgs
+    Parameters
+    ----------
+    lat, lon  : float - latitude / longitude in decimal degrees
+    bin_size  : float - cell edge length in degrees (e.g. 5.0 -> 5x5 degree cells)
 
+    Returns
+    -------
+    (lat_bin, lon_bin) : Tuple[int, int]
+        Signed integer bin indices computed via floor(coord / bin_size).
 
-def gps_bin(lat, lon, size_deg: float = 5.0):
-    """Discretize lat/lon to a coarse geographic bin index (contrastive class)."""
-    return (int(lat // size_deg), int(lon // size_deg))
-
-
-def build_latent(visual_dim: int, geo_dim: int, num_bins: int):
-    """Build the trainable modules: a small geography projector + bin embeddings.
-
-    Returns (projector, bin_embedding, optimizer_params) — plain nn.Modules so the
-    script runs with a bare torch. The encoder (CLIP vision tower) is frozen; only
-    this learned geo-head is trained, which keeps the fine-tune cheap/fast.
+    Examples
+    --------
+    >>> gps_bin(48.8, 2.2, 5.0)
+    (9, 0)
+    >>> gps_bin(-33.8, 151.2, 5.0)
+    (-7, 30)
     """
-    import torch
-    import torch.nn as nn
-
-    class GeoHead(nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.project = nn.Sequential(
-                nn.Linear(visual_dim, 512), nn.ReLU(), nn.Linear(512, geo_dim))
-            self.bins = nn.Embedding(num_bins, geo_dim)
-
-    return GeoHead()
+    return (int(math.floor(lat / bin_size)), int(math.floor(lon / bin_size)))
 
 
-def contrastive_loss(image_emb, geo_emb, temperature: float = 0.07):
-    """Symmetric InfoNCE (CLIP-style) between image and geography embeddings."""
-    import torch
-    import torch.nn.functional as F
-    if image_emb.shape != geo_emb.shape:
+# ---------------------------------------------------------------------------
+# Contrastive loss (NT-Xent / InfoNCE)
+# ---------------------------------------------------------------------------
+
+def contrastive_loss(emb1, emb2, temperature: float = 0.07):
+    """Compute NT-Xent contrastive loss between two batches of embeddings.
+
+    The two embedding tensors are treated as positive pairs: emb1[i] and
+    emb2[i] represent two augmented views of the *same* location, while all
+    cross-sample pairs are negatives.
+
+    Parameters
+    ----------
+    emb1 : torch.Tensor - shape (N, D)
+    emb2 : torch.Tensor - shape (N, D)
+    temperature : float - InfoNCE temperature tau (default 0.07)
+
+    Returns
+    -------
+    torch.Tensor - scalar loss value
+
+    Raises
+    ------
+    ValueError
+        If emb1 and emb2 have different batch sizes OR different feature dimensions.
+    """
+    try:
+        import torch
+        import torch.nn.functional as F
+    except ImportError as exc:
+        raise ImportError("torch is required for contrastive_loss") from exc
+
+    if emb1.shape[0] != emb2.shape[0]:
         raise ValueError(
-            f"shape mismatch: image {tuple(image_emb.shape)} vs geo {tuple(geo_emb.shape)} — "
-            "project image and geography to the SAME latent dim before comparing")
-    image_emb = F.normalize(image_emb, dim=-1)
-    geo_emb = F.normalize(geo_emb, dim=-1)
-    logits = (image_emb @ geo_emb.T) / temperature
-    n = image_emb.shape[0]
-    labels = torch.arange(n, device=image_emb.device)
-    loss = (F.cross_entropy(logits, labels) + F.cross_entropy(logits.T, labels)) / 2
+            f"Batch size mismatch: emb1 has {emb1.shape[0]} rows, "
+            f"emb2 has {emb2.shape[0]} rows."
+        )
+    if emb1.shape[1:] != emb2.shape[1:]:
+        raise ValueError(
+            f"Feature dimension mismatch: emb1 shape {tuple(emb1.shape)}, "
+            f"emb2 shape {tuple(emb2.shape)}."
+        )
+
+    N = emb1.shape[0]
+
+    # L2-normalise
+    z1 = F.normalize(emb1.float(), dim=-1)
+    z2 = F.normalize(emb2.float(), dim=-1)
+
+    # Concatenate: [2N, D]
+    z = torch.cat([z1, z2], dim=0)
+
+    # Similarity matrix [2N, 2N] / temperature
+    sim = torch.mm(z, z.t()) / temperature
+
+    # Mask out self-similarities
+    mask = torch.eye(2 * N, dtype=torch.bool, device=sim.device)
+    sim = sim.masked_fill(mask, float("-inf"))
+
+    # Positive indices: z1[i] pairs with z2[i] (offset by N), and vice-versa
+    labels = torch.cat([torch.arange(N, 2 * N), torch.arange(N)]).to(sim.device)
+
+    loss = F.cross_entropy(sim, labels)
     return loss
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data-dir", default="data/geo_train", help="dir of geotagged images")
-    ap.add_argument("--manifest", default=None, help="jsonl {image,lat,lon}")
-    ap.add_argument("--num-steps", type=int, default=2000)
-    ap.add_argument("--batch-size", type=int, default=32)
-    ap.add_argument("--epochs", type=int, default=10)
-    ap.add_argument("--lr", type=float, default=1e-4)
-    ap.add_argument("--save-out", default="models/backbone.pt")
-    ap.add_argument("--visual-dim", type=int, default=512)
-    ap.add_argument("--geo-dim", type=int, default=256)
-    ap.add_argument("--gps-bin-deg", type=float, default=5.0)
-    args = ap.parse_args()
+# ---------------------------------------------------------------------------
+# Dataset (optional; only materialises when torch + PIL are available)
+# ---------------------------------------------------------------------------
 
-    import torch
+class GeoContrastiveDataset:
+    """Minimal torch Dataset wrapping a SPADE-format manifest for fine-tuning."""
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    if device != "cuda":
-        print("WARNING: no CUDA here — training needs a GPU. Building the graph to "
-              "validate correctness only; use a GPU box for real training.",
-              file=sys.stderr)
+    def __init__(self, manifest_path: str, bin_size: float = 5.0):
+        import json
 
-    # Data: prefer an explicit manifest; else fall back to the local reference DB
-    # (real geotagged refs) so a CPU smoke can run.
-    imgs = []
-    if args.manifest:
-        imgs = load_geo_manifest(args.data_dir, args.manifest)
-    else:
-        import gzip
-        import json as _j
-        db = Path("data/visual_geo_db/meta.jsonl.gz")
-        imgs = []
-        if db.exists():
-            with gzip.open(db, "rt", encoding="utf-8") as f:
-                for line in f:
-                    m = _j.loads(line)
-                    p = Path(m.get("_path_") or m.get("title") or "")
-                    if m.get("lat") is not None and m.get("lon") is not None:
-                        imgs.append({"path": str(p), "lat": float(m["lat"]),
-                                     "lon": float(m["lon"])})
-        if not imgs:
-            # no path stored; just use lat/lon (counts, for a structural test)
-            with gzip.open(db, "rt", encoding="utf-8") as f:
-                for line in f:
-                    m = _j.loads(line)
-                    imgs.append({"path": None, "lat": float(m["lat"]),
-                                 "lon": float(m["lon"])})
-    if not imgs:
-        print("No training data found. Provide --data-dir/--manifest or a built "
-              "visual_geo_db.", file=sys.stderr)
-        return 1
+        manifest_path = os.path.abspath(manifest_path)
+        with open(manifest_path) as fh:
+            manifest = json.load(fh)
 
-    bins = {}
-    for im in imgs:
-        bins[gps_bin(im["lat"], im["lon"], args.gps_bin_deg)] = True
-    num_bins = len(bins)
-    print(f"device={device} data={len(imgs)} samples geo_bins={num_bins}")
+        self.manifest_dir = os.path.dirname(manifest_path)
+        self.samples = manifest.get("samples", [])
+        self.bin_size = bin_size
 
-    # Build the geo-head; the CLIP vision encoder below is frozen (only head trains).
+        try:
+            import torch  # noqa: F401
+            import torchvision.transforms as T  # noqa: F401
+            self._torch_ok = True
+        except ImportError:
+            self._torch_ok = False
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        if not self._torch_ok:
+            raise RuntimeError("torch/torchvision not installed; cannot iterate dataset.")
+
+        import torch
+        import torchvision.transforms as T
+        from PIL import Image
+
+        s = self.samples[idx]
+        ip = s["image_path"]
+        abs_path = ip if os.path.isabs(ip) else os.path.join(self.manifest_dir, ip)
+
+        aug = T.Compose([
+            T.Resize(256),
+            T.RandomCrop(224),
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+        img = Image.open(abs_path).convert("RGB")
+        view1 = aug(img)
+        view2 = aug(img)
+
+        lat_bin, lon_bin = gps_bin(float(s["latitude"]), float(s["longitude"]), self.bin_size)
+        return view1, view2, torch.tensor([lat_bin, lon_bin], dtype=torch.long)
+
+
+# ---------------------------------------------------------------------------
+# Training loop skeleton
+# ---------------------------------------------------------------------------
+
+def train_one_epoch(model, loader, optimiser, device="cpu", temperature=0.07):
+    """Run one training epoch; returns average loss."""
     try:
-        from modules.visual_geo_engine import VisualGeoEngine
-        engine = VisualGeoEngine()
-        head = build_latent(args.visual_dim, args.geo_dim, max(num_bins, 1))
-        head.to(device)
-    except Exception as e:
-        print(f"WARNING: could not init geo-head for this env ({e}). "
-              "On a GPU box this script is ready.", file=sys.stderr)
-        return 0
+        import torch
+    except ImportError:
+        raise
 
-    # Structural check: loss + optimizer + one forward pass (correctness, not scale).
-    optimizer = torch.optim.Adam(head.parameters(), lr=args.lr)
-    optimizer.zero_grad()
-    import torch.nn.functional as F
-    x = torch.randn(min(4, args.batch_size), args.visual_dim).to(device)
-    im = head.project(x)                      # learned image->geo projection
-    geo = head.bins(torch.zeros(x.shape[0], dtype=torch.long, device=device))
-    loss = contrastive_loss(im, geo)
-    loss.backward()
-    optimizer.step()
-    print(f"forward+loss OK: loss={loss.item():.4f} (correctness validated; "
-          f"training {args.num_steps} steps needs a GPU)")
+    model.train()
+    total_loss = 0.0
+    n_batches = 0
 
-    # Persist a "ready" marker so callers know the pipeline is correctly wired.
-    out = Path(args.save_out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({"geo_head_trainable": True, "visual_dim": args.visual_dim,
-                "geo_dim": args.geo_dim, "num_bins": num_bins,
-                "gps_bin_deg": args.gps_bin_deg, "trained_on_this_box": device == "cuda"},
-               out)
-    print(f"saved config to {out}")
-    return 0
+    for view1, view2, _ in loader:
+        view1, view2 = view1.to(device), view2.to(device)
+        emb1 = model(view1)
+        emb2 = model(view2)
+        loss = contrastive_loss(emb1, emb2, temperature=temperature)
+        optimiser.zero_grad()
+        loss.backward()
+        optimiser.step()
+        total_loss += loss.item()
+        n_batches += 1
+
+    return total_loss / n_batches if n_batches else 0.0
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def _cli():
+    parser = argparse.ArgumentParser(description="Geolocation contrastive fine-tuning.")
+    parser.add_argument("--manifest", required=True, help="SPADE manifest JSON.")
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--temperature", type=float, default=0.07)
+    parser.add_argument("--bin-size", type=float, default=5.0,
+                        help="GPS bin edge length in degrees.")
+    parser.add_argument("--out", default="models/finetune_geo/",
+                        help="Checkpoint output directory.")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Validate setup but skip training loop.")
+    args = parser.parse_args()
+
+    try:
+        import torch
+        import torch.nn as nn
+        from torch.utils.data import DataLoader
+    except ImportError:
+        print("ERROR: torch not installed. Install pytorch to run fine-tuning.", file=sys.stderr)
+        sys.exit(1)
+
+    dataset = GeoContrastiveDataset(args.manifest, bin_size=args.bin_size)
+    print(f"[finetune] Dataset: {len(dataset)} samples, bin_size={args.bin_size} degrees")
+
+    if args.dry_run:
+        print("[finetune] --dry-run: skipping training loop. Setup OK.")
+        return
+
+    loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
+
+    # Minimal backbone stub (replace with a real ViT / ResNet encoder)
+    model = nn.Sequential(
+        nn.AdaptiveAvgPool2d((7, 7)),
+        nn.Flatten(),
+        nn.Linear(3 * 49, 512),
+        nn.ReLU(),
+        nn.Linear(512, 512),
+    )
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = model.to(device)
+    opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    os.makedirs(args.out, exist_ok=True)
+    for epoch in range(1, args.epochs + 1):
+        loss = train_one_epoch(model, loader, opt, device=device,
+                               temperature=args.temperature)
+        print(f"  Epoch {epoch:>4d}/{args.epochs}  loss={loss:.4f}")
+        ckpt = os.path.join(args.out, f"geo_finetune_ep{epoch:04d}.pt")
+        torch.save(model.state_dict(), ckpt)
+        print(f"             saved -> {ckpt}")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    _cli()

@@ -48,6 +48,10 @@ FAMILY_NAMES = {
     "visual_geo_db": "visual",
     "wikimedia_commons": "visual",
     "visual_similarity": "visual",
+    "live_ground_retrieval": "visual",  # stage-3c GPS anchor from best live photo —
+    # VISUAL evidence with a geotag. Maps into the visual family so the
+    # one-vote-per-family rule can never count it as extra independence
+    # when ref-DB visuals already vote in the same cluster.
     "vlm_verify": "vlm",
     "streetclip_country": "country",
     "country": "country",
@@ -62,7 +66,12 @@ FAMILY_NAMES = {
     # Investigative reasoner = text/records evidence (web property research +
     # numbering deduction + geocode) — zero overlap with visual engines.
     "investigative": "investigative",
+    # Infrastructure signature = utility pole/roof/hydrant country prior
+    "infrastructure_prior": "infrastructure",
+    # Multi-frame consensus = evidence from multiple images of same location
+    "multi_frame_consensus": "multi_frame",
 }
+
 
 # Per-family influence weight in the agreement multiplier (0 = not used for location).
 FAMILY_WEIGHT = {
@@ -70,12 +79,15 @@ FAMILY_WEIGHT = {
     "grandmaster": 0.95,  # independent Raven-class engine — near top weight
     "investigative": 0.95,  # records-backed address evidence — near top weight
     "osv5m": 0.90,        # 4th independent deep-geoloc engine (65M-image trained)
+    "multi_frame": 0.90,  # multi-image session consensus — highly reliable
     "visual": 0.55,
     "vlm": 0.85,
     "country": 0.40,   # corroborates geography, not pin-level
+    "infrastructure": 0.30,  # country-level prior from pole/roof/hydrant fingerprints
     "heuristics": 0.25,
     "osm": 0.30,
 }
+
 
 
 def _validate(lat: float, lon: float) -> bool:

@@ -36,14 +36,17 @@ class CityIndex:
     def __init__(self, min_file: str = "cities15000.txt"):
         self._lats = None
         self._lons = None
+        self._vecs = None
         self._meta: List[Dict] = []
         self._load(min_file)
 
     def _load(self, fname: str):
-        path = DATA_DIR / fname
-        if not path.exists():
-            # fall back to the smaller set
-            path = DATA_DIR / "cities15000.txt"
+        # Fallback chain: requested file -> cities15000 -> cities5000.
+        # (cities15000 was removed in a disk cleanup; cities5000 ships in-tree.)
+        for candidate in (fname, "cities15000.txt", "cities5000.txt"):
+            path = DATA_DIR / candidate
+            if path.exists():
+                break
         if not path.exists():
             logger.warning("GeoNames data missing at %s — city snap disabled", DATA_DIR)
             return

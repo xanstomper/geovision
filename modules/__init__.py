@@ -69,6 +69,11 @@ except Exception:
     VisualGeoEngine = None
 
 try:
+    from .faiss_index_manager import FaissIndexManager
+except Exception:
+    FaissIndexManager = None
+
+try:
     from .geoclip_predictor import GeoCLIPPredictor
 except Exception:
     GeoCLIPPredictor = None
