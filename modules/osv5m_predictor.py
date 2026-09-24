@@ -20,15 +20,41 @@ class OSV5MPredictor:
       corpus is ever downloaded. Run scripts/setup_osv5m.sh to wire it up.
     """
 
+    def __new__(cls, *args, **kwargs):
+        # Singleton: ~2.4GB of weights (OSV-5M + its CLIP backbone) must load
+        # ONCE per process, not per investigate() call.
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    _instance = None
+
     def __init__(self, model_name: str = "osv5m/baseline"):
+        # Re-init guard: repeated constructions must not reload the model.
+        if getattr(self, "_initialized", False):
+            return
+        self._initialized = True
         print("\n=== Initializing OSV5M Predictor ===")
         try:
             # Add osv5m directory to path (from env OR <repo>/osv5m)
             repo_osv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "osv5m")
             osv5m_path = os.environ.get("OSV5M_PATH", "") or repo_osv
             osv5m_path = os.path.abspath(osv5m_path)
-            if osv5m_path not in sys.path:
-                sys.path.append(osv5m_path)
+            # PREPEND, not append: osv5m ships top-level packages (utils, models,
+            # metrics, configs) that a host environment may already shadow
+            # (e.g. a hermes-agent utils.py earlier on sys.path caused
+            # "No module named 'utils.model_utils'; 'utils' is not a package").
+            if osv5m_path in sys.path:
+                sys.path.remove(osv5m_path)
+            sys.path.insert(0, osv5m_path)
+            # Purge any already-imported shadowing top-level modules so the
+            # subprocess re-imports osv5m's own versions.
+            for _name in ("utils", "models", "metrics", "configs"):
+                _mod = sys.modules.get(_name)
+                if _mod is not None:
+                    _f = getattr(_mod, "__file__", None) or ""
+                    if _f and not os.path.abspath(_f).startswith(osv5m_path):
+                        del sys.modules[_name]
 
             # Runtime hardening for OSV-5M submodule:
             # 1. Resolve quadtree_path relative to osv5m_path

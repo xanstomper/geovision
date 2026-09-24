@@ -49,6 +49,10 @@
  .btn:disabled{opacity:.5;cursor:wait}
  .err{color:var(--bad);margin-top:12px;font-size:13px}
  .link{color:var(--blue);font-size:13px;margin-top:10px;display:inline-block}
+.thumb{display:inline-block;margin:6px 8px 0 0;text-align:center}
+.thumb img{width:92px;height:92px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.thumb .t{color:var(--dim);font-size:11px;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp .capq{color:var(--dim);font-size:11px;text-align:center}
  #map{height:260px;border-radius:10px;border:1px solid var(--line);margin-top:12px}
  .foot{color:var(--dim);font-size:12px;margin-top:30px;text-align:center}
 </style>
@@ -62,11 +66,11 @@
 
 <div id="up">
   <div class="drop" id="drop">
-    <b>Drop an image, or click to choose</b> — no account needed
-    <input type="file" id="file" accept="image/*" hidden>
+    <b>Drop image(s), or click to choose</b> — multiple frames of the same place enable cross-frame correlation
+    <input type="file" id="file" accept="image/*" multiple hidden>
     <div id="prev"></div>
   </div>
-  <button class="btn" id="go">Analyze image →</button>
+  <button class="btn" id="go">Analyze →</button>
   <div class="err" id="err"></div>
 </div>
 
@@ -97,6 +101,13 @@
       <div id="canv"></div>
     </div>
   </div>
+
+  <div class="row" id="mfrow" style="display:none">
+    <div class="card" style="grid-column:1/-1">
+      <h3>Cross-frame correlation</h3>
+      <div id="mf"></div>
+    </div>
+  </div>
 </div>
 
 <div class="foot">GeoVision · replicate-OceanIR evidence workspace · model-agnostic, key-free core</div>
@@ -104,23 +115,29 @@
 
 <script>
 const $=id=>document.getElementById(id);
-let map=null, marker=null, queryDataUrl=null;
+let map=null, marker=null; const frameUrls=[];
+const queryDataUrl=()=>frameUrls[0]?.url||null;
 
 const drop=$('drop'), file= $('file'), prev=$('prev');
+function setFrames(fl){
+  frameUrls.length=0;
+  [...fl].forEach(f=>{const r=new FileReader();
+    r.onload=()=>frameUrls.push({name:f.name,url:r.result});
+    r.readAsDataURL(f);});
+  const paint=()=>{ if(frameUrls.length<fl.length) return setTimeout(paint,80);
+    prev.innerHTML=frameUrls.map(fr=>`<span class="thumb"><img src="${fr.url}"><div class="t">${fr.name}</div></span>`).join('');
+  }; paint();
+}
 drop.addEventListener('click',()=>file.click());
-file.addEventListener('change',e=>{const f=e.target.files[0]; if(!f)return;
-  const r=new FileReader(); r.onload=()=>{prev.innerHTML=`<img src="${r.result}">`; queryDataUrl=r.result;};
-  r.readAsDataURL(f);
-});
+file.addEventListener('change',e=>{ if(e.target.files.length) setFrames(e.target.files); });
 ['dragover','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();
   drop.classList.toggle('over',ev==='dragover');
-  if(ev==='drop'){const f=e.dataTransfer.files[0]; if(f){file.files=e.dataTransfer.files;
-    const r=new FileReader(); r.onload=()=>{prev.innerHTML=`<img src="${r.result}">`; queryDataUrl=r.result;}; r.readAsDataURL(f);} }}));
+  if(ev==='drop' && e.dataTransfer.files.length){file.files=e.dataTransfer.files; setFrames(e.dataTransfer.files);} }));
 
 $('go').addEventListener('click',async()=>{
-  const f=file.files[0]; if(!f){$('err').textContent='Upload an image first.'; return;}
-  $('go').disabled=true; $('err').textContent='Analyzing — this runs deterministic geolocation + visual verify (CPU, ~minutes)...';
-  const fd=new FormData(); fd.append('images',f);
+  if(!file.files.length){$('err').textContent='Upload an image first.'; return;}
+  $('go').disabled=true; $('err').textContent='Analyzing — deterministic geolocation + visual verify (CPU, ~minutes/frame)...';
+  const fd=new FormData(); [...file.files].forEach(f=>fd.append('images',f));
   try{
     const res=await fetch('/api/oceanir',{method:'POST',body:fd});
     const j=await res.json();
@@ -156,7 +173,7 @@ function render(j){
     const items=refs[k]||[];
     items.slice(0,3).forEach(it=>{
       const u=typeof it==='string'?it:(it.url||it.thumbnail_url||'');
-      cmp+=`<div class="cmp"><div><img src="${queryDataUrl}" loading="lazy"><div class="cap">query</div></div>
+      cmp+=`<div class="cmp"><div><img src="${queryDataUrl()}" loading="lazy"><div class="cap">query</div></div>
         <div><img src="${u}" loading="lazy" onerror="this.style.opacity=.15"><div class="cap">${k}</div></div>
         </div>`;
     });
@@ -165,6 +182,25 @@ function render(j){
   $('chain').innerHTML=(j.reasoning||[]).map((s,i)=>`<div class="ev"><div class="n">step ${i+1}</div><div>${s}</div></div>`).join('')
     ||'<div class="ev"><div class="n">note</div>No reasoning chain.</div>';
   if(j.canvas_viewer_url){$('canv').innerHTML=`<a class="link" href="${j.canvas_viewer_url}" target="_blank">Open live detective canvas ↗</a>`;}
+  // Cross-frame correlation card (only when >1 image was analyzed)
+  const mf=j.multi_frame_correlation;
+  if(mf && mf.status==='success' && mf.frame_count>1){
+    $('mfrow').style.display='grid';
+    const be=mf.best_estimate||{};
+    const rows=(mf.merged_candidates||[]).slice(0,5).map((c,i)=>{
+      const pct=Math.round((c.confidence||0)*100);
+      const agr=c.multi_frame_agreement?`<span class="badge high">${c.multi_frame_agreement} frames agree</span>`:'';
+      return `<div class="cand"><span class="rank">${i+1}</span>
+        <div class="nm">${c.latitude?.toFixed?.(4)}, ${c.longitude?.toFixed?.(4)} ${agr}</div>
+        <div class="cc">${c.member_count||1} cands · ${c.spread_km??0}km spread</div>
+        <div class="nm" style="flex:0 0 64px;text-align:right">${pct}%</div></div>
+        <div class="bar" style="grid-column:2/4"><i style="width:${pct}%"></i></div>`;
+    }).join('');
+    $('mf').innerHTML=`<div class="best"><div class="coord">${be.latitude?.toFixed?.(5)??'—'}, ${be.longitude?.toFixed?.(5)??'—'}</div>
+      <div>${mf.frame_count} frames correlated · ${(mf.merged_ocr_texts||[]).length} OCR strings merged · ${(mf.merged_constraints||[]).length} constraints merged</div></div>
+      ${rows||'<div class="ev"><div class="n">note</div>No cross-frame clusters.</div>'}
+      ${(mf.correlation_notes||[]).map(n=>`<div class="ev"><div class="n">note</div><div>${n}</div></div>`).join('')}`;
+  } else { $('mfrow').style.display='none'; }
   initMap(b.latitude,b.longitude);
 }
 function initMap(lat,lon){

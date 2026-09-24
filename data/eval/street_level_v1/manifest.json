@@ -1,13 +1,13 @@
 {
   "name": "street_level_v1",
-  "description": "Real geotagged STREET-LEVEL (non-landmark) scenes across 12 cities. RAISES the bar vs landmarks \u2014 tests whether GeoVision beats a photo-DB on cross-view street imagery.",
+  "description": "Real geotagged STREET-LEVEL (non-landmark) scenes across 6 cities. RAISES the bar vs landmarks \u2014 tests whether GeoVision beats a photo-DB on cross-view street imagery.",
   "version": "1.0",
-  "n_cities": 12,
+  "n_cities": 6,
   "samples": [
     {
       "image_path": "images/tokyo_1_0.jpg",
-      "latitude": 35.659444,
-      "longitude": 139.632778,
+      "latitude": 35.683979,
+      "longitude": 139.657136,
       "country": "Japan",
       "city": "Tokyo",
       "region": "",
@@ -18,15 +18,57 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Sanai Benzaiten Shrine (\u5de6\u5185\u5f01\u8ca1\u5929) - panoramio.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Sanai_Benzaiten_Shrine_%28%E5%B7%A6%E5%86%85%E5%BC%81%E8%B2%A1%E5%A4%A9%29_-_panoramio.jpg/960px-Sanai_Benzaiten_Shrine_%28%E5%B7%A6%E5%86%85%E5%BC%81%E8%B2%A1%E5%A4%A9%29_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ASanai_Benzaiten_Shrine_%28%E5%B7%A6%E5%86%85%E5%BC%81%E8%B2%A1%E5%A4%A9%29_-_panoramio.jpg",
+        "page_title": "File:\u65b9\u5357\u30d5\u30a1\u30df\u30ea\u30fc\u30b3\u30fc\u30dd\u524d\u901a\u308a - panoramio.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/%E6%96%B9%E5%8D%97%E3%83%95%E3%82%A1%E3%83%9F%E3%83%AA%E3%83%BC%E3%82%B3%E3%83%BC%E3%83%9D%E5%89%8D%E9%80%9A%E3%82%8A_-_panoramio.jpg/960px-%E6%96%B9%E5%8D%97%E3%83%95%E3%82%A1%E3%83%9F%E3%83%AA%E3%83%BC%E3%82%B3%E3%83%BC%E3%83%9D%E5%89%8D%E9%80%9A%E3%82%8A_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3A%E6%96%B9%E5%8D%97%E3%83%95%E3%82%A1%E3%83%9F%E3%83%AA%E3%83%BC%E3%82%B3%E3%83%BC%E3%83%9D%E5%89%8D%E9%80%9A%E3%82%8A_-_panoramio.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Tokyo"
       }
     },
     {
       "image_path": "images/tokyo_1_1.jpg",
+      "latitude": 35.692402777778,
+      "longitude": 139.63312777778,
+      "country": "Japan",
+      "city": "Tokyo",
+      "region": "",
+      "difficulty": "street",
+      "urban_rural": "urban",
+      "tags": [
+        "street",
+        "cross_view"
+      ],
+      "metadata": {
+        "page_title": "File:\u6749\u4e26\u533a\u7acb\u6749\u4e26\u7b2c\u4e8c\u5c0f\u5b66\u6821.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/%E6%9D%89%E4%B8%A6%E5%8C%BA%E7%AB%8B%E6%9D%89%E4%B8%A6%E7%AC%AC%E4%BA%8C%E5%B0%8F%E5%AD%A6%E6%A0%A1.jpg/960px-%E6%9D%89%E4%B8%A6%E5%8C%BA%E7%AB%8B%E6%9D%89%E4%B8%A6%E7%AC%AC%E4%BA%8C%E5%B0%8F%E5%AD%A6%E6%A0%A1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3A%E6%9D%89%E4%B8%A6%E5%8C%BA%E7%AB%8B%E6%9D%89%E4%B8%A6%E7%AC%AC%E4%BA%8C%E5%B0%8F%E5%AD%A6%E6%A0%A1.jpg",
+        "source_label": "StreetLevelBenchmark",
+        "query_anchor": "Tokyo"
+      }
+    },
+    {
+      "image_path": "images/tokyo_1_2.jpg",
+      "latitude": 35.670661,
+      "longitude": 139.634919,
+      "country": "Japan",
+      "city": "Tokyo",
+      "region": "",
+      "difficulty": "street",
+      "urban_rural": "urban",
+      "tags": [
+        "street",
+        "cross_view"
+      ],
+      "metadata": {
+        "page_title": "File:Hatsudai Station-3.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Hatsudai_Station-3.jpg/960px-Hatsudai_Station-3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AHatsudai_Station-3.jpg",
+        "source_label": "StreetLevelBenchmark",
+        "query_anchor": "Tokyo"
+      }
+    },
+    {
+      "image_path": "images/tokyo_1_3.jpg",
       "latitude": 35.664722,
       "longitude": 139.653333,
       "country": "Japan",
@@ -47,51 +89,9 @@
       }
     },
     {
-      "image_path": "images/tokyo_1_2.jpg",
-      "latitude": 35.679008333333,
-      "longitude": 139.66038611111,
-      "country": "Japan",
-      "city": "Tokyo",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:\u6749\u4e26\u533a\u7acb\u65b9\u5357\u56f3\u66f8\u9928.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/%E6%9D%89%E4%B8%A6%E5%8C%BA%E7%AB%8B%E6%96%B9%E5%8D%97%E5%9B%B3%E6%9B%B8%E9%A4%A8.jpg/960px-%E6%9D%89%E4%B8%A6%E5%8C%BA%E7%AB%8B%E6%96%B9%E5%8D%97%E5%9B%B3%E6%9B%B8%E9%A4%A8.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3A%E6%9D%89%E4%B8%A6%E5%8C%BA%E7%AB%8B%E6%96%B9%E5%8D%97%E5%9B%B3%E6%9B%B8%E9%A4%A8.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Tokyo"
-      }
-    },
-    {
-      "image_path": "images/tokyo_1_3.jpg",
-      "latitude": 35.682817,
-      "longitude": 139.646072,
-      "country": "Japan",
-      "city": "Tokyo",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Pine of hanging saddle 2025-02-24.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/Pine_of_hanging_saddle_2025-02-24.jpg/960px-Pine_of_hanging_saddle_2025-02-24.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3APine_of_hanging_saddle_2025-02-24.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Tokyo"
-      }
-    },
-    {
       "image_path": "images/paris_2_0.jpg",
-      "latitude": 48.854444,
-      "longitude": 2.343333,
+      "latitude": 48.8372843,
+      "longitude": 2.3401792,
       "country": "France",
       "city": "Paris",
       "region": "",
@@ -102,17 +102,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Fahrzeuge der gendamerie nationale vor dem Palais de Justice in Paris.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Fahrzeuge_der_gendamerie_nationale_vor_dem_Palais_de_Justice_in_Paris.jpg/960px-Fahrzeuge_der_gendamerie_nationale_vor_dem_Palais_de_Justice_in_Paris.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AFahrzeuge_der_gendamerie_nationale_vor_dem_Palais_de_Justice_in_Paris.jpg",
+        "page_title": "File:Carri\u00e8res des Capucins (14575).jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Carri%C3%A8res_des_Capucins_%2814575%29.jpg/960px-Carri%C3%A8res_des_Capucins_%2814575%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3ACarri%C3%A8res_des_Capucins_%2814575%29.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Paris"
       }
     },
     {
       "image_path": "images/paris_2_1.jpg",
-      "latitude": 48.871289,
-      "longitude": 2.36265,
+      "latitude": 48.862597222222,
+      "longitude": 2.3539277777778,
       "country": "France",
       "city": "Paris",
       "region": "",
@@ -123,17 +123,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Rue Yves Toudic - Paris X (FR75) - 2021-06-23 - 2.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/Rue_Yves_Toudic_-_Paris_X_%28FR75%29_-_2021-06-23_-_2.jpg/960px-Rue_Yves_Toudic_-_Paris_X_%28FR75%29_-_2021-06-23_-_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ARue_Yves_Toudic_-_Paris_X_%28FR75%29_-_2021-06-23_-_2.jpg",
+        "page_title": "File:Acc\u00e8s Station Rambuteau M\u00e9tro Paris Rue Grenier Saint Lazare - Paris III (FR75) - 2026-01-21 - 1.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/Acc%C3%A8s_Station_Rambuteau_M%C3%A9tro_Paris_Rue_Grenier_Saint_Lazare_-_Paris_III_%28FR75%29_-_2026-01-21_-_1.jpg/960px-Acc%C3%A8s_Station_Rambuteau_M%C3%A9tro_Paris_Rue_Grenier_Saint_Lazare_-_Paris_III_%28FR75%29_-_2026-01-21_-_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AAcc%C3%A8s_Station_Rambuteau_M%C3%A9tro_Paris_Rue_Grenier_Saint_Lazare_-_Paris_III_%28FR75%29_-_2026-01-21_-_1.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Paris"
       }
     },
     {
       "image_path": "images/paris_2_2.jpg",
-      "latitude": 48.843056,
-      "longitude": 2.349167,
+      "latitude": 48.845447222222,
+      "longitude": 2.3558833333333,
       "country": "France",
       "city": "Paris",
       "region": "",
@@ -144,17 +144,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Le Pot de Fer, 12 Rue du Pot de Fer, 75005 Paris, 18 September 2019.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Le_Pot_de_Fer%2C_12_Rue_du_Pot_de_Fer%2C_75005_Paris%2C_18_September_2019.jpg/960px-Le_Pot_de_Fer%2C_12_Rue_du_Pot_de_Fer%2C_75005_Paris%2C_18_September_2019.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ALe_Pot_de_Fer%2C_12_Rue_du_Pot_de_Fer%2C_75005_Paris%2C_18_September_2019.jpg",
+        "page_title": "File:Rue Guy Brosse - Paris V (FR75) - 2025-04-02 - 2.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Rue_Guy_Brosse_-_Paris_V_%28FR75%29_-_2025-04-02_-_2.jpg/960px-Rue_Guy_Brosse_-_Paris_V_%28FR75%29_-_2025-04-02_-_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3ARue_Guy_Brosse_-_Paris_V_%28FR75%29_-_2025-04-02_-_2.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Paris"
       }
     },
     {
       "image_path": "images/paris_2_3.jpg",
-      "latitude": 48.847633,
-      "longitude": 2.341094,
+      "latitude": 48.869072,
+      "longitude": 2.332669,
       "country": "France",
       "city": "Paris",
       "region": "",
@@ -165,17 +165,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Invader - PA 1203 (44112343802).jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Invader_-_PA_1203_%2844112343802%29.jpg/960px-Invader_-_PA_1203_%2844112343802%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AInvader_-_PA_1203_%2844112343802%29.jpg",
+        "page_title": "File:Cafe du Cadran - Paris 2 - Decembre 2022.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Cafe_du_Cadran_-_Paris_2_-_Decembre_2022.jpg/960px-Cafe_du_Cadran_-_Paris_2_-_Decembre_2022.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3ACafe_du_Cadran_-_Paris_2_-_Decembre_2022.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Paris"
       }
     },
     {
       "image_path": "images/mexico_city_3_0.jpg",
-      "latitude": 19.4424833333,
-      "longitude": -99.1480683333,
+      "latitude": 19.444335,
+      "longitude": -99.12412,
       "country": "Mexico",
       "city": "Mexico City",
       "region": "",
@@ -186,17 +186,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:15-07-17-Mexico-D-F-RalfR-WMA 1306.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/15-07-17-Mexico-D-F-RalfR-WMA_1306.jpg/960px-15-07-17-Mexico-D-F-RalfR-WMA_1306.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3A15-07-17-Mexico-D-F-RalfR-WMA_1306.jpg",
+        "page_title": "File:Front\u00f3n Las \u00c1guilas 01.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Front%C3%B3n_Las_%C3%81guilas_01.jpg/960px-Front%C3%B3n_Las_%C3%81guilas_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AFront%C3%B3n_Las_%C3%81guilas_01.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Mexico City"
       }
     },
     {
       "image_path": "images/mexico_city_3_1.jpg",
-      "latitude": 19.428022,
-      "longitude": -99.138778,
+      "latitude": 19.427239,
+      "longitude": -99.146842,
       "country": "Mexico",
       "city": "Mexico City",
       "region": "",
@@ -207,17 +207,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Templo de Regina Coeli 01.JPG",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Templo_de_Regina_Coeli_01.JPG/960px-Templo_de_Regina_Coeli_01.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ATemplo_de_Regina_Coeli_01.JPG",
+        "page_title": "File:Cycling in Mexico City - La Palma Panaderia y Bizcoheria.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Cycling_in_Mexico_City_-_La_Palma_Panaderia_y_Bizcoheria.jpg/960px-Cycling_in_Mexico_City_-_La_Palma_Panaderia_y_Bizcoheria.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3ACycling_in_Mexico_City_-_La_Palma_Panaderia_y_Bizcoheria.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Mexico City"
       }
     },
     {
       "image_path": "images/mexico_city_3_2.jpg",
-      "latitude": 19.426591,
-      "longitude": -99.143069,
+      "latitude": 19.450253,
+      "longitude": -99.138581,
       "country": "Mexico",
       "city": "Mexico City",
       "region": "",
@@ -228,17 +228,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Estaci\u00f3n Salto del Agua del Metro de la Ciudad de M\u00e9xico - 13.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Estaci%C3%B3n_Salto_del_Agua_del_Metro_de_la_Ciudad_de_M%C3%A9xico_-_13.jpg/960px-Estaci%C3%B3n_Salto_del_Agua_del_Metro_de_la_Ciudad_de_M%C3%A9xico_-_13.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AEstaci%C3%B3n_Salto_del_Agua_del_Metro_de_la_Ciudad_de_M%C3%A9xico_-_13.jpg",
+        "page_title": "File:Mapa de Unidad Nonoalco Tlatelolco.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Mapa_de_Unidad_Nonoalco_Tlatelolco.jpg/960px-Mapa_de_Unidad_Nonoalco_Tlatelolco.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AMapa_de_Unidad_Nonoalco_Tlatelolco.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Mexico City"
       }
     },
     {
       "image_path": "images/mexico_city_3_3.jpg",
-      "latitude": 19.414630555556,
-      "longitude": -99.135077777778,
+      "latitude": 19.415925,
+      "longitude": -99.148186,
       "country": "Mexico",
       "city": "Mexico City",
       "region": "",
@@ -249,17 +249,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Estatuacosturera.jpg",
-        "source_url": "https://upload.wikimedia.org/wikipedia/commons/6/62/Estatuacosturera.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AEstatuacosturera.jpg",
+        "page_title": "File:Caldo de pollo con huevo.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Caldo_de_pollo_con_huevo.jpg/960px-Caldo_de_pollo_con_huevo.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3ACaldo_de_pollo_con_huevo.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Mexico City"
       }
     },
     {
       "image_path": "images/mumbai_4_0.jpg",
-      "latitude": 19.062545833333,
-      "longitude": 72.895359444444,
+      "latitude": 19.088678,
+      "longitude": 72.881586,
       "country": "India",
       "city": "Mumbai",
       "region": "",
@@ -270,17 +270,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Arjun Mitra Mandat 2011 1.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Arjun_Mitra_Mandat_2011_1.jpg/960px-Arjun_Mitra_Mandat_2011_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AArjun_Mitra_Mandat_2011_1.jpg",
+        "page_title": "File:Indigo flight with auto.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/Indigo_flight_with_auto.jpg/960px-Indigo_flight_with_auto.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AIndigo_flight_with_auto.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Mumbai"
       }
     },
     {
       "image_path": "images/mumbai_4_1.jpg",
-      "latitude": 19.060189,
-      "longitude": 72.870933,
+      "latitude": 19.08688,
+      "longitude": 72.888641599722,
       "country": "India",
       "city": "Mumbai",
       "region": "",
@@ -291,17 +291,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Friday rush hour and hanging out of doors in Mumbai.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/Friday_rush_hour_and_hanging_out_of_doors_in_Mumbai.jpg/960px-Friday_rush_hour_and_hanging_out_of_doors_in_Mumbai.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AFriday_rush_hour_and_hanging_out_of_doors_in_Mumbai.jpg",
+        "page_title": "File:Dublin Square entrance in Phoenix Marketcity, Mumbai.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Dublin_Square_entrance_in_Phoenix_Marketcity%2C_Mumbai.jpg/960px-Dublin_Square_entrance_in_Phoenix_Marketcity%2C_Mumbai.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3ADublin_Square_entrance_in_Phoenix_Marketcity%2C_Mumbai.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Mumbai"
       }
     },
     {
       "image_path": "images/mumbai_4_2.jpg",
-      "latitude": 19.081388888889,
-      "longitude": 72.893333333333,
+      "latitude": 19.079156972222,
+      "longitude": 72.89579,
       "country": "India",
       "city": "Mumbai",
       "region": "",
@@ -312,17 +312,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Kia Sonnet Isometric.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Kia_Sonnet_Isometric.jpg/960px-Kia_Sonnet_Isometric.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AKia_Sonnet_Isometric.jpg",
+        "page_title": "File:Hunter Premium Beer.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Hunter_Premium_Beer.jpg/960px-Hunter_Premium_Beer.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AHunter_Premium_Beer.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Mumbai"
       }
     },
     {
       "image_path": "images/mumbai_4_3.jpg",
-      "latitude": 19.069462,
-      "longitude": 72.865634,
+      "latitude": 19.069869,
+      "longitude": 72.87704,
       "country": "India",
       "city": "Mumbai",
       "region": "",
@@ -333,17 +333,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Mahindra Thar Flickr.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Mahindra_Thar_Flickr.jpg/960px-Mahindra_Thar_Flickr.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AMahindra_Thar_Flickr.jpg",
+        "page_title": "File:Vakratund ganesh.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Vakratund_ganesh.jpg/960px-Vakratund_ganesh.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AVakratund_ganesh.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Mumbai"
       }
     },
     {
       "image_path": "images/nairobi_5_0.jpg",
-      "latitude": -1.3090993431275,
-      "longitude": 36.828383228287,
+      "latitude": -1.2824444444444,
+      "longitude": 36.827416666667,
       "country": "Kenya",
       "city": "Nairobi",
       "region": "",
@@ -354,17 +354,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Mapillary (PfG4q 0GUPAHiP1uVHrTzQ) (reggie) 2017-12-12 08H26M59S543.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Mapillary_%28PfG4q_0GUPAHiP1uVHrTzQ%29_%28reggie%29_2017-12-12_08H26M59S543.jpg/960px-Mapillary_%28PfG4q_0GUPAHiP1uVHrTzQ%29_%28reggie%29_2017-12-12_08H26M59S543.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AMapillary_%28PfG4q_0GUPAHiP1uVHrTzQ%29_%28reggie%29_2017-12-12_08H26M59S543.jpg",
+        "page_title": "File:Kenneth Matiba Road, 2025 (01).jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Kenneth_Matiba_Road%2C_2025_%2801%29.jpg/960px-Kenneth_Matiba_Road%2C_2025_%2801%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AKenneth_Matiba_Road%2C_2025_%2801%29.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Nairobi"
       }
     },
     {
       "image_path": "images/nairobi_5_1.jpg",
-      "latitude": -1.284119,
-      "longitude": 36.840725,
+      "latitude": -1.2749047222222,
+      "longitude": 36.824536666667,
       "country": "Kenya",
       "city": "Nairobi",
       "region": "",
@@ -375,17 +375,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Lap gikosh.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Lap_gikosh.jpg/960px-Lap_gikosh.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ALap_gikosh.jpg",
+        "page_title": "File:Sport's Day.JPG",
+        "source_url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Sport%27s_Day.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3ASport%27s_Day.JPG",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Nairobi"
       }
     },
     {
       "image_path": "images/nairobi_5_2.jpg",
-      "latitude": -1.281455,
-      "longitude": 36.837685,
+      "latitude": -1.283,
+      "longitude": 36.802666666667,
       "country": "Kenya",
       "city": "Nairobi",
       "region": "",
@@ -396,17 +396,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:What's for Breakfast?.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/What%27s_for_Breakfast%3F.jpg/960px-What%27s_for_Breakfast%3F.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AWhat%27s_for_Breakfast%3F.jpg",
+        "page_title": "File:Jaguarruto.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Jaguarruto.jpg/960px-Jaguarruto.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AJaguarruto.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Nairobi"
       }
     },
     {
       "image_path": "images/nairobi_5_3.jpg",
-      "latitude": -1.2969226656576,
-      "longitude": 36.819389308333,
+      "latitude": -1.302487,
+      "longitude": 36.816282,
       "country": "Kenya",
       "city": "Nairobi",
       "region": "",
@@ -417,17 +417,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Nairobi's Central Business District Landmark Skyscrapers..jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/Nairobi%27s_Central_Business_District_Landmark_Skyscrapers..jpg/960px-Nairobi%27s_Central_Business_District_Landmark_Skyscrapers..jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ANairobi%27s_Central_Business_District_Landmark_Skyscrapers..jpg",
+        "page_title": "File:48 to Infinity session at Segal 2026 - Sarai Chisala-T.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/48_to_Infinity_session_at_Segal_2026_-_Sarai_Chisala-T.jpg/960px-48_to_Infinity_session_at_Segal_2026_-_Sarai_Chisala-T.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3A48_to_Infinity_session_at_Segal_2026_-_Sarai_Chisala-T.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "Nairobi"
       }
     },
     {
       "image_path": "images/new_york_6_0.jpg",
-      "latitude": 40.72573,
-      "longitude": -74.019588,
+      "latitude": 40.6960816666,
+      "longitude": -74.0167383333,
       "country": "United States",
       "city": "New York",
       "region": "",
@@ -438,17 +438,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:The City - panoramio (4).jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/The_City_-_panoramio_%284%29.jpg/960px-The_City_-_panoramio_%284%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AThe_City_-_panoramio_%284%29.jpg",
+        "page_title": "File:Manhattan, New York, NY, USA - panoramio (34).jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Manhattan%2C_New_York%2C_NY%2C_USA_-_panoramio_%2834%29.jpg/960px-Manhattan%2C_New_York%2C_NY%2C_USA_-_panoramio_%2834%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AManhattan%2C_New_York%2C_NY%2C_USA_-_panoramio_%2834%29.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "New York"
       }
     },
     {
       "image_path": "images/new_york_6_1.jpg",
-      "latitude": 40.70715,
-      "longitude": -73.999122,
+      "latitude": 40.696555,
+      "longitude": -74.0145766667,
       "country": "United States",
       "city": "New York",
       "region": "",
@@ -459,17 +459,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Brooklyn Bridge September 2022 014.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/Brooklyn_Bridge_September_2022_014.jpg/960px-Brooklyn_Bridge_September_2022_014.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ABrooklyn_Bridge_September_2022_014.jpg",
+        "page_title": "File:Manhattan, New York, NY, USA - panoramio (43).jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Manhattan%2C_New_York%2C_NY%2C_USA_-_panoramio_%2843%29.jpg/960px-Manhattan%2C_New_York%2C_NY%2C_USA_-_panoramio_%2843%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3AManhattan%2C_New_York%2C_NY%2C_USA_-_panoramio_%2843%29.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "New York"
       }
     },
     {
       "image_path": "images/new_york_6_2.jpg",
-      "latitude": 40.720926666667,
-      "longitude": -73.998745,
+      "latitude": 40.7181,
+      "longitude": -74.0107,
       "country": "United States",
       "city": "New York",
       "region": "",
@@ -480,17 +480,17 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:Ian Urbina.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/62/Ian_Urbina.jpg/960px-Ian_Urbina.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AIan_Urbina.jpg",
+        "page_title": "File:339 Greenwich Street HDR 2021 jeh.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/339_Greenwich_Street_HDR_2021_jeh.jpg/960px-339_Greenwich_Street_HDR_2021_jeh.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3A339_Greenwich_Street_HDR_2021_jeh.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "New York"
       }
     },
     {
       "image_path": "images/new_york_6_3.jpg",
-      "latitude": 40.696,
-      "longitude": -74.001144,
+      "latitude": 40.707711,
+      "longitude": -74.017747,
       "country": "United States",
       "city": "New York",
       "region": "",
@@ -501,515 +501,11 @@
         "cross_view"
       ],
       "metadata": {
-        "page_title": "File:NYC seen from the water.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/NYC_seen_from_the_water.jpg/960px-NYC_seen_from_the_water.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ANYC_seen_from_the_water.jpg",
+        "page_title": "File:Battery Park City April 2022 019.jpg",
+        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Battery_Park_City_April_2022_019.jpg/960px-Battery_Park_City_April_2022_019.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "page_url": "https://commons.wikimedia.org/wiki/File%3ABattery_Park_City_April_2022_019.jpg",
         "source_label": "StreetLevelBenchmark",
         "query_anchor": "New York"
-      }
-    },
-    {
-      "image_path": "images/bangkok_7_0.jpg",
-      "latitude": 13.757858,
-      "longitude": 100.491882,
-      "country": "Thailand",
-      "city": "Bangkok",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Phra Thinang Patchima Bhimook 20231323.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Phra_Thinang_Patchima_Bhimook_20231323.jpg/960px-Phra_Thinang_Patchima_Bhimook_20231323.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3APhra_Thinang_Patchima_Bhimook_20231323.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Bangkok"
-      }
-    },
-    {
-      "image_path": "images/bangkok_7_1.jpg",
-      "latitude": 13.754559,
-      "longitude": 100.492716,
-      "country": "Thailand",
-      "city": "Bangkok",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:\u0e04\u0e19\u0e44\u0e17\u0e22\u0e43\u0e19\u0e1b\u0e35 \u0e23.\u0e28 \u0e51\u0e51\u0e52 Siam - panoramio.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/%E0%B8%84%E0%B8%99%E0%B9%84%E0%B8%97%E0%B8%A2%E0%B9%83%E0%B8%99%E0%B8%9B%E0%B8%B5_%E0%B8%A3.%E0%B8%A8_%E0%B9%91%E0%B9%91%E0%B9%92_Siam_-_panoramio.jpg/960px-%E0%B8%84%E0%B8%99%E0%B9%84%E0%B8%97%E0%B8%A2%E0%B9%83%E0%B8%99%E0%B8%9B%E0%B8%B5_%E0%B8%A3.%E0%B8%A8_%E0%B9%91%E0%B9%91%E0%B9%92_Siam_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3A%E0%B8%84%E0%B8%99%E0%B9%84%E0%B8%97%E0%B8%A2%E0%B9%83%E0%B8%99%E0%B8%9B%E0%B8%B5_%E0%B8%A3.%E0%B8%A8_%E0%B9%91%E0%B9%91%E0%B9%92_Siam_-_panoramio.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Bangkok"
-      }
-    },
-    {
-      "image_path": "images/bangkok_7_2.jpg",
-      "latitude": 13.774105,
-      "longitude": 100.508055,
-      "country": "Thailand",
-      "city": "Bangkok",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:A HISTORIC WORLD WAR II AIR RAID SHELTER - panoramio (19).jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/72/A_HISTORIC_WORLD_WAR_II_AIR_RAID_SHELTER_-_panoramio_%2819%29.jpg/960px-A_HISTORIC_WORLD_WAR_II_AIR_RAID_SHELTER_-_panoramio_%2819%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AA_HISTORIC_WORLD_WAR_II_AIR_RAID_SHELTER_-_panoramio_%2819%29.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Bangkok"
-      }
-    },
-    {
-      "image_path": "images/bangkok_7_3.jpg",
-      "latitude": 13.745008,
-      "longitude": 100.494506,
-      "country": "Thailand",
-      "city": "Bangkok",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Sanam Chai Road footpath @ Wat Pho \u0e1f\u0e38\u0e15\u0e1a\u0e32\u0e18 \u0e16\u0e19\u0e19\u0e2a\u0e19\u0e32\u0e21\u0e0a\u0e31\u0e22 \u0e17\u0e35\u0e48 \u0e27\u0e31\u0e14\u0e42\u0e1e\u0e18\u0e34\u0e4c.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Sanam_Chai_Road_footpath_%40_Wat_Pho_%E0%B8%9F%E0%B8%B8%E0%B8%95%E0%B8%9A%E0%B8%B2%E0%B8%98_%E0%B8%96%E0%B8%99%E0%B8%99%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%A1%E0%B8%8A%E0%B8%B1%E0%B8%A2_%E0%B8%97%E0%B8%B5%E0%B9%88_%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B9%82%E0%B8%9E%E0%B8%98%E0%B8%B4%E0%B9%8C.jpg/960px-Sanam_Chai_Road_footpath_%40_Wat_Pho_%E0%B8%9F%E0%B8%B8%E0%B8%95%E0%B8%9A%E0%B8%B2%E0%B8%98_%E0%B8%96%E0%B8%99%E0%B8%99%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%A1%E0%B8%8A%E0%B8%B1%E0%B8%A2_%E0%B8%97%E0%B8%B5%E0%B9%88_%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B9%82%E0%B8%9E%E0%B8%98%E0%B8%B4%E0%B9%8C.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ASanam_Chai_Road_footpath_%40_Wat_Pho_%E0%B8%9F%E0%B8%B8%E0%B8%95%E0%B8%9A%E0%B8%B2%E0%B8%98_%E0%B8%96%E0%B8%99%E0%B8%99%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%A1%E0%B8%8A%E0%B8%B1%E0%B8%A2_%E0%B8%97%E0%B8%B5%E0%B9%88_%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B9%82%E0%B8%9E%E0%B8%98%E0%B8%B4%E0%B9%8C.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Bangkok"
-      }
-    },
-    {
-      "image_path": "images/london_8_0.jpg",
-      "latitude": 51.51798,
-      "longitude": -0.14569999999998,
-      "country": "United Kingdom",
-      "city": "London",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Porch, Chandos House, London W1-geograph-4467705.jpg",
-        "source_url": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Porch%2C_Chandos_House%2C_London_W1-geograph-4467705.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3APorch%2C_Chandos_House%2C_London_W1-geograph-4467705.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "London"
-      }
-    },
-    {
-      "image_path": "images/london_8_1.jpg",
-      "latitude": 51.520173,
-      "longitude": -0.11614200000002,
-      "country": "United Kingdom",
-      "city": "London",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Numbers 15 And 16 And Attached Railings.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Numbers_15_And_16_And_Attached_Railings.jpg/960px-Numbers_15_And_16_And_Attached_Railings.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ANumbers_15_And_16_And_Attached_Railings.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "London"
-      }
-    },
-    {
-      "image_path": "images/london_8_2.jpg",
-      "latitude": 51.503447786305,
-      "longitude": -0.14509124837657,
-      "country": "United Kingdom",
-      "city": "London",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Green Park - geograph.org.uk - 5697520.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Green_Park_-_geograph.org.uk_-_5697520.jpg/960px-Green_Park_-_geograph.org.uk_-_5697520.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AGreen_Park_-_geograph.org.uk_-_5697520.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "London"
-      }
-    },
-    {
-      "image_path": "images/london_8_3.jpg",
-      "latitude": 51.523857,
-      "longitude": -0.12500599999998,
-      "country": "United Kingdom",
-      "city": "London",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Decor - Holiday Inn - Bloomsbury - London - 2026-06-05.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/Decor_-_Holiday_Inn_-_Bloomsbury_-_London_-_2026-06-05.jpg/960px-Decor_-_Holiday_Inn_-_Bloomsbury_-_London_-_2026-06-05.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ADecor_-_Holiday_Inn_-_Bloomsbury_-_London_-_2026-06-05.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "London"
-      }
-    },
-    {
-      "image_path": "images/istanbul_9_0.jpg",
-      "latitude": 41.016939,
-      "longitude": 28.966731,
-      "country": "Turkey",
-      "city": "Istanbul",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Cemil Birsel Cd. Mercan Y\u00f6n\u00fc - panoramio.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Cemil_Birsel_Cd._Mercan_Y%C3%B6n%C3%BC_-_panoramio.jpg/960px-Cemil_Birsel_Cd._Mercan_Y%C3%B6n%C3%BC_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ACemil_Birsel_Cd._Mercan_Y%C3%B6n%C3%BC_-_panoramio.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Istanbul"
-      }
-    },
-    {
-      "image_path": "images/istanbul_9_1.jpg",
-      "latitude": 41.008201,
-      "longitude": 28.993612,
-      "country": "Turkey",
-      "city": "Istanbul",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:IStanbul - panoramio.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/IStanbul_-_panoramio.jpg/960px-IStanbul_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AIStanbul_-_panoramio.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Istanbul"
-      }
-    },
-    {
-      "image_path": "images/istanbul_9_2.jpg",
-      "latitude": 41.013986,
-      "longitude": 28.964053,
-      "country": "Turkey",
-      "city": "Istanbul",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:\u015eevket Memedali Bilgi\u015fin amfisi.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/%C5%9Eevket_Memedali_Bilgi%C5%9Fin_amfisi.jpg/960px-%C5%9Eevket_Memedali_Bilgi%C5%9Fin_amfisi.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3A%C5%9Eevket_Memedali_Bilgi%C5%9Fin_amfisi.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Istanbul"
-      }
-    },
-    {
-      "image_path": "images/istanbul_9_3.jpg",
-      "latitude": 40.991949,
-      "longitude": 28.9888,
-      "country": "Turkey",
-      "city": "Istanbul",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Boat - panoramio - ---=XEON=---.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Boat_-_panoramio_-_---%3DXEON%3D---.jpg/960px-Boat_-_panoramio_-_---%3DXEON%3D---.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ABoat_-_panoramio_-_---%3DXEON%3D---.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Istanbul"
-      }
-    },
-    {
-      "image_path": "images/athens_10_0.jpg",
-      "latitude": 37.986433,
-      "longitude": 23.737091,
-      "country": "Greece",
-      "city": "Athens",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:PROBLEME IMMER PROBLEME (34580611651).jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/29/PROBLEME_IMMER_PROBLEME_%2834580611651%29.jpg/960px-PROBLEME_IMMER_PROBLEME_%2834580611651%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3APROBLEME_IMMER_PROBLEME_%2834580611651%29.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Athens"
-      }
-    },
-    {
-      "image_path": "images/athens_10_1.jpg",
-      "latitude": 37.980861111111,
-      "longitude": 23.730919444444,
-      "country": "Greece",
-      "city": "Athens",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Arsakeio building complex.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/Arsakeio_building_complex.jpg/960px-Arsakeio_building_complex.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AArsakeio_building_complex.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Athens"
-      }
-    },
-    {
-      "image_path": "images/athens_10_2.jpg",
-      "latitude": 37.9781292,
-      "longitude": 23.7478702,
-      "country": "Greece",
-      "city": "Athens",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Vasculitis.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Vasculitis.jpg/960px-Vasculitis.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AVasculitis.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Athens"
-      }
-    },
-    {
-      "image_path": "images/athens_10_3.jpg",
-      "latitude": 37.969471,
-      "longitude": 23.727282,
-      "country": "Greece",
-      "city": "Athens",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:The paved street on the South Slope of the Acropolis on 28 April 2021.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/The_paved_street_on_the_South_Slope_of_the_Acropolis_on_28_April_2021.jpg/960px-The_paved_street_on_the_South_Slope_of_the_Acropolis_on_28_April_2021.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AThe_paved_street_on_the_South_Slope_of_the_Acropolis_on_28_April_2021.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Athens"
-      }
-    },
-    {
-      "image_path": "images/cairo_11_0.jpg",
-      "latitude": 30.054819,
-      "longitude": 31.25131,
-      "country": "Egypt",
-      "city": "Cairo",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Egypt scenes 1916.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/Egypt_scenes_1916.jpg/960px-Egypt_scenes_1916.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AEgypt_scenes_1916.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Cairo"
-      }
-    },
-    {
-      "image_path": "images/cairo_11_1.jpg",
-      "latitude": 30.031406,
-      "longitude": 31.223275,
-      "country": "Egypt",
-      "city": "Cairo",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Felucca on the Nile in Cairo 02.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/Felucca_on_the_Nile_in_Cairo_02.jpg/960px-Felucca_on_the_Nile_in_Cairo_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AFelucca_on_the_Nile_in_Cairo_02.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Cairo"
-      }
-    },
-    {
-      "image_path": "images/cairo_11_2.jpg",
-      "latitude": 30.051201,
-      "longitude": 31.239259,
-      "country": "Egypt",
-      "city": "Cairo",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:RESTURANT (3166968641).jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/RESTURANT_%283166968641%29.jpg/960px-RESTURANT_%283166968641%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ARESTURANT_%283166968641%29.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Cairo"
-      }
-    },
-    {
-      "image_path": "images/cairo_11_3.jpg",
-      "latitude": 30.041597,
-      "longitude": 31.239538,
-      "country": "Egypt",
-      "city": "Cairo",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Old Villa near parliament - panoramio.jpg",
-        "source_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Old_Villa_near_parliament_-_panoramio.jpg?width=640",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AOld_Villa_near_parliament_-_panoramio.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Cairo"
-      }
-    },
-    {
-      "image_path": "images/cape_town_12_0.jpg",
-      "latitude": -33.926274,
-      "longitude": 18.413547,
-      "country": "South Africa",
-      "city": "Cape Town",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Coowatool Islam Masjid, Loop Street.JPG",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/Coowatool_Islam_Masjid%2C_Loop_Street.JPG/960px-Coowatool_Islam_Masjid%2C_Loop_Street.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ACoowatool_Islam_Masjid%2C_Loop_Street.JPG",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Cape Town"
-      }
-    },
-    {
-      "image_path": "images/cape_town_12_1.jpg",
-      "latitude": -33.921711,
-      "longitude": 18.439007,
-      "country": "South Africa",
-      "city": "Cape Town",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Foreshore, Cape Town, 8001, South Africa - panoramio.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dd/Foreshore%2C_Cape_Town%2C_8001%2C_South_Africa_-_panoramio.jpg/960px-Foreshore%2C_Cape_Town%2C_8001%2C_South_Africa_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AForeshore%2C_Cape_Town%2C_8001%2C_South_Africa_-_panoramio.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Cape Town"
-      }
-    },
-    {
-      "image_path": "images/cape_town_12_2.jpg",
-      "latitude": -33.917277,
-      "longitude": 18.409352,
-      "country": "South Africa",
-      "city": "Cape Town",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:Cape Town Harbour - panoramio.jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Cape_Town_Harbour_-_panoramio.jpg/960px-Cape_Town_Harbour_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3ACape_Town_Harbour_-_panoramio.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Cape Town"
-      }
-    },
-    {
-      "image_path": "images/cape_town_12_3.jpg",
-      "latitude": -33.909602,
-      "longitude": 18.431968,
-      "country": "South Africa",
-      "city": "Cape Town",
-      "region": "",
-      "difficulty": "street",
-      "urban_rural": "urban",
-      "tags": [
-        "street",
-        "cross_view"
-      ],
-      "metadata": {
-        "page_title": "File:AHI Treasures of Southern Africa 3-07 0059 N (554347404).jpg",
-        "source_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/01/AHI_Treasures_of_Southern_Africa_3-07_0059_N_%28554347404%29.jpg/960px-AHI_Treasures_of_Southern_Africa_3-07_0059_N_%28554347404%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "page_url": "https://commons.wikimedia.org/wiki/File%3AAHI_Treasures_of_Southern_Africa_3-07_0059_N_%28554347404%29.jpg",
-        "source_label": "StreetLevelBenchmark",
-        "query_anchor": "Cape Town"
       }
     }
   ]
