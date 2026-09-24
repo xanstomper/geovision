@@ -3,11 +3,12 @@ VLM Geo Analyzer — Vision-Language Model geolocation reasoning
 ================================================================
 Ports open_geo_spy's VLM feature-extraction + reasoning pattern into GeoVision.
 
-Uses any OpenAI-compatible vision endpoint (OpenCode Zen, Gemini via
-OpenAI-compat, etc.) configured via env vars:
-    GEOVISION_VLM_BASE_URL  (default: https://opencode.ai/zen/v1)
-    GEOVISION_VLM_API_KEY   (default: $OPENCODE_ZEN_API_KEY)
-    GEOVISION_VLM_MODEL     (default: opencode/gpt-5.4-nano)
+Uses any OpenAI-compatible vision endpoint configured via env vars —
+NO provider is built in, NO fallback keys exist:
+    GEOVISION_VLM_BASE_URL  (required)
+    GEOVISION_VLM_API_KEY   (required)
+    GEOVISION_VLM_MODEL     (required)
+Unset = VLM stages skip cleanly; the deterministic core never needs them.
 
 Two calls (ported prompt patterns from open_geo_spy):
   1. Feature extraction — structured JSON of ALL geo clues
@@ -155,12 +156,17 @@ Return your answer as JSON:
 
 
 def _get_client():
-    """Build an OpenAI-compatible client from env config. Returns (client, model) or (None, None)."""
-    api_key = os.environ.get("GEOVISION_VLM_API_KEY") or os.environ.get("OPENCODE_ZEN_API_KEY")
-    if not api_key:
+    """Build an OpenAI-compatible client from env config. Returns (client, model) or (None, None).
+
+    Fully user-supplied: point GEOVISION_VLM_BASE_URL / _API_KEY / _MODEL at
+    any OpenAI-compatible endpoint. There is deliberately NO default endpoint
+    and NO fallback key — unset means the VLM stages skip cleanly.
+    """
+    api_key = os.environ.get("GEOVISION_VLM_API_KEY")
+    base_url = os.environ.get("GEOVISION_VLM_BASE_URL")
+    model = os.environ.get("GEOVISION_VLM_MODEL")
+    if not (api_key and base_url and model):
         return None, None
-    base_url = os.environ.get("GEOVISION_VLM_BASE_URL", "https://opencode.ai/zen/v1")
-    model = os.environ.get("GEOVISION_VLM_MODEL", "opencode/gpt-5.4-nano")
     try:
         from openai import OpenAI
         client = OpenAI(base_url=base_url, api_key=api_key)
@@ -200,7 +206,7 @@ def vlm_analyze(image_path: str,
         "status": "skipped",
         "features": None,
         "prediction": None,
-        "note": "No VLM configured (set GEOVISION_VLM_API_KEY or OPENCODE_ZEN_API_KEY)",
+        "note": "No VLM configured (set GEOVISION_VLM_API_KEY + _BASE_URL + _MODEL)",
     }
 
     client, model = _get_client()

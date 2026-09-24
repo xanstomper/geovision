@@ -22,7 +22,8 @@ IMG = "data/eval/wikipedia_landmarks_v1/images/colosseum.jpg"
 @pytest.fixture(autouse=True)
 def _no_keys():
     """Ensure keyed stages start unset for every test."""
-    for k in ("GEOVISION_VLM_API_KEY", "OPENCODE_ZEN_API_KEY", "GOOGLE_VISION_API_KEY"):
+    for k in ("GEOVISION_VLM_API_KEY", "GEOVISION_VLM_BASE_URL",
+              "GEOVISION_VLM_MODEL", "GOOGLE_VISION_API_KEY"):
         os.environ.pop(k, None)
     yield
 
@@ -40,12 +41,22 @@ def test_vlm_client_none_without_key():
 
 
 def test_vlm_activation_reads_env_var():
-    """Setting the env var changes the gating (call path active, not skipped)."""
+    """Setting ALL THREE env vars changes the gating (active, not skipped).
+
+    GeoVision has NO built-in provider: base URL, key and model are all
+    user-supplied. A key alone must NOT activate anything.
+    """
     os.environ["GEOVISION_VLM_API_KEY"] = "sk-test-fake"
     from modules.vlm_geo_analyzer import _get_client
-    # a fake key still yields a client object (activation path), not None
+    # key WITHOUT base_url/model -> still inactive (no default endpoint exists)
     client, _ = _get_client()
+    assert client is None
+    os.environ["GEOVISION_VLM_BASE_URL"] = "https://example.invalid/v1"
+    os.environ["GEOVISION_VLM_MODEL"] = "test-model"
+    # a fake key + user endpoint yields a client object (activation path)
+    client, model = _get_client()
     assert client is not None
+    assert model == "test-model"
 
 
 def test_google_vision_skips_cleanly_without_key():

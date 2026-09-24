@@ -119,7 +119,7 @@ def extract_visual_features(
     Extract structured geolocation features from an image via a VLM.
 
     Uses the open_geo_spy prompt pattern: one pass, full structured JSON.
-    Works with any OpenAI-compatible client (OpenAI, OpenCode Zen, etc.).
+    Works with any OpenAI-compatible client (fully user-supplied config).
 
     Args:
         image_path: path to the image

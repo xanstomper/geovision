@@ -151,14 +151,14 @@ def _driving_context(bbox_x: int, img_w: int) -> Dict[str, Any]:
 
 def _vlm_identify(crop_bgr: np.ndarray) -> Optional[Dict[str, Any]]:
     """Use VLM to identify vehicle make/model/year. Returns None if unavailable."""
-    api_key = os.environ.get("GEOVISION_VLM_API_KEY") or os.environ.get("OPENCODE_ZEN_API_KEY")
-    if not api_key:
-        return None
+    api_key = os.environ.get("GEOVISION_VLM_API_KEY")
+    base_url = os.environ.get("GEOVISION_VLM_BASE_URL")
+    model    = os.environ.get("GEOVISION_VLM_MODEL")
+    if not (api_key and base_url and model):
+        return None  # no built-in provider, no fallback — stages skip cleanly
     try:
         import base64, io as _io
         from openai import OpenAI
-        base_url = os.environ.get("GEOVISION_VLM_BASE_URL", "https://opencode.ai/zen/v1")
-        model    = os.environ.get("GEOVISION_VLM_MODEL", "opencode/gpt-5.4-nano")
         # Encode crop
         _, buf = cv2.imencode(".jpg", crop_bgr, [cv2.IMWRITE_JPEG_QUALITY, 85])
         b64 = base64.b64encode(buf.tobytes()).decode()

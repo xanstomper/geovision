@@ -498,7 +498,8 @@ def tool_uncertainty_bounds(args: Dict[str, Any]) -> Dict[str, Any]:
 
 def _vlm_configured() -> bool:
     return bool(os.environ.get("GEOVISION_VLM_API_KEY")
-                or os.environ.get("OPENCODE_ZEN_API_KEY"))
+                and os.environ.get("GEOVISION_VLM_BASE_URL")
+                and os.environ.get("GEOVISION_VLM_MODEL"))
 
 
 # ---------------------------------------------------------------------------

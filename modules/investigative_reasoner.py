@@ -171,9 +171,11 @@ class InvestigativeReasoner:
                              "supply clues from your own vision instead")}
         try:
             from openai import OpenAI
-            base_url = os.environ.get("GEOVISION_VLM_BASE_URL",
-                                      "https://opencode.ai/zen/v1")
-            model = os.environ.get("GEOVISION_VLM_MODEL", "gpt-5.4-nano")
+            base_url = os.environ.get("GEOVISION_VLM_BASE_URL")
+            model = os.environ.get("GEOVISION_VLM_MODEL")
+            if not (base_url and model):
+                return {"status": "skipped",
+                        "note": "GEOVISION_VLM_BASE_URL/_MODEL not configured"}
             client = OpenAI(base_url=base_url, api_key=api_key)
         except Exception as e:
             return {"status": "skipped", "note": f"vlm client unavailable: {str(e)[:120]}"}

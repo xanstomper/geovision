@@ -46,8 +46,10 @@ git clone https://github.com/xanstomper/geovision.git
 cd geovision
 pip install -r requirements.txt
 
-# Optional: set a VLM key for AI-assisted reasoning
-echo "OPENCODE_ZEN_API_KEY=sk-your-key-here" >> .env
+# Optional: point the VLM stages at YOUR OWN OpenAI-compatible endpoint
+echo "GEOVISION_VLM_BASE_URL=http://localhost:11434/v1" >> .env
+echo "GEOVISION_VLM_API_KEY=ollama" >> .env
+echo "GEOVISION_VLM_MODEL=llava:13b" >> .env
 
 # Launch the web UI
 python3 web/app.py
@@ -190,13 +192,13 @@ Open `http://localhost:9999`. Features:
 
 ## Configuration
 
-GeoVision works without any API keys. VLM reasoning (Phase 8b) and vehicle make/model identification are skipped cleanly if no key is set.
+GeoVision works without any API keys. VLM reasoning (Phase 8b) and vehicle make/model identification are skipped cleanly if not configured. There is NO built-in provider and NO fallback key — you bring your own endpoint:
 
 ```bash
-# .env or ~/.hermes/.env
-OPENCODE_ZEN_API_KEY=sk-your-key-here  # enables VLM reasoning
-GEOVISION_VLM_MODEL=opencode/gpt-5.4-nano  # default model
-GEOVISION_VLM_BASE_URL=https://opencode.ai/zen/v1  # default endpoint
+# .env — ALL THREE required to activate VLM stages
+GEOVISION_VLM_BASE_URL=<your OpenAI-compatible endpoint>
+GEOVISION_VLM_API_KEY=<your key>
+GEOVISION_VLM_MODEL=<model name>
 ```
 
 Any OpenAI-compatible endpoint works — Ollama, LM Studio, OpenRouter, etc.
