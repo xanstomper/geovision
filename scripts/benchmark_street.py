@@ -33,6 +33,10 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from modules.geo_math import haversine_distance  # noqa: E402
 from modules.geo_eval_metrics import format_report, SampleResult, compute_metrics  # noqa: E402
 
+# hybrid method: regressor coords accepted when within this distance of the
+# ensemble consensus cluster (tune via per_sample pred/gt rows, no re-run needed)
+HYBRID_AGREE_KM = 25.0
+
 
 def _load(manifest_path: Path):
     m = json.loads(manifest_path.read_text())
@@ -54,20 +58,25 @@ def run_method(name, samples, osv5m_ready, limit):
     """Run a single geolocation method over samples; return list of (err_km, has_pred)."""
     results = []
     per_sample = []
+    global _GP, _PP
+    _GP = None   # GeoCLIPPredictor singleton (loaded once per process)
+    _PP = None   # PatchGeoPredictor singleton
     for i, s in enumerate(samples[:limit]):
         t0 = time.time()
         try:
             if name == "geoclip":
                 from modules.geoclip_predictor import GeoCLIPPredictor
-                gp = GeoCLIPPredictor("cpu")
-                preds = gp.predict(s["image_path"])
+                if _GP is None:
+                    _GP = GeoCLIPPredictor("cpu")
+                preds = _GP.predict(s["image_path"])
                 p = preds[0] if preds else None
                 lat, lon = (p["lat"], p["lon"]) if p else (None, None)
             elif name == "ensemble":
                 # Full cross-signal consensus: patch GeoCLIP + full GeoCLIP + (osv5m if ready)
                 from modules.patch_geo_predictor import PatchGeoPredictor
-                pp = PatchGeoPredictor("cpu")
-                pr = pp.predict(s["image_path"], eps_km=15.0)
+                if _PP is None:
+                    _PP = PatchGeoPredictor("cpu")
+                pr = _PP.predict(s["image_path"], eps_km=15.0)
                 cons = pr.get("consensus") or {}
                 lat = cons.get("lat"); lon = cons.get("lon")
             elif name == "osv5m":
@@ -80,6 +89,35 @@ def run_method(name, samples, osv5m_ready, limit):
                     lat, lon = (res["lat"], res["lon"]) if res else (None, None)
                 else:
                     lat = lon = None
+            elif name == "hybrid":
+                # Precision-inheritance fusion: when the direct regressor's
+                # fine prediction lands INSIDE the ensemble consensus cluster
+                # (<= HYBRID_AGREE_KM), trust the regressor's exact coords;
+                # otherwise fall back to the consensus (robustness).
+                from modules.geoclip_predictor import GeoCLIPPredictor
+                from modules.patch_geo_predictor import PatchGeoPredictor
+                if _GP is None:
+                    _GP = GeoCLIPPredictor("cpu")
+                if _PP is None:
+                    _PP = PatchGeoPredictor("cpu")
+                preds = _GP.predict(s["image_path"])
+                p = preds[0] if preds else None
+                pr = _PP.predict(s["image_path"], eps_km=15.0)
+                cons = pr.get("consensus") or {}
+                glat = float(p["lat"]) if p else None
+                glon = float(p["lon"]) if p else None
+                clat, clon = cons.get("lat"), cons.get("lon")
+                if (glat is not None and glon is not None
+                        and clat is not None and clon is not None):
+                    d = haversine_distance(glat, glon, float(clat), float(clon))
+                    if d <= HYBRID_AGREE_KM:
+                        lat, lon = glat, glon
+                    else:
+                        lat, lon = clat, clon
+                elif clat is not None:
+                    lat, lon = clat, clon
+                else:
+                    lat, lon = glat, glon
             else:
                 lat = lon = None
         except Exception as e:

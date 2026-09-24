@@ -157,7 +157,10 @@ function render(j){
     <div>${b.place||''} ${b.country||''}</div>
     <span class="badge ${cls}">${unsure?'UNSURE — low confidence':(Math.round((b.confidence||0)*100)+'% confidence')}${b.uncalibrated?'<small> (uncalibrated)</small>':''}</span>
     ${ev.precision_tier?`<span class="badge high" style="background:rgba(90,167,214,.15);color:var(--blue)">${ev.precision_tier.replace('_',' ')}</span>`:''}
-    ${ev.verification_status?`<span class="badge ${cls}">${ev.verification_status.replace('_',' ')}</span>`:''}`;
+    ${ev.verification_status?`<span class="badge ${cls}">${ev.verification_status.replace('_',' ')}</span>`:''}
+    ${ev.coverage?(ev.coverage.in_coverage===false?`<span class="badge low" title="No reference photos near this prediction — hypothesis, not verification">uncovered</span>`
+      :ev.coverage.tier==='fringe'?`<span class="badge unsure">thin coverage</span>`
+      :ev.coverage.tier==='dense'?`<span class="badge high" title="${ev.coverage.refs_core_km} reference photos within 5km">dense evidence</span>`:''):''}`;
   $('supports').innerHTML=(ev.supports||[]).map(s=>`<div class="ev"><div class="n" style="color:var(--good)">supports</div><div>${s}</div></div>`).join('')||'';
   $('contradictions').innerHTML=(ev.contradictions||[]).map(s=>`<div class="ev"><div class="n" style="color:var(--bad)">against</div><div>${s}</div></div>`).join('')||'';
   (j.candidates||[]).forEach((c,i)=>{

@@ -1337,7 +1337,25 @@ class GeoVisionHarness:
             verdict = None
 
         if verdict and verdict.get("latitude") is not None:
-            best = verdict
+            best = dict(verdict)
+            # Precision inheritance (hybrid fusion): the ensemble consensus is
+            # the reliable verdict, but when the direct GeoCLIP regressor's
+            # top prediction lands INSIDE the consensus cluster (<=25km), its
+            # fine-grained coords pinpoint better (measured: ensemble median
+            # 6.3km vs geoclip 78.9km overall, but geoclip wins @1km when it
+            # agrees). Inherit the regressor's exact coords, keep the ensemble
+            # confidence + reasoning.
+            try:
+                _geo = next(c for c in candidates if c.get("source") == "geoclip")
+                from modules.geo_math import haversine_distance as _hd
+                if _hd(float(verdict["latitude"]), float(verdict["longitude"]),
+                       float(_geo["latitude"]), float(_geo["longitude"])) <= 25.0:
+                    best["latitude"] = float(_geo["latitude"])
+                    best["longitude"] = float(_geo["longitude"])
+                    best["precision_inherited_from"] = "geoclip"
+                    best["consensus_anchor"] = [verdict["latitude"], verdict["longitude"]]
+            except (StopIteration, Exception):
+                pass
             # pin coordinates used across the harness (candidate convention)
             if "longitude" in best and "coordinates" not in best:
                 best["coords"] = [best["latitude"], best["longitude"]]
@@ -1445,12 +1463,30 @@ class GeoVisionHarness:
         if hint_str and best and hint_str not in best_place:
             scope_consistent = False  # scene/answer doesn't contain the hint
 
+        # Coverage abstention (OceanIR M1 pre-empt, key-free): density of
+        # street-level reference evidence around the predicted point. A pin
+        # with ZERO nearby refs is flagged explicitly — never a naked guess.
+        coverage: Dict[str, Any] = {"in_coverage": None, "tier": "unknown"}
+        if best and best.get("latitude") is not None:
+            try:
+                from modules.coverage_abstention import CoverageAbstention
+                coverage = CoverageAbstention().assess(
+                    float(best["latitude"]), float(best["longitude"]), conf)
+                if coverage.get("in_coverage") is False:
+                    contradictions.append(coverage.get(
+                        "note", "prediction outside evidenced coverage"))
+                elif coverage.get("tier") == "fringe":
+                    contradictions.append(coverage.get("note", "thin coverage"))
+            except Exception:
+                pass
+
         return {
             "confidence": conf,
             "uncalibrated": not best.get("confidence_calibrated"),
             "precision_tier": tier,
             "verification_status": vstatus,
             "scope_consistent": scope_consistent,
+            "coverage": coverage,
             "location_hint": record.get("location_hint"),
             "supports": supports[:8],
             "contradictions": contradictions[:8],
