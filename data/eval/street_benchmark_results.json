@@ -1,0 +1,32 @@
+{
+  "methods": {
+    "geoclip": {
+      "n": 24,
+      "n_with_prediction": 24,
+      "accuracy_at_1km": 12.5,
+      "accuracy_at_25km": 45.8,
+      "accuracy_at_200km": 54.2,
+      "median_error_km": 78.91,
+      "mean_error_km": 1624.39
+    },
+    "osv5m": {
+      "n": 24,
+      "n_with_prediction": 24,
+      "accuracy_at_1km": 0.0,
+      "accuracy_at_25km": 25.0,
+      "accuracy_at_200km": 33.3,
+      "median_error_km": 772.96,
+      "mean_error_km": 2003.06
+    },
+    "ensemble": {
+      "n": 24,
+      "n_with_prediction": 24,
+      "accuracy_at_1km": 8.3,
+      "accuracy_at_25km": 66.7,
+      "accuracy_at_200km": 70.8,
+      "median_error_km": 6.29,
+      "mean_error_km": 1328.99
+    }
+  },
+  "samples_total": 24
+}

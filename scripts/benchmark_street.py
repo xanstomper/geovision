@@ -53,6 +53,7 @@ def _load(manifest_path: Path):
 def run_method(name, samples, osv5m_ready, limit):
     """Run a single geolocation method over samples; return list of (err_km, has_pred)."""
     results = []
+    per_sample = []
     for i, s in enumerate(samples[:limit]):
         t0 = time.time()
         try:
@@ -89,7 +90,14 @@ def run_method(name, samples, osv5m_ready, limit):
         tag = f"{err:.1f}km" if err is not None else "no-pred"
         print(f"    [{name}] {i+1}/{limit} {s['title']}  -> {tag}  ({time.time()-t0:.0f}s)")
         results.append((err, lat is not None))
-    return results
+        per_sample.append({
+            "title": s.get("title", ""),
+            "gt_lat": s.get("gt_lat"), "gt_lon": s.get("gt_lon"),
+            "pred_lat": lat, "pred_lon": lon,
+            "error_km": round(err, 3) if err is not None else None,
+            "city": s.get("city", ""),
+        })
+    return results, per_sample
 
 
 def main() -> int:
@@ -109,7 +117,7 @@ def main() -> int:
     for name in allowed:
         print(f"\n--- Method: {name} ---")
         print(f"Base error: {'N/A'}")
-        results = run_method(name, samples, osv5m_ready=False, limit=args.limit)
+        results, per_sample = run_method(name, samples, osv5m_ready=False, limit=args.limit)
         errs = [e for e, _ in results]
         has = [h for _, h in results]
         valid = [e for e in errs if e is not None]
@@ -124,6 +132,7 @@ def main() -> int:
             "mean_error_km": round(sum(valid)/len(valid), 2) if valid else None,
         }
         summary["methods"][name] = m
+        summary.setdefault("per_sample", {})[name] = per_sample
         print(f"  accuracy@1km={m['accuracy_at_1km']}%  @25km={m['accuracy_at_25km']}%  "
               f"@200km={m['accuracy_at_200km']}%  median={m['median_error_km']}km  mean={m['mean_error_km']}km")
 
